@@ -12,6 +12,11 @@
     <Version>2021.01.22</Version>
     <Description>A set of wrappers, functions, and utilities that I use frequently, and that I want to make available in perpetuity.</Description>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/athendrix/commonstructurelibrary</RepositoryUrl>
+    <RepositoryType>Github</RepositoryType>
+    <NeutralLanguage>en</NeutralLanguage>
+    <PackageProjectUrl>https://github.com/athendrix/commonstructurelibrary</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +25,13 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Npgsql" Version="4.1.3.1" />
     <PackageReference Include="Pkcs11Interop" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
