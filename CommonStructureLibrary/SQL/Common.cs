@@ -62,6 +62,15 @@ namespace CSL.SQL
             object toReturn = row[index];
             return !DBNull.Value.Equals(toReturn) ? (T)toReturn : default;
         }
+
+        public static ulong ToUlong(this long item)
+        {
+            return unchecked((ulong)(item - long.MinValue));
+        }
+        public static long ToLong(this ulong item)
+        {
+            return unchecked((long)item + long.MinValue);
+        }
         //public static KeyValuePair<string, object> BindTo(this string key, object value)
         //{
         //    return new KeyValuePair<string, object>(key, value);
