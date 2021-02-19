@@ -7,9 +7,9 @@
     <Authors>Andrew Hendrix</Authors>
     <Company>Andrew Hendrix</Company>
     <Copyright>Andrew Hendrix 2021</Copyright>
-    <AssemblyVersion>20.21.1.22</AssemblyVersion>
-    <FileVersion>20.21.1.22</FileVersion>
-    <Version>2021.01.22</Version>
+    <AssemblyVersion>20.21.2.19</AssemblyVersion>
+    <FileVersion>20.21.2.19</FileVersion>
+    <Version>2021.02.19</Version>
     <Description>A set of wrappers, functions, and utilities that I use frequently, and that I want to make available in perpetuity.</Description>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
