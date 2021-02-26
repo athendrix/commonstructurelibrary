@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -71,6 +73,62 @@ namespace CSL.SQL
         {
             return unchecked((long)item + long.MinValue);
         }
+
+        public static void WriteStruct<T>(this BinaryWriter bw, T value) where T : struct => bw.Write(value.ToByteArray());
+        public static byte[] ToByteArray<T>(this T value) where T : struct => MemoryMarshal.AsBytes<T>(new T[] { value }).ToArray();
+        public static T ReadStruct<T>(this BinaryReader br) where T : struct
+        {
+            int length = MemoryMarshal.AsBytes<T>(new T[] { default(T) }).Length;
+            byte[] read = br.ReadBytes(length);
+            if (read.Length < length)
+            {
+                byte[] temp = new byte[length];
+                Array.Copy(read, temp, read.Length);
+                read = temp;
+            }
+            return read.ToStruct<T>();
+        }
+        public static T ToStruct<T>(this byte[] data) where T : struct => MemoryMarshal.Cast<byte, T>(data)[0];
+        public static void WriteMany(this BinaryWriter bw, params object[] items)
+        {
+            foreach(object o in items)
+            {
+                if (o is bool bl) { bw.Write(bl); continue; }
+                if (o is byte bt) { bw.Write(bt); continue; }
+                //if (o is byte[] buffer) { bw.Write(buffer); continue; } //not wise, unless you encode the length first like string. We don't control the reading so we can't reliably do this.
+                if (o is byte[] buffer) { throw new ArgumentException("Cannot write byte[] because we won't know the length on retrieval! We recomend writing the length and then the byte[] manually."); }
+                if (o is char ch) { bw.Write(ch); continue; }
+                if (o is char[] chars) { bw.Write(new string(chars)); continue; } //turn it into a string so it works better (writing length first)
+                if (o is decimal dec) { bw.Write(dec); continue; }
+                if (o is double d) { bw.Write(d); continue; }
+                if (o is float f) { bw.Write(f); continue; }
+                if (o is int i) { bw.Write(i); continue; }
+                if (o is long l) { bw.Write(l); continue; }
+                if (o is sbyte sb) { bw.Write(sb); continue; }
+                if (o is short sh) { bw.Write(sh); continue; }
+                if (o is string s) { bw.Write(s); continue; }
+                if (o is uint ui) { bw.Write(ui); continue; }
+                if (o is ulong ul) { bw.Write(ul); continue; }
+                if (o is ushort us) { bw.Write(us); continue; }
+                if (o is Guid id) { bw.WriteStruct<Guid>(id); continue; }
+                if (o is DateTime dt) { bw.WriteStruct<DateTime>(dt); continue; }
+                if (o is TimeSpan ts) { bw.WriteStruct<TimeSpan>(ts); continue; }
+                if (o is IBinaryWritable ibw) { bw.Write(ibw.ToByteArray()); continue; }
+                throw new ArgumentException("object " + o.ToString() + " is an unknown type, and cannot be converted to a byte[]");
+            }
+        }
+
+        public static Guid HashToGuid(this byte[] data) => HashToGuid(data, out Guid _);
+        public static Guid HashToGuid(this byte[] data, out Guid secondaryGuid)
+        {
+            using (SHA256 sha = SHA256.Create())
+            {
+                Span<byte> shahash = sha.ComputeHash(data);
+                secondaryGuid = new Guid(shahash.Slice(16, 16));
+                return new Guid(shahash.Slice(0, 16));
+            }
+        }
+
         //public static KeyValuePair<string, object> BindTo(this string key, object value)
         //{
         //    return new KeyValuePair<string, object>(key, value);
