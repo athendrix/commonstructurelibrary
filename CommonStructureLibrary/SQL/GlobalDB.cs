@@ -55,7 +55,7 @@ namespace CSL.SQL
             {
                 return await sql.ExecuteScalar<string>(
                     //"INSERT INTO \"Settings\" (\"Key\",\"Value\") VALUES (@key,null) ON CONFLICT DO NOTHING; " +
-                    "SELECT \"Value\" FROM \"Settings\" WHERE \"Key\" = @key;", new Dictionary<string, object> { { "@key", key } });
+                    "SELECT \"Value\" FROM \"Settings\" WHERE \"Key\" = @0;", key);
             }
         }
         public async Task Set(string key, string value)
@@ -64,11 +64,11 @@ namespace CSL.SQL
             {
                 if (value == null)
                 {
-                    await sql.ExecuteNonQuery("DELETE FROM \"Settings\" WHERE \"Key\" =  @key;", new Dictionary<string, object> { { "@key", key } });
+                    await sql.ExecuteNonQuery("DELETE FROM \"Settings\" WHERE \"Key\" =  @0;", key);
                 }
                 else
                 {
-                    await sql.ExecuteNonQuery("INSERT INTO \"Settings\" (\"Key\",\"Value\") VALUES (@key,@value) ON CONFLICT(\"Key\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";", new Dictionary<string, object> { { "@key", key }, { "@value", value } });
+                    await sql.ExecuteNonQuery("INSERT INTO \"Settings\" (\"Key\",\"Value\") VALUES (@0,@1) ON CONFLICT(\"Key\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";", key, value);
                 }
             }
         }
@@ -99,7 +99,7 @@ namespace CSL.SQL
             {
                 byte[] data = await sql.ExecuteScalar<byte[]>(
                     //"INSERT INTO \"KVStore\" (\"Key\",\"Value\") VALUES (@key,null) ON CONFLICT DO NOTHING; " +
-                    "SELECT \"Value\" FROM \"KVStore\" WHERE \"Key\" = @key;", new Dictionary<string, object> { { "@key", key } });
+                    "SELECT \"Value\" FROM \"KVStore\" WHERE \"Key\" = @0;", key );
                 return Create(data);
             }
         }
@@ -125,11 +125,11 @@ namespace CSL.SQL
                 byte[] data = ToByteArray(value);
                 if (data == null)
                 {
-                    await sql.ExecuteNonQuery("DELETE FROM \"KVStore\" WHERE \"Key\" =  @key;", new Dictionary<string, object> { { "@key", key } });
+                    await sql.ExecuteNonQuery("DELETE FROM \"KVStore\" WHERE \"Key\" =  @0;", key );
                 }
                 else
                 {
-                    await sql.ExecuteNonQuery("INSERT INTO \"KVStore\" (\"Key\",\"Value\") VALUES (@key,@value) ON CONFLICT(\"Key\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";", new Dictionary<string, object> { { "@key", key }, { "@value", data } });
+                    await sql.ExecuteNonQuery("INSERT INTO \"KVStore\" (\"Key\",\"Value\") VALUES (@0,@1) ON CONFLICT(\"Key\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";",  key, data);
                 }
             }
         }
@@ -145,8 +145,8 @@ namespace CSL.SQL
         {
             using (SQL sql = await PostgreSQL.Connect(Server, Database, username, password, Schema, sslMode))
             {
-                await sql.ExecuteNonQuery("INSERT INTO \"Log\" (\"Timestamp\",\"Message\",\"EntryType\",\"EventID\",\"CategoryID\",\"RawData\") VALUES (@timestamp,@message,@entrytype,@eventid,@categoryid,@rawdata);",
-                new Dictionary<string, object> { { "@timestamp", DateTime.Now }, { "@message", Message }, { "@entrytype", LogEntryType }, { "@eventid", eventID }, { "@categoryid", categoryID }, { "@rawdata", rawData } });
+                await sql.ExecuteNonQuery("INSERT INTO \"Log\" (\"Timestamp\",\"Message\",\"EntryType\",\"EventID\",\"CategoryID\",\"RawData\") VALUES (@0,@1,@2,@3,@4,@5);",
+                                                                DateTime.Now ,   Message , LogEntryType,    eventID,    categoryID,  rawData);
             }
 
         }
