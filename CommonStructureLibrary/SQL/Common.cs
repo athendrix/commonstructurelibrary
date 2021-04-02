@@ -65,10 +65,12 @@ namespace CSL.SQL
             return !DBNull.Value.Equals(toReturn) ? (T)toReturn : default;
         }
 
+        [Obsolete("This method is obsolete. You can just cast from a long to a ulong and back safely.")]
         public static ulong ToUlong(this long item)
         {
             return unchecked((ulong)(item - long.MinValue));
         }
+        [Obsolete("This method is obsolete. You can just cast from a ulong to a long and back safely.")]
         public static long ToLong(this ulong item)
         {
             return unchecked((long)item + long.MinValue);

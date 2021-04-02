@@ -54,8 +54,8 @@ namespace CSL.SQL
             {
                 CreateDB(sql);
                 return await sql.ExecuteScalar<string>(
-                    "INSERT OR IGNORE INTO `SETTINGS` (`KEY`,`VALUE`) VALUES (@key,null); " +
-                    "SELECT `VALUE` FROM `SETTINGS` WHERE `KEY` = @key;", new Dictionary<string, object> { { "@key", key } });
+                    "INSERT OR IGNORE INTO `SETTINGS` (`KEY`,`VALUE`) VALUES (@0,null); " +
+                    "SELECT `VALUE` FROM `SETTINGS` WHERE `KEY` = @0;", key);
             }
         }
         public async Task Set(string key, string value)
@@ -63,7 +63,7 @@ namespace CSL.SQL
             using (SQL sql = new Sqlite(filename))
             {
                 CreateDB(sql);
-                await sql.ExecuteNonQuery("INSERT OR REPLACE INTO `SETTINGS` (`KEY`,`VALUE`) VALUES (@key,@value);", new Dictionary<string, object> { { "@key", key }, { "@value", value } });
+                await sql.ExecuteNonQuery("INSERT OR REPLACE INTO `SETTINGS` (`KEY`,`VALUE`) VALUES (@0,@1);", key, value);
             }
         }
 
@@ -73,8 +73,8 @@ namespace CSL.SQL
             using (SQL sql = new Sqlite(filename))
             {
                 CreateDB(sql);
-                await sql.ExecuteNonQuery("INSERT OR REPLACE INTO `LOG` (`TIMESTAMP`,`MESSAGE`,`ENTRYTYPE`,`EVENTID`,`CATEGORYID`,`RAWDATA`) VALUES (@timestamp,@message,@entrytype,@eventid,@categoryid,@rawdata);",
-                new Dictionary<string, object> { { "@timestamp", DateTime.Now }, { "@message", Message }, { "@entrytype", LogEntryType }, { "@eventid", eventID }, { "@categoryid", categoryID }, { "@rawdata", rawData } });
+                await sql.ExecuteNonQuery("INSERT OR REPLACE INTO `LOG` (`TIMESTAMP`,`MESSAGE`,`ENTRYTYPE`,`EVENTID`,`CATEGORYID`,`RAWDATA`) VALUES (@0,@1,@2,@3,@4,@5);",
+                                                                        DateTime.Now,  Message, LogEntryType, eventID, categoryID, rawData);
             }
         }
 

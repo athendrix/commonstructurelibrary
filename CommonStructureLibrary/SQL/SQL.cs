@@ -12,7 +12,7 @@ namespace CSL.SQL
 {
     public abstract class SQL : IDisposable
     {
-
+        [Obsolete("With the obsoletion of other functions in this class, this function is no longer necessary.")]
         public static string QueryIn<T>(IEnumerable<T> inputList, out IEnumerable<KeyValuePair<string, object>> parameters)
         {
             T[] enumerableArray = inputList as T[] ?? inputList.ToArray();
@@ -24,7 +24,10 @@ namespace CSL.SQL
         public DbConnection InternalConnection { get; protected set; }
         protected DbTransaction currentTransaction = null;
         #region Server Calls
-        public async Task<AutoClosingDataReader> ExecuteReader(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
+        #region Reader
+        [Obsolete("This version of ExecuteReader is deprecated. Please use the version with incrementing values.")]
+        public Task<AutoClosingDataReader> ExecuteReader(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteReader(commandText, parameters, commandType);
+        private async Task<AutoClosingDataReader> InnerExecuteReader(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType)
         {
             DbCommand cmd = InternalConnection.CreateCommand();
             cmd.CommandText = commandText;
@@ -42,7 +45,27 @@ namespace CSL.SQL
             }
             return new AutoClosingDataReader(await cmd.ExecuteReaderAsync(), cmd);
         }
-        public Task<int> ExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
+        /// <summary>
+        /// Use incrementing values for each parameter, prefixed with an @ symbol.
+        /// for example, "SELECT * FROM users WHERE username = @0 AND site = @1;"
+        /// </summary>
+        /// <param name="commandText">The SQL Text to execute.</param>
+        /// <param name="parameters">The Parameters passed in.</param>
+        /// <returns>An AutoClosingDataReader object that should be wrapped in a using block.</returns>
+        public Task<AutoClosingDataReader> ExecuteReader(string commandText, params object[] parameters)
+        {
+            Dictionary<string, object> newParams = new Dictionary<string, object>();
+            for(int i = 0; i < parameters.Length; i++)
+            {
+                newParams.Add("@" + i, parameters[i]);
+            }
+            return InnerExecuteReader(commandText, newParams, CommandType.Text);
+        }
+        #endregion
+        #region NonQuery
+        [Obsolete("This version of ExecuteNonQuery is deprecated. Please use the version with incrementing values.")]
+        public Task<int> ExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteNonQuery(commandText, parameters, commandType);
+        private Task<int> InnerExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
         {
             using DbCommand cmd = InternalConnection.CreateCommand();
             cmd.CommandText = commandText;
@@ -60,7 +83,27 @@ namespace CSL.SQL
             }
             return cmd.ExecuteNonQueryAsync();
         }
-        public async Task<T> ExecuteScalar<T>(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
+        /// <summary>
+        /// Use incrementing values for each parameter, prefixed with an @ symbol.
+        /// for example, "UPDATE users SET site = @1 WHERE username = @0;"
+        /// </summary>
+        /// <param name="commandText">The SQL Text to execute.</param>
+        /// <param name="parameters">The Parameters passed in.</param>
+        /// <returns>An int representing how many rows were affected.</returns>
+        public Task<int> ExecuteNonQuery(string commandText, params object[] parameters)
+        {
+            Dictionary<string, object> newParams = new Dictionary<string, object>();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                newParams.Add("@" + i, parameters[i]);
+            }
+            return InnerExecuteNonQuery(commandText, newParams, CommandType.Text);
+        }
+        #endregion
+        #region Scalar
+        [Obsolete("This version of ExecuteScalar is deprecated. Please use the version with incrementing values.")]
+        public Task<T> ExecuteScalar<T>(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteScalar<T>(commandText, parameters, commandType);
+        private async Task<T> InnerExecuteScalar<T>(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
         {
             Debug.Assert(default(T) == null, "Type must be Nullable. Try adding a ? to the end of the type to make it Nullable. (e.g. 'int?')");
             using DbCommand cmd = InternalConnection.CreateCommand();
@@ -84,6 +127,23 @@ namespace CSL.SQL
             }
             return (T)toReturn;
         }
+        /// <summary>
+        /// Use incrementing values for each parameter, prefixed with an @ symbol.
+        /// for example, "SELECT userid FROM users WHERE username = @0 AND site = @1;"
+        /// </summary>
+        /// <param name="commandText">The SQL Text to execute.</param>
+        /// <param name="parameters">The Parameters passed in.</param>
+        /// <returns>The value in the first column and first row of the result.</returns>
+        public Task<T> ExecuteScalar<T>(string commandText, params object[] parameters)
+        {
+            Dictionary<string, object> newParams = new Dictionary<string, object>();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                newParams.Add("@" + i, parameters[i]);
+            }
+            return InnerExecuteScalar<T>(commandText, newParams, CommandType.Text);
+        }
+        #endregion
         #endregion
         #region Transaction Management
         public void BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.Serializable)
