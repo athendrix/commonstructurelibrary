@@ -14,7 +14,7 @@ namespace CSL.SQL
             PostgreSQL toReturn = new PostgreSQL(Server, Database, username, password, SslMode);
             if (Schema != null)
             {
-                await toReturn.ExecuteNonQuery("SET search_path to \"" + Common.NameParser(Schema) + "\";");
+                await toReturn.ExecuteNonQuery("CREATE SCHEMA IF NOT EXISTS \"" + Common.NameParser(Schema) + "\"; SET search_path to \"" + Common.NameParser(Schema) + "\";");
             }
             return toReturn;
         }

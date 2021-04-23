@@ -52,14 +52,42 @@ namespace CSL.SQL
         /// <param name="commandText">The SQL Text to execute.</param>
         /// <param name="parameters">The Parameters passed in.</param>
         /// <returns>An AutoClosingDataReader object that should be wrapped in a using block.</returns>
-        public Task<AutoClosingDataReader> ExecuteReader(string commandText, params object[] parameters)
+        public async Task<AutoClosingDataReader> ExecuteReader(string commandText, params object[] parameters)
         {
-            Dictionary<string, object> newParams = new Dictionary<string, object>();
-            for(int i = 0; i < parameters.Length; i++)
+            DbCommand cmd = InternalConnection.CreateCommand();
+            cmd.CommandText = commandText;
+            cmd.CommandType = CommandType.Text;
+            cmd.Transaction = currentTransaction;
+            for (int i = 0; i < parameters.Length; i++)
             {
-                newParams.Add("@" + i, parameters[i]);
+                DbParameter toAdd = cmd.CreateParameter();
+                toAdd.ParameterName = "@" + i.ToString();
+                toAdd.Value = parameters[i] ?? DBNull.Value;
+                cmd.Parameters.Add(toAdd);
             }
-            return InnerExecuteReader(commandText, newParams, CommandType.Text);
+            return new AutoClosingDataReader(await cmd.ExecuteReaderAsync(), cmd);
+        }
+        /// <summary>
+        /// Use incrementing values for each parameter, prefixed with an @ symbol.
+        /// for example, "SELECT * FROM users WHERE username = @0 AND site = @1;"
+        /// </summary>
+        /// <param name="commandText">The SQL Text to execute.</param>
+        /// <param name="parameters">The Parameters passed in.</param>
+        /// <returns>An AutoClosingDataReader object that should be wrapped in a using block.</returns>
+        public AutoClosingDataReader ExecuteReaderSync(string commandText, params object[] parameters)
+        {
+            DbCommand cmd = InternalConnection.CreateCommand();
+            cmd.CommandText = commandText;
+            cmd.CommandType = CommandType.Text;
+            cmd.Transaction = currentTransaction;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                DbParameter toAdd = cmd.CreateParameter();
+                toAdd.ParameterName = "@" + i.ToString();
+                toAdd.Value = parameters[i] ?? DBNull.Value;
+                cmd.Parameters.Add(toAdd);
+            }
+            return new AutoClosingDataReader(cmd.ExecuteReader(), cmd);
         }
         #endregion
         #region NonQuery
@@ -92,12 +120,44 @@ namespace CSL.SQL
         /// <returns>An int representing how many rows were affected.</returns>
         public Task<int> ExecuteNonQuery(string commandText, params object[] parameters)
         {
-            Dictionary<string, object> newParams = new Dictionary<string, object>();
-            for (int i = 0; i < parameters.Length; i++)
+            using (DbCommand cmd = InternalConnection.CreateCommand())
             {
-                newParams.Add("@" + i, parameters[i]);
+                cmd.CommandText = commandText;
+                cmd.CommandType = CommandType.Text;
+                cmd.Transaction = currentTransaction;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    DbParameter toAdd = cmd.CreateParameter();
+                    toAdd.ParameterName = "@" + i.ToString();
+                    toAdd.Value = parameters[i] ?? DBNull.Value;
+                    cmd.Parameters.Add(toAdd);
+                }
+                return cmd.ExecuteNonQueryAsync();
             }
-            return InnerExecuteNonQuery(commandText, newParams, CommandType.Text);
+        }
+        /// <summary>
+        /// Use incrementing values for each parameter, prefixed with an @ symbol.
+        /// for example, "UPDATE users SET site = @1 WHERE username = @0;"
+        /// </summary>
+        /// <param name="commandText">The SQL Text to execute.</param>
+        /// <param name="parameters">The Parameters passed in.</param>
+        /// <returns>An int representing how many rows were affected.</returns>
+        public int ExecuteNonQuerySync(string commandText, params object[] parameters)
+        {
+            using (DbCommand cmd = InternalConnection.CreateCommand())
+            {
+                cmd.CommandText = commandText;
+                cmd.CommandType = CommandType.Text;
+                cmd.Transaction = currentTransaction;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    DbParameter toAdd = cmd.CreateParameter();
+                    toAdd.ParameterName = "@" + i.ToString();
+                    toAdd.Value = parameters[i] ?? DBNull.Value;
+                    cmd.Parameters.Add(toAdd);
+                }
+                return cmd.ExecuteNonQuery();
+            }
         }
         #endregion
         #region Scalar
@@ -134,14 +194,56 @@ namespace CSL.SQL
         /// <param name="commandText">The SQL Text to execute.</param>
         /// <param name="parameters">The Parameters passed in.</param>
         /// <returns>The value in the first column and first row of the result.</returns>
-        public Task<T> ExecuteScalar<T>(string commandText, params object[] parameters)
+        public async Task<T> ExecuteScalar<T>(string commandText, params object[] parameters)
         {
-            Dictionary<string, object> newParams = new Dictionary<string, object>();
-            for (int i = 0; i < parameters.Length; i++)
+            using (DbCommand cmd = InternalConnection.CreateCommand())
             {
-                newParams.Add("@" + i, parameters[i]);
+                cmd.CommandText = commandText;
+                cmd.CommandType = CommandType.Text;
+                cmd.Transaction = currentTransaction;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    DbParameter toAdd = cmd.CreateParameter();
+                    toAdd.ParameterName = "@" + i.ToString();
+                    toAdd.Value = parameters[i] ?? DBNull.Value;
+                    cmd.Parameters.Add(toAdd);
+                }
+                object toReturn = await cmd.ExecuteScalarAsync();
+                if (DBNull.Value.Equals(toReturn))
+                {
+                    return default;
+                }
+                return (T)toReturn;
             }
-            return InnerExecuteScalar<T>(commandText, newParams, CommandType.Text);
+        }
+        /// <summary>
+        /// Use incrementing values for each parameter, prefixed with an @ symbol.
+        /// for example, "SELECT userid FROM users WHERE username = @0 AND site = @1;"
+        /// </summary>
+        /// <param name="commandText">The SQL Text to execute.</param>
+        /// <param name="parameters">The Parameters passed in.</param>
+        /// <returns>The value in the first column and first row of the result.</returns>
+        public T ExecuteScalarSync<T>(string commandText, params object[] parameters)
+        {
+            using (DbCommand cmd = InternalConnection.CreateCommand())
+            {
+                cmd.CommandText = commandText;
+                cmd.CommandType = CommandType.Text;
+                cmd.Transaction = currentTransaction;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    DbParameter toAdd = cmd.CreateParameter();
+                    toAdd.ParameterName = "@" + i.ToString();
+                    toAdd.Value = parameters[i] ?? DBNull.Value;
+                    cmd.Parameters.Add(toAdd);
+                }
+                object toReturn = cmd.ExecuteScalar();
+                if (DBNull.Value.Equals(toReturn))
+                {
+                    return default;
+                }
+                return (T)toReturn;
+            }
         }
         #endregion
         #endregion

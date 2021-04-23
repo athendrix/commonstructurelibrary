@@ -1,4 +1,5 @@
 ﻿using CSL.Encryption;
+using CSL.SQL;
 using System;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,7 +11,9 @@ namespace CommonStructureLibraryTester
     {
         public static void Main(string[] args)
         {
-            AsyncMain(args).GetAwaiter().GetResult();
+            Tester.GetTestDB = () => PostgreSQL.Connect("localhost", "testdb", "testuser", "testpassword", "testschema");
+            Tester.RunTests();
+            //AsyncMain(args).GetAwaiter().GetResult();
         }
         public static async Task AsyncMain(string[] args)
         {

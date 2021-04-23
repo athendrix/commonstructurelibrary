@@ -9,8 +9,9 @@ namespace CSL.SQL
     /// <summary>
     /// Uses Sqlite to provide a local Key/Value store and logging functionality.
     /// </summary>
-    public class LocalDB
+    public class LocalDB : IDisposable
     {
+        private SQL sql;
         public enum PathBase : int
         {
             ApplicationDirectory = 0,
@@ -37,7 +38,12 @@ namespace CSL.SQL
         public LocalDB(string filepath)
         {
             filename = filepath ?? throw new ArgumentNullException();
+            if (filename != ":memory:")
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(filename));
+            }
             createtables = false;
+            sql = new Sqlite(filename);
         }
         /// <summary>
         /// Creates a new LocalDB at a predefined Well Known application directory.
@@ -50,43 +56,39 @@ namespace CSL.SQL
 
         public async Task<string> Get(string key)
         {
-            using (SQL sql = new Sqlite(filename))
-            {
-                CreateDB(sql);
-                return await sql.ExecuteScalar<string>(
-                    "INSERT OR IGNORE INTO `SETTINGS` (`KEY`,`VALUE`) VALUES (@0,null); " +
-                    "SELECT `VALUE` FROM `SETTINGS` WHERE `KEY` = @0;", key);
-            }
+            await CreateDB();
+            return await sql.ExecuteScalar<string>(
+                "INSERT OR IGNORE INTO `SETTINGS` (`KEY`,`VALUE`) VALUES (@0,null); " +
+                "SELECT `VALUE` FROM `SETTINGS` WHERE `KEY` = @0;", key);
         }
         public async Task Set(string key, string value)
         {
-            using (SQL sql = new Sqlite(filename))
-            {
-                CreateDB(sql);
-                await sql.ExecuteNonQuery("INSERT OR REPLACE INTO `SETTINGS` (`KEY`,`VALUE`) VALUES (@0,@1);", key, value);
-            }
+            await CreateDB();
+            await sql.ExecuteNonQuery("INSERT OR REPLACE INTO `SETTINGS` (`KEY`,`VALUE`) VALUES (@0,@1);", key, value);
         }
 
 
         public async Task Log(string Message, string LogEntryType = "Error", int eventID = 0, int categoryID = 0, byte[] rawData = null)
         {
-            using (SQL sql = new Sqlite(filename))
-            {
-                CreateDB(sql);
-                await sql.ExecuteNonQuery("INSERT OR REPLACE INTO `LOG` (`TIMESTAMP`,`MESSAGE`,`ENTRYTYPE`,`EVENTID`,`CATEGORYID`,`RAWDATA`) VALUES (@0,@1,@2,@3,@4,@5);",
-                                                                        DateTime.Now,  Message, LogEntryType, eventID, categoryID, rawData);
-            }
+
+            await CreateDB();
+            await sql.ExecuteNonQuery("INSERT OR REPLACE INTO `LOG` (`TIMESTAMP`,`MESSAGE`,`ENTRYTYPE`,`EVENTID`,`CATEGORYID`,`RAWDATA`) VALUES (@0,@1,@2,@3,@4,@5);",
+                                                                    DateTime.Now, Message, LogEntryType, eventID, categoryID, rawData);
         }
 
-        private void CreateDB(SQL sql)
+        private async Task CreateDB()
         {
             if (!createtables)
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(filename));
-                sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS `SETTINGS` ( `KEY` TEXT NOT NULL UNIQUE, `VALUE` TEXT, PRIMARY KEY(`KEY`) ); " +
+                await sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS `SETTINGS` ( `KEY` TEXT NOT NULL UNIQUE, `VALUE` TEXT, PRIMARY KEY(`KEY`) ); " +
                 "CREATE TABLE IF NOT EXISTS `LOG` ( `TIMESTAMP` DATETIME NOT NULL UNIQUE, `MESSAGE` TEXT, `ENTRYTYPE` TEXT, `EVENTID` INTEGER, `CATEGORYID` INTEGER, `RAWDATA` BLOB, PRIMARY KEY(`TIMESTAMP`)  );");
                 createtables = true;
             }
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)sql).Dispose();
         }
     }
 }

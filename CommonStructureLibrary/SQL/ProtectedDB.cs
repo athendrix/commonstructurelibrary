@@ -10,7 +10,7 @@ namespace CSL.SQL
     /// <summary>
     /// Uses Sqlite to provide a local Key/Value store and logging functionality.
     /// </summary>
-    public class ProtectedDB
+    public class ProtectedDB :IDisposable
     {
         private readonly LocalDB innerDB;
         private readonly IProtector protector;
@@ -22,6 +22,12 @@ namespace CSL.SQL
         {
             this.innerDB = innerDB;
             this.protector = protector;
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)innerDB).Dispose();
+            ((IDisposable)protector).Dispose();
         }
 
         public async Task<string> Get(string key)

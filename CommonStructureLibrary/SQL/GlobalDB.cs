@@ -9,75 +9,53 @@ namespace CSL.SQL
     /// <summary>
     /// Uses PostgreSQL to provide access to a shared Key/Value store and logging functionality.
     /// </summary>
-    public class GlobalDB
+    public class GlobalDB : IDisposable
     {
+        private SQL sql;
         /// <summary>
         /// The most recent GlobalDB instance that was created. 
         /// </summary>
-        public static GlobalDB LatestDB = null;
+        //public static GlobalDB LatestDB = null;
         private bool createtables;
 
-        private readonly string Server;
-        private readonly string Database;
-        private readonly string username;
-        private readonly string password;
-        private readonly string Schema;
-        private readonly Npgsql.SslMode sslMode;
-        public GlobalDB(string Server, string Database, string username, string password, string Schema = null, Npgsql.SslMode sslMode = Npgsql.SslMode.Prefer)
+        public GlobalDB(PostgreSQL innerSQL)
         {
-            this.Server = Server;
-            this.Database = Database;
-            this.username = username;
-            this.password = password;
-            this.Schema = Schema;
-            this.sslMode = sslMode;
+            sql = innerSQL;
             createtables = false;
-            LatestDB = this;
+            //LatestDB = this;
         }
-        public async Task<GlobalDB> InitDB()
+        public async Task InitDB()
         {
             if (!createtables)
             {
-                using (SQL sql = await PostgreSQL.Connect(Server, Database, username, password, Schema, sslMode))
-                {
-                    await sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS \"Settings\" ( \"Key\" VARCHAR(255) NOT NULL UNIQUE, \"Value\" TEXT, PRIMARY KEY(\"Key\") ); " +
-                    "CREATE TABLE IF NOT EXISTS \"KVStore\" ( \"Key\" UUID NOT NULL, \"Value\" BYTEA, PRIMARY KEY(\"Key\") ); " +
-                    "CREATE TABLE IF NOT EXISTS \"Log\" ( \"Timestamp\" TIMESTAMP NOT NULL UNIQUE, \"Message\" TEXT, \"EntryType\" TEXT, \"EventID\" INT, \"CategoryID\" INT, \"RawData\" BYTEA, PRIMARY KEY(\"Timestamp\"));");
-                    createtables = true;
-                }
+                await sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS \"Settings\" ( \"Key\" VARCHAR(255) NOT NULL UNIQUE, \"Value\" TEXT, PRIMARY KEY(\"Key\") ); " +
+                "CREATE TABLE IF NOT EXISTS \"KVStore\" ( \"Key\" UUID NOT NULL, \"Value\" BYTEA, PRIMARY KEY(\"Key\") ); " +
+                "CREATE TABLE IF NOT EXISTS \"Log\" ( \"Timestamp\" TIMESTAMP NOT NULL UNIQUE, \"Message\" TEXT, \"EntryType\" TEXT, \"EventID\" INT, \"CategoryID\" INT, \"RawData\" BYTEA, PRIMARY KEY(\"Timestamp\"));");
+                createtables = true;
             }
-            return this;
         }
         #region Settings
         public async Task<string> Get(string key)
         {
-            using (SQL sql = await PostgreSQL.Connect(Server, Database, username, password, Schema, sslMode))
-            {
-                return await sql.ExecuteScalar<string>(
-                    //"INSERT INTO \"Settings\" (\"Key\",\"Value\") VALUES (@key,null) ON CONFLICT DO NOTHING; " +
-                    "SELECT \"Value\" FROM \"Settings\" WHERE \"Key\" = @0;", key);
-            }
+            await InitDB();
+            return await sql.ExecuteScalar<string>("SELECT \"Value\" FROM \"Settings\" WHERE \"Key\" = @0;", key);
         }
         public async Task Set(string key, string value)
         {
-            using (SQL sql = await PostgreSQL.Connect(Server, Database, username, password, Schema, sslMode))
+            await InitDB();
+            if (value == null)
             {
-                if (value == null)
-                {
-                    await sql.ExecuteNonQuery("DELETE FROM \"Settings\" WHERE \"Key\" =  @0;", key);
-                }
-                else
-                {
-                    await sql.ExecuteNonQuery("INSERT INTO \"Settings\" (\"Key\",\"Value\") VALUES (@0,@1) ON CONFLICT(\"Key\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";", key, value);
-                }
+                await sql.ExecuteNonQuery("DELETE FROM \"Settings\" WHERE \"Key\" =  @0;", key);
+            }
+            else
+            {
+                await sql.ExecuteNonQuery("INSERT INTO \"Settings\" (\"Key\",\"Value\") VALUES (@0,@1) ON CONFLICT(\"Key\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";", key, value);
             }
         }
         public async Task ClearSettings()
         {
-            using (SQL sql = await PostgreSQL.Connect(Server, Database, username, password, Schema, sslMode))
-            {
-                await sql.ExecuteNonQuery("TRUNCATE \"Settings\";");
-            }
+            await InitDB();
+            await sql.ExecuteNonQuery("TRUNCATE \"Settings\";");
         }
         #endregion
         #region KVStore
@@ -93,15 +71,11 @@ namespace CSL.SQL
                 }
             });
         }
-        public async Task<T> Get<T>(Guid key, Func<byte[],T> Create)
+        public async Task<T> Get<T>(Guid key, Func<byte[], T> Create)
         {
-            using (SQL sql = await PostgreSQL.Connect(Server, Database, username, password, Schema, sslMode))
-            {
-                byte[] data = await sql.ExecuteScalar<byte[]>(
-                    //"INSERT INTO \"KVStore\" (\"Key\",\"Value\") VALUES (@key,null) ON CONFLICT DO NOTHING; " +
-                    "SELECT \"Value\" FROM \"KVStore\" WHERE \"Key\" = @0;", key );
-                return Create(data);
-            }
+            await InitDB();
+            byte[] data = await sql.ExecuteScalar<byte[]>("SELECT \"Value\" FROM \"KVStore\" WHERE \"Key\" = @0;", key);
+            return Create(data);
         }
         public Task Set<T>(Guid key, T value) where T : IBinaryWritable => Set(key, value, (x) => (value?.ToByteArray()));
         public Task Set(Guid key, byte[] value) => Set(key, value, (x) => x);
@@ -118,44 +92,41 @@ namespace CSL.SQL
                 }
             });
         }
-        public async Task Set<T>(Guid key, T value, Func<T,byte[]> ToByteArray )
+        public async Task Set<T>(Guid key, T value, Func<T, byte[]> ToByteArray)
         {
-            using (SQL sql = await PostgreSQL.Connect(Server, Database, username, password, Schema, sslMode))
+            await InitDB();
+            byte[] data = ToByteArray(value);
+            if (data == null)
             {
-                byte[] data = ToByteArray(value);
-                if (data == null)
-                {
-                    await sql.ExecuteNonQuery("DELETE FROM \"KVStore\" WHERE \"Key\" =  @0;", key );
-                }
-                else
-                {
-                    await sql.ExecuteNonQuery("INSERT INTO \"KVStore\" (\"Key\",\"Value\") VALUES (@0,@1) ON CONFLICT(\"Key\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";",  key, data);
-                }
+                await sql.ExecuteNonQuery("DELETE FROM \"KVStore\" WHERE \"Key\" =  @0;", key);
+            }
+            else
+            {
+                await sql.ExecuteNonQuery("INSERT INTO \"KVStore\" (\"Key\",\"Value\") VALUES (@0,@1) ON CONFLICT(\"Key\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";", key, data);
             }
         }
         public async Task ClearKVStore()
         {
-            using (SQL sql = await PostgreSQL.Connect(Server, Database, username, password, Schema, sslMode))
-            {
-                await sql.ExecuteNonQuery("TRUNCATE \"KVStore\";");
-            }
+            await InitDB();
+            await sql.ExecuteNonQuery("TRUNCATE \"KVStore\";");
         }
+
         #endregion
         public async Task Log(string Message, string LogEntryType = "Error", int eventID = 0, int categoryID = 0, byte[] rawData = null)
         {
-            using (SQL sql = await PostgreSQL.Connect(Server, Database, username, password, Schema, sslMode))
-            {
-                await sql.ExecuteNonQuery("INSERT INTO \"Log\" (\"Timestamp\",\"Message\",\"EntryType\",\"EventID\",\"CategoryID\",\"RawData\") VALUES (@0,@1,@2,@3,@4,@5);",
-                                                                DateTime.Now ,   Message , LogEntryType,    eventID,    categoryID,  rawData);
-            }
-
+            await InitDB();
+            await sql.ExecuteNonQuery("INSERT INTO \"Log\" (\"Timestamp\",\"Message\",\"EntryType\",\"EventID\",\"CategoryID\",\"RawData\") VALUES (@0,@1,@2,@3,@4,@5);",
+                                                            DateTime.Now, Message, LogEntryType, eventID, categoryID, rawData);
         }
         public async Task ClearLogs()
         {
-            using (SQL sql = await PostgreSQL.Connect(Server, Database, username, password, Schema, sslMode))
-            {
-                await sql.ExecuteNonQuery("TRUNCATE \"Log\";");
-            }
+            await InitDB();
+            await sql.ExecuteNonQuery("TRUNCATE \"Log\";");
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)sql).Dispose();
         }
     }
 }
