@@ -6,6 +6,6 @@ namespace CSL.SQL
 {
     public interface IBinaryWritable
     {
-        public byte[] ToByteArray();
+        byte[] ToByteArray();
     }
 }

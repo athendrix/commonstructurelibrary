@@ -95,21 +95,23 @@ namespace CSL.SQL
         public Task<int> ExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteNonQuery(commandText, parameters, commandType);
         private Task<int> InnerExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
         {
-            using DbCommand cmd = InternalConnection.CreateCommand();
-            cmd.CommandText = commandText;
-            cmd.CommandType = commandType;
-            cmd.Transaction = currentTransaction;
-            if (parameters != null)
+            using (DbCommand cmd = InternalConnection.CreateCommand())
             {
-                foreach (KeyValuePair<string, object> parameter in parameters)
+                cmd.CommandText = commandText;
+                cmd.CommandType = commandType;
+                cmd.Transaction = currentTransaction;
+                if (parameters != null)
                 {
-                    DbParameter toAdd = cmd.CreateParameter();
-                    toAdd.ParameterName = parameter.Key;
-                    toAdd.Value = parameter.Value ?? DBNull.Value;
-                    cmd.Parameters.Add(toAdd);
+                    foreach (KeyValuePair<string, object> parameter in parameters)
+                    {
+                        DbParameter toAdd = cmd.CreateParameter();
+                        toAdd.ParameterName = parameter.Key;
+                        toAdd.Value = parameter.Value ?? DBNull.Value;
+                        cmd.Parameters.Add(toAdd);
+                    }
                 }
+                return cmd.ExecuteNonQueryAsync();
             }
-            return cmd.ExecuteNonQueryAsync();
         }
         /// <summary>
         /// Use incrementing values for each parameter, prefixed with an @ symbol.
@@ -166,26 +168,28 @@ namespace CSL.SQL
         private async Task<T> InnerExecuteScalar<T>(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
         {
             Debug.Assert(default(T) == null, "Type must be Nullable. Try adding a ? to the end of the type to make it Nullable. (e.g. 'int?')");
-            using DbCommand cmd = InternalConnection.CreateCommand();
-            cmd.CommandText = commandText;
-            cmd.CommandType = commandType;
-            cmd.Transaction = currentTransaction;
-            if (parameters != null)
+            using (DbCommand cmd = InternalConnection.CreateCommand())
             {
-                foreach (KeyValuePair<string, object> parameter in parameters)
+                cmd.CommandText = commandText;
+                cmd.CommandType = commandType;
+                cmd.Transaction = currentTransaction;
+                if (parameters != null)
                 {
-                    DbParameter toAdd = cmd.CreateParameter();
-                    toAdd.ParameterName = parameter.Key;
-                    toAdd.Value = parameter.Value ?? DBNull.Value;
-                    cmd.Parameters.Add(toAdd);
+                    foreach (KeyValuePair<string, object> parameter in parameters)
+                    {
+                        DbParameter toAdd = cmd.CreateParameter();
+                        toAdd.ParameterName = parameter.Key;
+                        toAdd.Value = parameter.Value ?? DBNull.Value;
+                        cmd.Parameters.Add(toAdd);
+                    }
                 }
+                object toReturn = await cmd.ExecuteScalarAsync();
+                if (DBNull.Value.Equals(toReturn))
+                {
+                    return default;
+                }
+                return (T)toReturn;
             }
-            object toReturn = await cmd.ExecuteScalarAsync();
-            if (DBNull.Value.Equals(toReturn))
-            {
-                return default;
-            }
-            return (T)toReturn;
         }
         /// <summary>
         /// Use incrementing values for each parameter, prefixed with an @ symbol.

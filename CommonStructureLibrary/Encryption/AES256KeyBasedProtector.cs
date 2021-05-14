@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using static CSL.DependencyInjection;
 
 #if BRIDGE
 using Bridge.Html5;
@@ -18,40 +19,26 @@ namespace CSL.Encryption
 {
     public class AES256KeyBasedProtector : IProtector
     {
-#if BRIDGE
-        private Uint8Array key;
-#else
+        private static RandomNumberGenerator RNG = RandomNumberGenerator.Create();
         private byte[] key;
-#endif
+
         public AES256KeyBasedProtector()
         {
-#if BRIDGE
-            key = new Uint8Array(32);
-#else
             key = new byte[32];
-#endif
-            RandomNumberGenerator.Fill(key);
+            RNG.GetBytes(key);
         }
+
         public AES256KeyBasedProtector(byte[] key)
         {
             if (key.Length != 32)
             {
                 throw new ArgumentException("Invalid Key Size");
             }
-#if BRIDGE
-            this.key = key.ToUint8Array();
-#else
             this.key = (byte[])key.Clone();
-#endif
         }
         public byte[] GetKey()
         {
-#if BRIDGE
-            return key.ToArray();
-#else
             return (byte[])key.Clone();
-#endif
-
         }
 
         public async Task<string> Protect(string input, string purpose = null)
@@ -74,47 +61,31 @@ namespace CSL.Encryption
             //int noncesize = AesGcm.NonceByteSizes.MaxSize;
             int noncesize = 12;
 
-#if BRIDGE
-            Uint8Array toReturn;
-            Uint8Array purposebytes = purpose == null ? null : Encoding.UTF8.GetBytes(purpose).ToUint8Array();
-#else
             byte[] toReturn;
             byte[] purposebytes = purpose == null ? null : Encoding.UTF8.GetBytes(purpose);
-#endif
-            using (AesGcm cipher = new AesGcm(key))
+            using (IAesGcm cipher = CreateIAesGcm(key))
             {
-#if BRIDGE
-                Uint8Array plaintext = input.ToUint8Array();
-                toReturn = new Uint8Array(tagsize + noncesize + plaintext.Length);
-                Uint8Array tag = toReturn.SubArray(0, tagsize);
-                Uint8Array nonce = toReturn.SubArray(tagsize, noncesize);
-                Uint8Array ciphertext = toReturn.SubArray(tagsize + noncesize);
-                RandomNumberGenerator.Fill(nonce);
-                await cipher.Encrypt(nonce, plaintext, ciphertext, tag, purposebytes);
-#else
                 byte[] plaintext = input;
                 toReturn = await Task.Run(() => EasyEncrypt(cipher, plaintext, tagsize, noncesize, purposebytes));
-#endif
                 plaintext = null;
             }
-#if BRIDGE
-            return Convert.ToBase64String(toReturn.ToArray());
-#else
             return Convert.ToBase64String(toReturn);
-#endif
         }
-#if !BRIDGE
-        private static byte[] EasyEncrypt(AesGcm cipher, byte[] plaintext, int tagsize, int noncesize, byte[] purposebytes)
+
+        private static byte[] EasyEncrypt(IAesGcm cipher, byte[] plaintext, int tagsize, int noncesize, byte[] purposebytes)
         {
-            byte[] toReturn = new byte[tagsize + noncesize + plaintext.Length];
-            Span<byte> tag = toReturn.AsSpan(0, tagsize);
-            Span<byte> nonce = toReturn.AsSpan(tagsize, noncesize);
-            Span<byte> ciphertext = toReturn.AsSpan(tagsize + noncesize);
-            RandomNumberGenerator.Fill(nonce);
+            byte[] tag = new byte[tagsize];
+            byte[] nonce = new byte[noncesize];
+            byte[] ciphertext = new byte[plaintext.Length];
+            RNG.GetBytes(nonce);
             cipher.Encrypt(nonce, plaintext, ciphertext, tag, purposebytes);
+            byte[] toReturn = new byte[tagsize + noncesize + plaintext.Length];
+            tag.CopyTo(toReturn,0);
+            nonce.CopyTo(toReturn, tagsize);
+            ciphertext.CopyTo(toReturn, tagsize + noncesize);
             return toReturn;
         }
-#endif
+
 
         public async Task<string> Unprotect(string input, string purpose = null)
         {
@@ -133,38 +104,26 @@ namespace CSL.Encryption
             int noncesize = 12;
             byte[] purposebytes = purpose == null ? null : Encoding.UTF8.GetBytes(purpose);
 
-            using (AesGcm cipher = new AesGcm(key))
+            using (IAesGcm cipher = CreateIAesGcm(key))
             {
-
-#if BRIDGE
-                Uint8Array protectedText = Convert.FromBase64String(input).ToUint8Array();
-                //Uint8Array plaintext = input.ToUint8Array();
-                Uint8Array plaintexttemp = new Uint8Array(protectedText.Length - (tagsize + noncesize));
-                Uint8Array tag = protectedText.SubArray(0, tagsize);
-                Uint8Array nonce = protectedText.SubArray(tagsize, noncesize);
-                Uint8Array ciphertext = protectedText.SubArray(tagsize + noncesize);
-                await cipher.Decrypt(nonce, ciphertext, tag, plaintexttemp, purposebytes.ToUint8Array());
-                byte[] plaintext = plaintexttemp.ToArray();
-#else
                 byte[] protectedText = Convert.FromBase64String(input);
                 byte[] plaintext = await Task.Run(() => EasyDecrypt(cipher, protectedText, tagsize, noncesize, purposebytes));
-#endif
                 return plaintext;
             }
         }
-#if !BRIDGE
-        private static byte[] EasyDecrypt(AesGcm cipher, byte[] protectedText, int tagsize, int noncesize, byte[] purposebytes)
+
+        private static byte[] EasyDecrypt(IAesGcm cipher, byte[] protectedText, int tagsize, int noncesize, byte[] purposebytes)
         {
+            
             byte[] toReturn = new byte[protectedText.Length - (tagsize + noncesize)];
-            Span<byte> tag = protectedText.AsSpan(0, tagsize);
-            Span<byte> nonce = protectedText.AsSpan(tagsize, noncesize);
-            Span<byte> ciphertext = protectedText.AsSpan(tagsize + noncesize);
+            byte[] tag = protectedText.AsSpan(0, tagsize).ToArray();
+            byte[] nonce = protectedText.AsSpan(tagsize, noncesize).ToArray();
+            byte[] ciphertext = protectedText.AsSpan(tagsize + noncesize).ToArray();
             cipher.Decrypt(nonce, ciphertext, tag, toReturn, purposebytes);
             return toReturn;
         }
-#endif
 
-        #region IDisposable Support
+#region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
         protected virtual void Dispose(bool disposing)
@@ -198,6 +157,9 @@ namespace CSL.Encryption
             // TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
-        #endregion
+#endregion
     }
+    
+
+
 }

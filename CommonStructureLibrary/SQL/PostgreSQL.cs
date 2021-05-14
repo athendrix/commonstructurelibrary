@@ -1,8 +1,9 @@
-﻿using Npgsql;
+﻿//using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using static CSL.DependencyInjection;
 
 namespace CSL.SQL
 {
@@ -18,21 +19,19 @@ namespace CSL.SQL
             }
             return toReturn;
         }
-        private PostgreSQL(string Server, string Database, string username, string password, SslMode SslMode)
+        private PostgreSQL(string Server, string Database, string username, string password, SslMode SslMode, bool TrustAllServerCertificates = false)
         {
-            TrustAllServerCertificates = true;
-            NpgsqlConnectionStringBuilder csb = new NpgsqlConnectionStringBuilder()
-            {
-                Host = Server,
-                Database = Database,
-                //SearchPath = Schema,
-                Username = username,
-                Password = password,
-                SslMode = SslMode,
-                TrustServerCertificate = TrustAllServerCertificates,
-            };
+            INpgsqlConnectionStringBuilder csb = CreateINpgsqlConnectionStringBuilder();
+            csb.Host = Server;
+            csb.Database = Database;
+            //csb.SearchPath = Schema;
+            csb.Username = username;
+            csb.Password = password;
+            csb.SslMode = SslMode;
+            csb.TrustServerCertificate = TrustAllServerCertificates;
+            
             currentTransaction = null;
-            InternalConnection = new NpgsqlConnection(csb.ConnectionString);
+            InternalConnection = CreateNpgsqlConnection(csb.ConnectionString);
             InternalConnection.Open();
         }
     }

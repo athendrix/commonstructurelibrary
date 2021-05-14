@@ -126,8 +126,8 @@ namespace CSL.SQL
             using (SHA256 sha = SHA256.Create())
             {
                 Span<byte> shahash = sha.ComputeHash(data);
-                secondaryGuid = new Guid(shahash.Slice(16, 16));
-                return new Guid(shahash.Slice(0, 16));
+                secondaryGuid = new Guid(shahash.Slice(16, 16).ToArray());
+                return new Guid(shahash.Slice(0, 16).ToArray());
             }
         }
 

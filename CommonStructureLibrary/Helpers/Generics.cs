@@ -151,21 +151,17 @@ namespace CSL.Helpers
             {
                 try
                 {
-#if BRIDGE
-                            toReturn = true;
-                            object Tresult;
-                            try
-                            {
-                                Tresult = Enum.Parse(TType, s, true);
-                            }
-                            catch (Exception)
-                            {
-                                toReturn = false;
-                                Tresult = default;
-                            }
-#else
-                    toReturn = Enum.TryParse(TType, s, true, out object Tresult);
-#endif
+                    toReturn = true;
+                    object Tresult;
+                    try
+                    {
+                        Tresult = Enum.Parse(TType, s, true);
+                    }
+                    catch (Exception)
+                    {
+                        toReturn = false;
+                        Tresult = default;
+                    }
                     result = (T)Tresult;
                     return toReturn;
                 }

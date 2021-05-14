@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Data;
-using Microsoft.Data.Sqlite;
+//using Microsoft.Data.Sqlite;
+using static CSL.DependencyInjection;
 
 namespace CSL.SQL
 {
@@ -10,9 +11,12 @@ namespace CSL.SQL
     {
         public Sqlite(string Filename, SqliteOpenMode Mode = SqliteOpenMode.ReadWriteCreate, SqliteCacheMode Cache = SqliteCacheMode.Default)
         {
-            SqliteConnectionStringBuilder csb = new SqliteConnectionStringBuilder { DataSource = Filename, Mode = Mode, Cache = Cache };
+            ISqliteConnectionStringBuilder csb = CreateISqliteConnectionStringBuilder();
+            csb.DataSource = Filename;
+            csb.Mode = Mode;
+            csb.Cache = Cache;
             currentTransaction = null;
-            InternalConnection = new SqliteConnection(csb.ConnectionString);
+            InternalConnection = CreateSqliteConnection(csb.ConnectionString);
             InternalConnection.Open();
         }
     }

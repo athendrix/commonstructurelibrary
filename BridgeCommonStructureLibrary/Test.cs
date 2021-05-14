@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Bridge.Html5;
 using CSL.Bridge;
+using CSL.Bridge.Crypto;
 using CSL.Data;
 using CSL.Encryption;
 
@@ -32,7 +33,7 @@ namespace CSL
                     string keybase = KeyBox.Value;
                     if (string.IsNullOrWhiteSpace(keybase))
                     {
-                        using (AES256KeyBasedProtector protector = new AES256KeyBasedProtector())
+                        using (AES256KeyBasedProtector protector = new AES256KeyBasedProtector((key)=> new AesGcm(key) ))
                         {
                             KeyBox.Value = Convert.ToBase64String(protector.GetKey());
                             string PlaintextString = TextBox.Value;
@@ -41,7 +42,7 @@ namespace CSL
                     }
                     else
                     {
-                        using (AES256KeyBasedProtector protector = new AES256KeyBasedProtector(Convert.FromBase64String(keybase)))
+                        using (AES256KeyBasedProtector protector = new AES256KeyBasedProtector(Convert.FromBase64String(keybase), (key) => new AesGcm(key)))
                         {
                             string PlaintextString = TextBox.Value;
                             TextBox.Value = await protector.Protect(PlaintextString);
@@ -62,7 +63,7 @@ namespace CSL
                 }
                 else
                 {
-                    using (AES256KeyBasedProtector protector = new AES256KeyBasedProtector(Convert.FromBase64String(keybase)))
+                    using (AES256KeyBasedProtector protector = new AES256KeyBasedProtector(Convert.FromBase64String(keybase), (key) => new AesGcm(key)))
                     {
                         string CryptoTextString = TextBox.Value;
                         TextBox.Value = await protector.Unprotect(CryptoTextString);

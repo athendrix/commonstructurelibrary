@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace CSL.Bridge.Crypto
 {
-    public class AesGcm : IDisposable
+    public class AesGcm : Encryption.IAesGcm
     {
         Uint8Array key;
         public AesGcm(Uint8Array key)
@@ -28,7 +28,7 @@ namespace CSL.Bridge.Crypto
             }
         }
 
-        internal async Task Decrypt(Uint8Array iv, Uint8Array ciphertext, Uint8Array plaintext, Uint8Array tag, Uint8Array additionalData)
+        public async Task Decrypt(Uint8Array iv, Uint8Array ciphertext, Uint8Array plaintext, Uint8Array tag, Uint8Array additionalData)
         {
             int tLength = tag.Length;
             Uint8Array input = new Uint8Array(tLength + ciphertext.Length);
@@ -47,7 +47,7 @@ namespace CSL.Bridge.Crypto
             }
         }
 
-        internal async Task Encrypt(Uint8Array iv, Uint8Array plaintext, Uint8Array ciphertext, Uint8Array tag, Uint8Array additionalData)
+        public async Task Encrypt(Uint8Array iv, Uint8Array plaintext, Uint8Array ciphertext, Uint8Array tag, Uint8Array additionalData)
         {
             int tLength = tag.Length;
             Uint8Array result = (Uint8Array)(await Task.FromPromise(Script.Call<IPromise>("window.crypto.subtle.encrypt", new { name = "AES-GCM", iv, additionalData, tagLength = tLength * 8 }, key, plaintext)))[0];
