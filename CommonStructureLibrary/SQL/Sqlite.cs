@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Data;
-//using Microsoft.Data.Sqlite;
 using static CSL.DependencyInjection;
 
 namespace CSL.SQL
