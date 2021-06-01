@@ -61,7 +61,7 @@ namespace CommonStructureLibraryTester
             }
         }
         #endregion
-        #region Helpers
+        #region Testing Helpers
         public static bool SyncTest(Func<bool> test)
         {
             try
@@ -229,7 +229,13 @@ namespace CommonStructureLibraryTester
             });
         }
         #endregion
-        #region Helpers
+        #region Encryption
+        public static bool FriendlyPasswordTest() => SyncTest(() =>
+        {
+            return Passwords.FriendlyPassGen() != null;
+        });
+        #endregion
+        #region Other Helpers
         public static bool GenericsTest1()
         {
             return SyncTest(() =>
