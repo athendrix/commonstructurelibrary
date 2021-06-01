@@ -23,7 +23,7 @@ namespace CSL.Encryption
                 string word1 = Adjectives[data[0]];
                 string word2 = Adjectives[data[1]];
                 string word3 = Pokemon[data[2]];
-                string word4 = Symbols[data[2] & 0x0F] + "" + (data[5] + ((data[2] & 0xF0) >> 4));
+                string word4 = Symbols[data[3] & 0x0F] + "" + (data[4] + ((data[3] & 0xF0) >> 4));
                 return word1 + word2 + word3 + word4;
             }
             return null;
