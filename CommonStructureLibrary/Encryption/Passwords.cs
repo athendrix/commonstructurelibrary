@@ -12,24 +12,27 @@ namespace CSL.Encryption
             int templen = length/4 + (length %4 > 0?1:0);
             byte[] toReturn = new byte[templen * 3];
             RNG.GetBytes(toReturn);
-            return Convert.ToBase64String(toReturn).Substring(0, length).Replace('/', '_').Replace('+', '-');
+            return Helpers.WebBase64.Encode(toReturn).Substring(0, length);
         }
         public static string FriendlyPassGen()
         {
-            if(CheckAdjectives && CheckPokemon)
+
+            byte[] data = new byte[8];
+            RNG.GetBytes(data);
+            string word1 = Adjectives[data[0]];
+            string word2 = Adjectives[data[1]];
+            string word3 = Pokemon[data[2]];
+            string word4 = Symbols[data[3] & 0x0F].ToString();
+            byte[] word5bit = new byte[] { (byte)((data[3] & 0xF0) >> 4), data[4] };
+            if (BitConverter.IsLittleEndian)
             {
-                byte[] data = new byte[8];
-                RNG.GetBytes(data);
-                string word1 = Adjectives[data[0]];
-                string word2 = Adjectives[data[1]];
-                string word3 = Pokemon[data[2]];
-                string word4 = Symbols[data[3] & 0x0F] + "" + (data[4] + ((data[3] & 0xF0) >> 4));
-                return word1 + word2 + word3 + word4;
+                Array.Reverse(word5bit);
             }
-            return null;
+            string word5 = BitConverter.ToUInt16(word5bit, 0).ToString();
+            return word1 + word2 + word3 + word4 + word5;
         }
         public static readonly string[] Adjectives = new string[]
-{
+        {
             "Abandoned",
             "Abundant",
             "Accurate",
@@ -286,7 +289,7 @@ namespace CSL.Encryption
             "Young",
             "Youthful",
             "Zealous"
-};
+        };
         public static readonly string[] Pokemon = new string[]
         {
             "Bulbasaur",
@@ -370,7 +373,6 @@ namespace CSL.Encryption
             "Slowbro",
             "Magnemite",
             "Magneton",
-            "Farfetch'd",
             "Doduo",
             "Dodrio",
             "Seel",
@@ -535,11 +537,12 @@ namespace CSL.Encryption
             "Pupitar",
             "Tyranitar",
             "Lugia",
-            "Ho-Oh",
             "Celebi",
             "Regirock",
             "Regice",
             "Registeel",
+            "Latias",
+            "Latios",
             "Kyogre",
             "Groudon",
             "Rayquaza",
@@ -547,24 +550,5 @@ namespace CSL.Encryption
             "Deoxys"
         };
         public static readonly char[] Symbols = "!@#$%^&*<>=+[]-_".ToCharArray();
-        
-        private static bool CheckAdjectives
-        {
-            get
-            {
-                HashSet<string> test = new HashSet<string>();
-                test.UnionWith(Adjectives);
-                return test.Count == 256;
-            }
-        }
-        private static bool CheckPokemon
-        {
-            get
-            {
-                HashSet<string> test = new HashSet<string>();
-                test.UnionWith(Pokemon);
-                return test.Count == 256;
-            }
-        }
     }
 }

@@ -9,6 +9,7 @@ using CSL.SQL;
 using CSL.Webserver;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 namespace CommonStructureLibraryTester
 {
@@ -130,108 +131,118 @@ namespace CommonStructureLibraryTester
         #endregion
         public static bool TestTest() => SyncTest(()=>true);
         #region SQL
-        public static bool LocalDBTest()
+        public static bool LocalDBTest => AsyncTest(async () =>
         {
-            return AsyncTest(async () =>
+            using (LocalDB localDB = new LocalDB(":memory:"))
             {
-                using (LocalDB localDB = new LocalDB(":memory:"))
-                {
-                    await localDB.Set("TestKey", "TestValue");
-                    return (await localDB.Get("TestKey")) == "TestValue";
-                }
-            });
-        }
-        public static bool ProtectedDBTest()
+                await localDB.Set("TestKey", "TestValue");
+                return (await localDB.Get("TestKey")) == "TestValue";
+            }
+        });
+        public static bool ProtectedDBTest => AsyncTest(async () =>
         {
-            return AsyncTest(async () =>
+            byte[] key = new byte[32];
+            RandomNumberGenerator.Fill(key);
+            AES256KeyBasedProtector protector = new AES256KeyBasedProtector(key);
+            using (LocalDB localDB = new LocalDB(":memory:"))
+            using (ProtectedDB protectedDB = new ProtectedDB(localDB,protector))
             {
-                byte[] key = new byte[32];
-                RandomNumberGenerator.Fill(key);
-                AES256KeyBasedProtector protector = new AES256KeyBasedProtector(key);
-                using (LocalDB localDB = new LocalDB(":memory:"))
-                using (ProtectedDB protectedDB = new ProtectedDB(localDB,protector))
-                {
-                    await protectedDB.Set("TestKey", "TestValue");
-                    return (await protectedDB.Get("TestKey")) == "TestValue";
-                }
-            });
-        }
-        public static bool PostgresTest()
-        {
-            return AsyncTest(async () =>
-            {
-                using(PostgreSQL sql = await GetTestDB())
-                {
-                    string version = await sql.ExecuteScalar<string>("SELECT version();");
-                    await sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Settings ( Key VARCHAR(255) NOT NULL UNIQUE, Value TEXT, PRIMARY KEY(Key) ); ");
+                await protectedDB.Set("TestKey", "TestValue");
+                return (await protectedDB.Get("TestKey")) == "TestValue";
+            }
+        });
 
-                    return true;
-                }
-            });
-        }
-        public static bool GlobalDBStructTest1()
+        public static bool PostgresTest() => AsyncTest(async () =>
         {
-            return AsyncTest(async () =>
+            using (PostgreSQL sql = await GetTestDB())
             {
-                using (GlobalDB db = new GlobalDB(await GetTestDB()))
-                {
-                    Guid key = Guid.NewGuid();
-                    int testint = RandomNumberGenerator.GetInt32(int.MinValue,int.MaxValue);
-                    await db.ClearKVStore();
-                    if (await db.GetStruct<int>(key) != null)
-                    {
-                        return false;
-                    }
-                    await db.SetStruct<int>(key, testint);
-                    int? test2int = await db.GetStruct<int>(key);
-                    return test2int.HasValue && testint == test2int.Value;
-                }
-            });
-        }
-        public static bool GlobalDBStructTest2()
+                string version = await sql.ExecuteScalar<string>("SELECT version();");
+                await sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Settings ( Key VARCHAR(255) NOT NULL UNIQUE, Value TEXT, PRIMARY KEY(Key) ); ");
+
+                return true;
+            }
+        });
+        public static bool GlobalDBStructTest1() => AsyncTest(async () =>
         {
-            return AsyncTest(async () =>
+            using (GlobalDB db = new GlobalDB(await GetTestDB()))
             {
-                using (GlobalDB db = new GlobalDB(await GetTestDB()))
+                Guid key = Guid.NewGuid();
+                int testint = RandomNumberGenerator.GetInt32(int.MinValue, int.MaxValue);
+                await db.ClearKVStore();
+                if (await db.GetStruct<int>(key) != null)
                 {
-                    Guid key = Guid.NewGuid();
-                    DateTime Now = DateTime.Now;
-                    await db.ClearKVStore();
-                    if(await db.GetStruct<DateTime>(key) != null)
-                    {
-                        return false;
-                    }
-                    await db.SetStruct<DateTime>(key, Now);
-                    DateTime? TestNow = await db.GetStruct<DateTime>(key);
-                    return TestNow.HasValue && Now == TestNow.Value;
+                    return false;
                 }
-            });
-        }
-        public static bool GlobalDBValTest1()
+                await db.SetStruct<int>(key, testint);
+                int? test2int = await db.GetStruct<int>(key);
+                return test2int.HasValue && testint == test2int.Value;
+            }
+        });
+        public static bool GlobalDBStructTest2() => AsyncTest(async () =>
         {
-            return AsyncTest(async () =>
+            using (GlobalDB db = new GlobalDB(await GetTestDB()))
             {
-                using (GlobalDB db = new GlobalDB(await GetTestDB()))
+                Guid key = Guid.NewGuid();
+                DateTime Now = DateTime.Now;
+                await db.ClearKVStore();
+                if (await db.GetStruct<DateTime>(key) != null)
                 {
-                    Func<byte[], Guid> converterA = (br) => br == null ? Guid.Empty : new Guid(br);
-                    Func<Guid, byte[]> converterB = (gd) => gd == Guid.Empty ? null : gd.ToByteArray();
-                    Guid key = Guid.NewGuid();
-                    Guid value = Guid.NewGuid();
-                    await db.ClearKVStore();
-                    if (await db.Get(key,converterA) != Guid.Empty)
-                    {
-                        return false;
-                    }
-                    await db.Set(key,value,converterB);
-                    Guid TestVal = await db.Get(key,converterA);
-                    return TestVal == value;
+                    return false;
                 }
-            });
-        }
+                await db.SetStruct<DateTime>(key, Now);
+                DateTime? TestNow = await db.GetStruct<DateTime>(key);
+                return TestNow.HasValue && Now == TestNow.Value;
+            }
+        });
+        public static bool GlobalDBValTest1() => AsyncTest(async () =>
+        {
+            using (GlobalDB db = new GlobalDB(await GetTestDB()))
+            {
+                Func<byte[], Guid> converterA = (br) => br == null ? Guid.Empty : new Guid(br);
+                Func<Guid, byte[]> converterB = (gd) => gd == Guid.Empty ? null : gd.ToByteArray();
+                Guid key = Guid.NewGuid();
+                Guid value = Guid.NewGuid();
+                await db.ClearKVStore();
+                if (await db.Get(key, converterA) != Guid.Empty)
+                {
+                    return false;
+                }
+                await db.Set(key, value, converterB);
+                Guid TestVal = await db.Get(key, converterA);
+                return TestVal == value;
+            }
+        });
         #endregion
         #region Encryption
         public static bool FriendlyPasswordTest() => SyncTest(() =>
         {
+            HashSet<string> testAdj = new HashSet<string>();
+            testAdj.UnionWith(Passwords.Adjectives);
+            if(testAdj.Count != 256)//256 Unique Values
+            {
+                return false;
+            }
+            HashSet<string> testPoke = new HashSet<string>();
+            testPoke.UnionWith(Passwords.Pokemon);
+            if(testPoke.Count != 256)//256 Unique Values
+            {
+                return false;
+            }
+            Regex r = new Regex("^[A-Z][a-z]+$",RegexOptions.Compiled);
+            for(int i = 0; i < 256; i++)
+            {
+                if (!r.IsMatch(Passwords.Adjectives[i]))
+                {
+                    Console.WriteLine("\"" + Passwords.Adjectives[i] + "\" is not a proper password term.");
+                    return false;
+                }
+                if (!r.IsMatch(Passwords.Pokemon[i]))
+                {
+                    Console.WriteLine("\"" + Passwords.Pokemon[i] + "\" is not a proper password term.");
+                    return false;
+                }
+            }
+
             return Passwords.FriendlyPassGen() != null;
         });
         #endregion
