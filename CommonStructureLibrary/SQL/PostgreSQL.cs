@@ -9,10 +9,10 @@ namespace CSL.SQL
 {
     public class PostgreSQL : SQL
     {
-        public static bool TrustAllServerCertificates;
+        public static bool TrustAllServerCertificates = false;
         public static async Task<PostgreSQL> Connect(string Server, string Database, string username, string password, string Schema = null, SslMode SslMode = SslMode.Prefer)
         {
-            PostgreSQL toReturn = new PostgreSQL(Server, Database, username, password, SslMode);
+            PostgreSQL toReturn = new PostgreSQL(Server, Database, username, password, SslMode, TrustAllServerCertificates);
             if (Schema != null)
             {
                 await toReturn.ExecuteNonQuery("CREATE SCHEMA IF NOT EXISTS \"" + Common.NameParser(Schema) + "\"; SET search_path to \"" + Common.NameParser(Schema) + "\";");
