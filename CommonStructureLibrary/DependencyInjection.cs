@@ -102,6 +102,7 @@ namespace CSL
             }
 
             public string Host { set => NpgsqlConnectionStringInstance.Host = value; }
+            public int Port { set => NpgsqlConnectionStringInstance.Port = value; }
             public string Database { set => NpgsqlConnectionStringInstance.Database = value; }
             public string Username { set => NpgsqlConnectionStringInstance.Username = value; }
             public string Password { set => NpgsqlConnectionStringInstance.Password = value; }
@@ -113,6 +114,7 @@ namespace CSL
         internal interface INpgsqlConnectionStringBuilder
         {
             string Host { set; }
+            int Port { set; }
             string Database { set; }
             string Username { set; }
             string Password { set; }

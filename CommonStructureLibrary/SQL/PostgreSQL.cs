@@ -22,7 +22,24 @@ namespace CSL.SQL
         private PostgreSQL(string Server, string Database, string username, string password, SslMode SslMode, bool TrustAllServerCertificates = false)
         {
             INpgsqlConnectionStringBuilder csb = CreateINpgsqlConnectionStringBuilder();
-            csb.Host = Server;
+            if(Server.Contains(":"))
+            {
+                string[] serversplit = Server.Split(':');
+                string dumbtest = serversplit[0].ToLower();
+                if(dumbtest == "http" || dumbtest == "https")
+                {
+                    throw new ArgumentException("Postgres connections are not http connections.");
+                }
+                csb.Host = serversplit[0];
+                if (int.TryParse(serversplit[1], out int port))
+                {
+                    csb.Port = port;
+                }
+            }
+            else
+            {
+                csb.Host = Server;
+            }
             csb.Database = Database;
             //csb.SearchPath = Schema;
             csb.Username = username;

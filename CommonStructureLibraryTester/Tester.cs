@@ -17,6 +17,7 @@ namespace CommonStructureLibraryTester
     {
         #region Init
         public static Func<Task<PostgreSQL>> GetTestDB = null;
+        public static Func<Task<PostgreSQL>> GetTestDB2 = null;
         public static void RunTests()
         {
             int passcount = 0;
@@ -155,6 +156,16 @@ namespace CommonStructureLibraryTester
         public static bool PostgresTest() => AsyncTest(async () =>
         {
             using (PostgreSQL sql = await GetTestDB())
+            {
+                string version = await sql.ExecuteScalar<string>("SELECT version();");
+                await sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Settings ( Key VARCHAR(255) NOT NULL UNIQUE, Value TEXT, PRIMARY KEY(Key) ); ");
+
+                return true;
+            }
+        });
+        public static bool PostgresTest2() => AsyncTest(async () =>
+        {
+            using (PostgreSQL sql = await GetTestDB2())
             {
                 string version = await sql.ExecuteScalar<string>("SELECT version();");
                 await sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Settings ( Key VARCHAR(255) NOT NULL UNIQUE, Value TEXT, PRIMARY KEY(Key) ); ");
