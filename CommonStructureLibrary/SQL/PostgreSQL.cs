@@ -7,7 +7,7 @@ using static CSL.DependencyInjection;
 
 namespace CSL.SQL
 {
-    public class PostgreSQL : SQL
+    public class PostgreSQL : SQLDB
     {
         public static bool TrustAllServerCertificates = false;
         public static async Task<PostgreSQL> Connect(string Server, string Database, string username, string password, string Schema = null, SslMode SslMode = SslMode.Prefer)

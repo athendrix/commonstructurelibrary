@@ -6,7 +6,7 @@ using static CSL.DependencyInjection;
 
 namespace CSL.SQL
 {
-    public class Sqlite : SQL
+    public class Sqlite : SQLDB
     {
         public Sqlite(string Filename, SqliteOpenMode Mode = SqliteOpenMode.ReadWriteCreate, SqliteCacheMode Cache = SqliteCacheMode.Default)
         {

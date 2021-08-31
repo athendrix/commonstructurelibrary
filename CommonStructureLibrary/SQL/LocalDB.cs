@@ -11,7 +11,7 @@ namespace CSL.SQL
     /// </summary>
     public class LocalDB : IDisposable
     {
-        private readonly SQL sql;
+        private readonly SQLDB sql;
         public enum PathBase : int
         {
             ApplicationDirectory = 0,

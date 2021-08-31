@@ -11,7 +11,7 @@ namespace CSL.SQL
     /// </summary>
     public class GlobalDB : IDisposable
     {
-        private readonly SQL sql;
+        private readonly SQLDB sql;
         /// <summary>
         /// The most recent GlobalDB instance that was created. 
         /// </summary>

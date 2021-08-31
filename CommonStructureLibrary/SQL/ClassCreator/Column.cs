@@ -52,10 +52,6 @@ namespace CSL.SQL.ClassCreator
             {"TIMESTAMP",ColumnType.DateTime},
 
             {"ENUM", ColumnType.Enum},
-
-            {"STRUCT", ColumnType.Struct},
-
-            {"CLASS", ColumnType.Class },
         };
         public static Regex LengthFinder = new Regex(@"\((\d+)\)", RegexOptions.Compiled);
         public readonly string ColumnName;
@@ -84,8 +80,6 @@ namespace CSL.SQL.ClassCreator
                     case ColumnType.Guid: return "Guid" + (nullable ? "?" : "");
                     case ColumnType.DateTime: return "DateTime" + (nullable ? "?" : "");
                     case ColumnType.Enum: return ColumnName + (nullable ? "?" : "");
-                    case ColumnType.Struct: return ColumnName + (nullable ? "?" : "");
-                    case ColumnType.Class: return ColumnName;
                     default: return "<FIXME>";
                 }
             }
@@ -99,8 +93,6 @@ namespace CSL.SQL.ClassCreator
                     case ColumnType.Byte: return "byte[]";
                     case ColumnType.UnsignedLong: return "long" + (nullable ? "?" : "");
                     case ColumnType.Enum: return "long" + (nullable ? "?" : "");
-                    case ColumnType.Struct: return "byte[]";
-                    case ColumnType.Class: return "byte[]";
                     default: return CSharpTypeName;
                 }
             }
@@ -115,7 +107,6 @@ namespace CSL.SQL.ClassCreator
                     case ColumnType.Byte: return "new byte[] {";
                     case ColumnType.UnsignedLong: return "(long" + (nullable ? "?" : "") + ")";
                     case ColumnType.Enum: return "(long" + (nullable ? "?" : "") + ")";
-                    //ColumnType.Struct : return "MemoryMarshal.AsBytes(new " + CSharpTypeName.TrimEnd('?') + "[]{";
                     default: return "";
                 }
             }
@@ -126,11 +117,7 @@ namespace CSL.SQL.ClassCreator
             {
                 switch (type)
                 {
-                    case ColumnType.Byte: return "}";
-                    //case ColumnType.UnsignedLong : return (nullable?".Value":"") + ".ToLong()";
-                    //case ColumnType.Enum : return ")" + (nullable?".Value":"") + ".ToLong()";
-                    case ColumnType.Struct: return (nullable ? ".Value" : "") + ".ToByteArray()";
-                    case ColumnType.Class: return ".ToByteArray()";
+                    case ColumnType.Byte: return (nullable ? ".Value":"") +"}";
                     default: return "";
                 }
             }
@@ -143,8 +130,6 @@ namespace CSL.SQL.ClassCreator
                 {
                     case ColumnType.Enum: return "(" + CSharpTypeName + ")";
                     case ColumnType.UnsignedLong: return "(ulong" + (nullable ? "?" : "") + ")";
-                    //case ColumnType.Struct : return "MemoryMarshal.AsRef<" + CSharpTypeName.TrimEnd('?') + ">(";
-                    case ColumnType.Class: return "new " + CSharpTypeName + "(";
                     default: return "";
                 }
             }
@@ -156,10 +141,6 @@ namespace CSL.SQL.ClassCreator
                 switch (type)
                 {
                     case ColumnType.Byte: return "[0]";
-                    //case ColumnType.UnsignedLong : return (nullable?"?":"") + ".ToUlong()";
-                    //case ColumnType.Enum : return (nullable?"?":"") + ".ToUlong())";
-                    case ColumnType.Struct: return ".ToStruct<" + CSharpTypeName.TrimEnd('?') + ">()";
-                    case ColumnType.Class: return ")";
                     default: return "";
                 }
             }
@@ -182,12 +163,10 @@ namespace CSL.SQL.ClassCreator
                     case ColumnType.Double: return "FLOAT8" + (nullable ? "" : " NOT NULL");
                     case ColumnType.Decimal: return "NUMERIC" + (nullable ? "" : " NOT NULL");
                     case ColumnType.String: return (length >= 0 ? "VARCHAR(" + length.ToString() + ")" : "TEXT") + (nullable ? "" : " NOT NULL");
-                    case ColumnType.ByteArray: return "BYTEA" + (nullable ? "" : " NOT NULL");//TODO: Add Length
+                    case ColumnType.ByteArray: return "BYTEA" + (nullable ? "" : " NOT NULL");//TODO: Add Length?
                     case ColumnType.Guid: return "UUID" + (nullable ? "" : " NOT NULL");
                     case ColumnType.DateTime: return "TIMESTAMP" + (nullable ? "" : " NOT NULL");
                     case ColumnType.Enum: return "BIGINT" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Struct: return "BYTEA" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Class: return "BYTEA" + (nullable ? "" : " NOT NULL");
                     default: return "<FIXME>";
                 }
             }
@@ -246,11 +225,6 @@ namespace CSL.SQL.ClassCreator
         Guid,                  //UUID
         DateTime,              //TIMESTAMP
         Enum, //Unsigned Long for maximum values. //BIGINT with C# conversion
-        //A User defined datatype that won't be portable across archetectures.
-        //x86 vs ARM
-        //Dependant on the ability of Memory Marshal to do the conversion.
-        Struct,                //BYTEA
-        Class,
         Unknown
     }
 }

@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace CSL.SQL
 {
-    public abstract class SQL : IDisposable
+    public abstract class SQLDB : IDisposable
     {
-        [Obsolete("With the obsoletion of other functions in this class, this function is no longer necessary.")]
+        [Obsolete("With the obsoletion of other functions in this class, this function is no longer necessary.", true)]
         public static string QueryIn<T>(IEnumerable<T> inputList, out IEnumerable<KeyValuePair<string, object>> parameters)
         {
             T[] enumerableArray = inputList as T[] ?? inputList.ToArray();

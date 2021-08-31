@@ -18,12 +18,12 @@ namespace CSL.SQL.ClassCreator
             gen.Select(TableName, PrimaryKeys);
             gen.Delete(TableName, PrimaryKeys);
             gen.EndFactory();
-            gen.BeginRowClass(TableName, PrimaryKeys);
-            gen.Properties(PrimaryKeys, Columns);
-            gen.Constructors(TableName, PrimaryKeys, Columns);
+            gen.BeginRecord(TableName, PrimaryKeys, Columns);
+            gen.RecordPKs(PrimaryKeys);
+            gen.SQLConverters(TableName, Columns);
             gen.IDBSetFunctions(TableName, PrimaryKeys, Columns);
-            gen.EndRowClass();
-            gen.EnumsAndStructs(Columns);
+            gen.EndRecord();
+            gen.Enums(Columns);
             gen.EndNamespace();
             return gen.ToString();
         }
@@ -69,7 +69,8 @@ namespace CSL.SQL.ClassCreator
         public void EndFactory() => ExitBlock();
         public void CreateDB(string TableName, List<Column> PrimaryKeys, List<Column> Columns, string[] ExtraSQLLines)
         {
-            IndentAdd("public Task<int> CreateDB(SQL sql)");
+            bool extralines = ExtraSQLLines != null && ExtraSQLLines.Length != 0;
+            IndentAdd("public Task<int> CreateDB(SQLDB sql)");
             EnterBlock();
             IndentAdd("return sql.ExecuteNonQuery(");
             IndentAdd($@"""CREATE TABLE IF NOT EXISTS \""{TableName}\"" ("" +");
@@ -77,12 +78,18 @@ namespace CSL.SQL.ClassCreator
             {
                 IndentAdd($@"""\""{Columns[i].ColumnName}\"" {Columns[i].SQLTypeName}, "" +");
             }
-            IndentAdd($@"""PRIMARY KEY(\""{string.Join(@"\"", \""", PrimaryKeys.Select((x) => x.ColumnName))}\"")"" +");
-            if (ExtraSQLLines != null)
+            IndentAdd($"\"PRIMARY KEY(\\\"{string.Join("\\\", \\\"", PrimaryKeys.Select((x) => x.ColumnName))}\\\"){(extralines?", ":"")}\" +");
+            if (extralines)
             {
-                foreach (string SQLLine in ExtraSQLLines)
+                for(int i = 0; i < ExtraSQLLines.Length;i++)
                 {
-                    IndentAdd("\"" + SQLLine.Trim().Replace("\"", "\\\"") + "\" +");
+                    string SQLLine = ExtraSQLLines[i].Trim().TrimEnd(',');
+                    string lineend = ", ";
+                    if(i == ExtraSQLLines.Length - 1)
+                    {
+                        lineend = " ";
+                    }
+                    IndentAdd("\"" + ExtraSQLLines[i].Trim().Replace("\"", "\\\"") + lineend + "\" +");
                 }
             }
             IndentAdd("\");\");");
@@ -92,11 +99,11 @@ namespace CSL.SQL.ClassCreator
         {
             string types = string.Join(", ", PrimaryKeys.Select((x) => x.CSharpTypeName));
             IndentAdd($"IEnumerable<IDBSet<{ types }>> IDBSetFactory<{types}>.GetEnumerator(IDataReader dr) => GetEnumerator(dr);");
-            IndentAdd($"public IEnumerable<{TableName}Row> GetEnumerator(IDataReader dr)");
+            IndentAdd($"public IEnumerable<{TableName}Record> GetEnumerator(IDataReader dr)");
             EnterBlock();
             IndentAdd("while(dr.Read())");
             EnterBlock();
-            IndentAdd($"yield return new {TableName}Row(dr);");
+            IndentAdd($"yield return {TableName}Record.FromDataReader(dr);");
             ExitBlock();
             IndentAdd("yield break;");
             ExitBlock();
@@ -111,12 +118,24 @@ namespace CSL.SQL.ClassCreator
             }
 
             Region("Select");
-            IndentAdd("IAsyncEnumerable<IDBSet<" + returnType + ">> IDBSetFactory<" + returnType + ">.Select(SQL sql) => Select(sql);");
-            IndentAdd("public async IAsyncEnumerable<" + TableName + "Row> Select(SQL sql)");
+            IndentAdd("IAsyncEnumerable<IDBSet<" + returnType + ">> IDBSetFactory<" + returnType + ">.Select(SQLDB sql) => Select(sql);");
+            IndentAdd("public async IAsyncEnumerable<" + TableName + "Record> Select(SQLDB sql)");
             EnterBlock();
             IndentAdd($@"using (IDataReader dr = await sql.ExecuteReader(""SELECT * FROM \""{TableName}\"";""))");
             EnterBlock();
-            IndentAdd($"foreach ({TableName}Row item in GetEnumerator(dr))");
+            IndentAdd($"foreach ({TableName}Record item in GetEnumerator(dr))");
+            EnterBlock();
+            IndentAdd("yield return item;");
+            ExitBlock();
+            ExitBlock();
+            ExitBlock();
+
+            IndentAdd("IAsyncEnumerable<IDBSet<" + returnType + ">> IDBSetFactory<" + returnType + ">.Select(SQLDB sql, string query, params object[] parameters) => Select(sql, query, parameters);");
+            IndentAdd("public async IAsyncEnumerable<" + TableName + "Record> Select(SQLDB sql, string query, params object[] parameters)");
+            EnterBlock();
+            IndentAdd($@"using (IDataReader dr = await sql.ExecuteReader(query, parameters))");
+            EnterBlock();
+            IndentAdd($"foreach ({TableName}Record item in GetEnumerator(dr))");
             EnterBlock();
             IndentAdd("yield return item;");
             ExitBlock();
@@ -166,7 +185,7 @@ namespace CSL.SQL.ClassCreator
         {
             string parentType = (partial ? "IAsyncEnumerable" : "Task");
             string FnNumSuffix = (partial ? string.Join("", CO.Select((x) => x.Item2)) : "");
-            string FnParams = "(SQL sql, " + string.Join(", ", CO.Select((x) => x.Item1.CSharpTypeName + " " + x.Item1.ColumnName)) + ")";
+            string FnParams = "(SQLDB sql, " + string.Join(", ", CO.Select((x) => x.Item1.CSharpTypeName + " " + x.Item1.ColumnName)) + ")";
             string BareFnParams = string.Join(", ", CO.Select((x) => x.Item1.ColumnName));
             for (int i = 0; i < CO.Length; i++)
             {
@@ -174,13 +193,13 @@ namespace CSL.SQL.ClassCreator
             }
             IndentAdd((partial ? "" : "async ") + parentType + "<IDBSet<" + iReturnType + ">> IDBSetFactory<" + iReturnType + ">.SelectByPK" + FnNumSuffix + FnParams + " => " +
                 (partial ? "" : "await ") + "SelectByPK" + FnNumSuffix + "(sql, " + BareFnParams + ");");
-            IndentAdd("public async " + parentType + "<" + TableName + "Row> SelectByPK" + FnNumSuffix + FnParams);
+            IndentAdd("public async " + parentType + "<" + TableName + "Record> SelectByPK" + FnNumSuffix + FnParams);
             EnterBlock();
             IndentAdd($@"using (IDataReader dr = await sql.ExecuteReader(""SELECT * FROM \""{TableName}\"" WHERE {string.Join(" AND ", CO.Select((x) => $@"\""{x.Item1.ColumnName}\"" = @{x.Item2}"))};"", " + BareFnParams + "))");
             EnterBlock();
             if (partial)
             {
-                IndentAdd($"foreach ({TableName}Row item in GetEnumerator(dr))");
+                IndentAdd($"foreach ({TableName}Record item in GetEnumerator(dr))");
                 EnterBlock();
                 IndentAdd("yield return item;");
                 ExitBlock();
@@ -242,7 +261,7 @@ namespace CSL.SQL.ClassCreator
         private void DeleteHelper(string TableName, bool partial, params ValueTuple<Column, int>[] CO)
         {
             string BareFnParams = string.Join(", ", CO.Select((x) => x.Item1.ColumnName));
-            IndentAdd("public Task<int> DeleteByPK" + (partial ? string.Join("", CO.Select((x) => x.Item2)) : "") + "(SQL sql, "
+            IndentAdd("public Task<int> DeleteByPK" + (partial ? string.Join("", CO.Select((x) => x.Item2)) : "") + "(SQLDB sql, "
             + string.Join(", ", CO.Select((x) => x.Item1.CSharpTypeName + " " + x.Item1.ColumnName)) + ")");
             for (int i = 0; i < CO.Length; i++)
             {
@@ -253,68 +272,66 @@ namespace CSL.SQL.ClassCreator
             ExitBlock();
         }
         #endregion
-        #region Row Functions
-        public void BeginRowClass(string TableName, List<Column> PrimaryKeys)
+        #region Record Functions
+        public void BeginRecord(string TableName, List<Column> PrimaryKeys, List<Column> Columns)
         {
-            IndentAdd("public class " + TableName + "Row : IDBSet<" + string.Join(",", PrimaryKeys.Select((x) => x.CSharpTypeName)) + ">");
+            string TypeColumns = string.Join(", ", Columns.Select((x) => x.CSharpTypeName + " " + x.ColumnName));
+            string KeyTypes = string.Join(", ", PrimaryKeys.Select((x) => x.CSharpTypeName));
+            IndentAdd("public record " + TableName + "Record(" + TypeColumns + ") : IDBSet<" + KeyTypes + " > ");
             EnterBlock();
         }
-        public void EndRowClass() => ExitBlock();
-        public void Properties(List<Column> PrimaryKeys, List<Column> Columns)
+        public void RecordPKs(List<Column> PrimaryKeys)
         {
-            Region("Properties");
+            Region("Primary Keys");
             int i;
             for (i = 0; i < PrimaryKeys.Count; i++)
             {
-                string PrivCSType = PrimaryKeys[i].CSharpPrivateTypeName;
                 string CSType = PrimaryKeys[i].CSharpTypeName;
                 string Name = PrimaryKeys[i].ColumnName;
-                string pubpre = PrimaryKeys[i].CSharpConvertPublicPrepend;
-                string pubapp = PrimaryKeys[i].CSharpConvertPublicAppend;
-                bool nullable = PrimaryKeys[i].nullable;
-                IndentAdd("private readonly " + PrivCSType + " _" + Name + ";");
-                IndentAdd("public " + CSType + " " + Name + " => " + (nullable ? "_" + Name + " == null?default:" : "") + pubpre + "_" + Name + pubapp + ";");
                 IndentAdd("public " + CSType + " PK" + (PrimaryKeys.Count == 1 ? "" : (i + 1).ToString()) + " => " + Name + ";");
                 BlankLine();
             }
-            for (; i < Columns.Count; i++)
+            EndRegion();
+        }
+        public void SQLConverters(string TableName, List<Column> Columns)
+        {
+            Region("SQLConverters");
+            IndentAdd($"public static {TableName}Record FromDataReader(IDataReader dr)");
+            EnterBlock();
+            for (int i = 0; i < Columns.Count; i++)
             {
                 string PrivCSType = Columns[i].CSharpPrivateTypeName;
                 string CSType = Columns[i].CSharpTypeName;
                 string Name = Columns[i].ColumnName;
                 string pubpre = Columns[i].CSharpConvertPublicPrepend;
                 string pubapp = Columns[i].CSharpConvertPublicAppend;
-                string privpre = Columns[i].CSharpConvertPrivatePrepend;
-                string privapp = Columns[i].CSharpConvertPrivateAppend;
                 bool nullable = Columns[i].nullable;
-                IndentAdd("private " + PrivCSType + " _" + Name + ";");
-                IndentAdd("public " + CSType + " " + Name + " { get => " + (nullable ? "_" + Name + " == null?default:" : "") + pubpre + "_" + Name + pubapp + "; set => _" + Name + " = " + privpre + "value" + privapp + ";}");
-                BlankLine();
+                if (CSType != PrivCSType)
+                {
+                    IndentAdd($"{PrivCSType} _{Name} = dr.IsDBNull({i}) ? default : ({PrivCSType.TrimEnd('?')})dr[{i}];");
+                    IndentAdd($"{CSType} {Name} = {(nullable ? "_" + Name + " == null?default:" : "")}{pubpre}_{Name}{pubapp};");
+                }
+                else
+                {
+                    IndentAdd($"{CSType} {Name} = dr.IsDBNull({i}) ? default : ({PrivCSType.TrimEnd('?')})dr[{i}];");
+                }
             }
-            EndRegion();
-        }
-        public void Constructors(string TableName, List<Column> PrimaryKeys, List<Column> Columns)
-        {
-            Region("Constructors");
-            IndentAdd($"public {TableName}Row(IDataReader dr)");
+            IndentAdd($"return new {TableName}Record({string.Join(", ",Columns.Select((x)=>x.ColumnName))});");
+            ExitBlock();
+            string ToObjectList = string.Join(", ", Columns.Select((x) => "_" + x.ColumnName));
+            IndentAdd("public object[] ToArray()");
             EnterBlock();
             for (int i = 0; i < Columns.Count; i++)
             {
                 string PrivCSType = Columns[i].CSharpPrivateTypeName;
-                string Name = Columns[i].ColumnName;
-                IndentAdd($"_{Name} = dr.IsDBNull({i.ToString()}) ? default : ({PrivCSType.TrimEnd('?')})dr[{i.ToString()}];");
-            }
-            ExitBlock();
-            string FunctionParams = string.Join(", ", Columns.Select((x) => x.CSharpTypeName + " " + x.ColumnName));
-            IndentAdd($"public {TableName}Row({FunctionParams})");
-            EnterBlock();
-            for (int i = 0; i < Columns.Count; i++)
-            {
+                bool cast = Columns[i].CSharpTypeName == PrivCSType;
                 string Name = Columns[i].ColumnName;
                 string privpre = Columns[i].CSharpConvertPrivatePrepend;
                 string privapp = Columns[i].CSharpConvertPrivateAppend;
-                IndentAdd($"_{Name} = {(Columns[i].nullable ? ("(" + Name + " == null) ? default : ") : "")}{privpre}{Name}{privapp};");
+                bool nullable = Columns[i].nullable;
+                IndentAdd($"{PrivCSType} _{Name} = {(nullable ? Name + " == null?default:" : "")}{privpre}{Name}{privapp};");
             }
+            IndentAdd("return new object[] { " + ToObjectList + " };");
             ExitBlock();
             EndRegion();
         }
@@ -339,91 +356,47 @@ namespace CSL.SQL.ClassCreator
             string WhereData = string.Join(" AND ", PrimaryKeys.Select((x) => "\\\"" + x.ColumnName + "\\\" = " + CN[x.ColumnName]));
             string ConflictKeys = string.Join(", ", PrimaryKeys.Select((x) => "\\\"" + x.ColumnName + "\\\""));
             string ToObjectList = string.Join(", ", Columns.Select((x) => "_" + x.ColumnName));
-            IndentAdd("public Task<int> Insert(SQL sql)");
+            IndentAdd("public Task<int> Insert(SQLDB sql)");
             EnterBlock();
             IndentAdd($@"return sql.ExecuteNonQuery(""INSERT INTO \""{TableName}\"" ({SQLCols}) "" +");
             IndentAdd($"\"VALUES({SQLParams});\", ToArray());");
             ExitBlock();
-            IndentAdd("public Task<int> Update(SQL sql)");
+            IndentAdd("public Task<int> Update(SQLDB sql)");
             EnterBlock();
             IndentAdd($@"return sql.ExecuteNonQuery(""UPDATE \""{TableName}\"" "" +");
             IndentAdd($"\"SET {SetData} \" +");
             IndentAdd($"\"WHERE {WhereData};\", ToArray());");
             ExitBlock();
-            IndentAdd("public Task<int> Upsert(SQL sql)");
+            IndentAdd("public Task<int> Upsert(SQLDB sql)");
             EnterBlock();
             IndentAdd($@"return sql.ExecuteNonQuery(""INSERT INTO \""{TableName}\"" ({SQLCols}) "" +");
             IndentAdd($"\"VALUES({SQLParams}) \" +");
             IndentAdd($"\"ON CONFLICT ({ConflictKeys}) DO UPDATE \" +");
             IndentAdd($"\"SET {SetData};\", ToArray());");
             ExitBlock();
-            IndentAdd("public object[] ToArray()");
-            EnterBlock();
-            IndentAdd("return new object[] { " + ToObjectList + " };");
-            ExitBlock();
-            //IndentAdd("public Dictionary<string,object> ToDictionary()");
-            //EnterBlock();
-            //IndentAdd("return new Dictionary<string, object>()");
-            //EnterBlock();
-            //for(int i = 0; i< Columns.Count; i++)
-            //{
-            //    IndentAdd("{\"@" + Columns[i].ColumnName + "\", _" + Columns[i].ColumnName + "},");
-            //}
-            //ExitInlineBlock();
-            //ExitBlock();
             EndRegion();
         }
+        public void EndRecord() => ExitBlock();
         #endregion
-        #region Enums, Structs, and Classes
-        public void EnumsAndStructs(List<Column> Columns)
+        #region Enums
+        public void Enums(List<Column> Columns)
         {
             foreach (Column c in Columns)
             {
-                switch (c.type)
+                if (c.type == ColumnType.Enum)
                 {
-                    case ColumnType.Enum:
-                        IndentAdd("[Flags]");
-                        IndentAdd("public enum " + c.CSharpTypeName.TrimEnd('?') + " : ulong");
-                        EnterBlock();
-                        IndentAdd("NoFlags = 0,");
-                        for (int i = 0; i < 16; i++)
-                        {
-                            IndentAdd("Flag" + (i + 1).ToString() + ((i + 1) >= 10 ? "  " : "   ") + "= 1UL << " + i.ToString() + ",");
-                        }
-                        ExitBlock();
-                        break;
-                    case ColumnType.Struct:
-                        IndentAdd("public struct " + c.CSharpTypeName.TrimEnd('?'));
-                        EnterBlock();
-                        IndentAdd("public uint Dummy;");
-                        ExitBlock();
-                        break;
-                    case ColumnType.Class:
-                        IndentAdd("public class " + c.CSharpTypeName.TrimEnd('?') + ":IBinaryWritable");
-                        EnterBlock();
-                        IndentAdd("public " + c.CSharpTypeName.TrimEnd('?') + "(byte[] data)");
-                        EnterBlock();
-                        IndentAdd("using (MemoryStream ms = new MemoryStream(data))");
-                        IndentAdd("using (BinaryReader br = new BinaryReader(ms))");
-                        EnterBlock();
-                        IndentAdd("Dummy = br.ReadString();");
-                        IndentAdd("Dummy2 = br.ReadStruct<Guid>();");
-                        ExitBlock();
-                        ExitBlock();
-                        IndentAdd("public byte[] ToByteArray()");
-                        EnterBlock();
-                        IndentAdd("using (MemoryStream ms = new MemoryStream())");
-                        IndentAdd("using (BinaryWriter bw = new BinaryWriter(ms))");
-                        EnterBlock();
-                        IndentAdd("bw.WriteMany(Dummy,Dummy2);");
-                        IndentAdd("return ms.ToArray();");
-                        ExitBlock();
-                        ExitBlock();
-                        IndentAdd("public string Dummy;");
-                        IndentAdd("public Guid Dummy2;");
-                        ExitBlock();
-                        break;
-                    default: continue;
+                    BlankLine();
+                    IndentAdd("////", "Example Enum");
+                    IndentAdd("//", "[Flags]");
+                    IndentAdd("////", "Specifying ulong allows data to be auto converted for your convenience into the database.");
+                    IndentAdd("//", "public enum " + c.CSharpTypeName.TrimEnd('?') + " : ulong");
+                    EnterBlock(commented: true);
+                    IndentAdd("//", "NoFlags = 0,");
+                    for (int i = 0; i < 16; i++)
+                    {
+                        IndentAdd("//", "Flag" + (i + 1).ToString() + ((i + 1) >= 10 ? "  " : "   ") + "= 1UL << " + i.ToString() + ",");
+                    }
+                    ExitBlock(commented: true);
                 }
             }
         }
@@ -433,20 +406,20 @@ namespace CSL.SQL.ClassCreator
         {
             toReturn.Add(new string(' ', CurrentIndentationLevel) + string.Join("", toAdd));
         }
-        public void EnterBlock()
+        public void EnterBlock(bool commented = false)
         {
-            IndentAdd("{");
+            IndentAdd(commented ? "//" : "" , "{");
             CurrentIndentationLevel += 4;
         }
-        public void ExitBlock()
+        public void ExitBlock(bool commented = false)
         {
             CurrentIndentationLevel -= 4;
-            IndentAdd("}");
+            IndentAdd(commented ? "//" : "" , "}");
         }
-        public void ExitInlineBlock()
+        public void ExitInlineBlock(bool commented = false)
         {
             CurrentIndentationLevel -= 4;
-            IndentAdd("};");
+            IndentAdd(commented ? "//" : "" , "};");
         }
         #endregion
     }
