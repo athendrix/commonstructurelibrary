@@ -16,8 +16,7 @@ namespace CommonStructureLibraryTester
     public static class Tester
     {
         #region Init
-        public static Func<Task<PostgreSQL>> GetTestDB = null;
-        public static Func<Task<PostgreSQL>> GetTestDB2 = null;
+        public static List<Func<Task<PostgreSQL>>> GetTestDB = new List<Func<Task<PostgreSQL>>>();
         public static void RunTests()
         {
             int passcount = 0;
@@ -155,73 +154,65 @@ namespace CommonStructureLibraryTester
 
         public static bool PostgresTest() => AsyncTest(async () =>
         {
-            using (PostgreSQL sql = await GetTestDB())
+            for(int i = 0; i < GetTestDB.Count; i++)
             {
-                string version = await sql.ExecuteScalar<string>("SELECT version();");
-                await sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Settings ( Key VARCHAR(255) NOT NULL UNIQUE, Value TEXT, PRIMARY KEY(Key) ); ");
-
-                return true;
-            }
-        });
-        public static bool PostgresTest2() => AsyncTest(async () =>
-        {
-            using (PostgreSQL sql = await GetTestDB2())
-            {
-                string version = await sql.ExecuteScalar<string>("SELECT version();");
-                await sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Settings ( Key VARCHAR(255) NOT NULL UNIQUE, Value TEXT, PRIMARY KEY(Key) ); ");
-
-                return true;
-            }
-        });
-        public static bool GlobalDBStructTest1() => AsyncTest(async () =>
-        {
-            using (GlobalDB db = new GlobalDB(await GetTestDB()))
-            {
-                Guid key = Guid.NewGuid();
-                int testint = RandomNumberGenerator.GetInt32(int.MinValue, int.MaxValue);
-                await db.ClearKVStore();
-                if (await db.GetStruct<int>(key) != null)
+                using (PostgreSQL sql = await GetTestDB[i]())
                 {
-                    return false;
+                    string version = await sql.ExecuteScalar<string>("SELECT version();");
+                    await sql.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Settings ( Key VARCHAR(255) NOT NULL UNIQUE, Value TEXT, PRIMARY KEY(Key) ); ");
                 }
-                await db.SetStruct<int>(key, testint);
-                int? test2int = await db.GetStruct<int>(key);
-                return test2int.HasValue && testint == test2int.Value;
             }
+            return true;
+            
         });
-        public static bool GlobalDBStructTest2() => AsyncTest(async () =>
+
+        public static bool GlobalDBStructTest() => AsyncTest(async () =>
         {
-            using (GlobalDB db = new GlobalDB(await GetTestDB()))
+            for (int i = 0; i < GetTestDB.Count; i++)
             {
-                Guid key = Guid.NewGuid();
-                DateTime Now = DateTime.Now;
-                await db.ClearKVStore();
-                if (await db.GetStruct<DateTime>(key) != null)
+                using (GlobalDB db = new GlobalDB(await GetTestDB[i]()))
                 {
-                    return false;
+                    Guid key = Guid.NewGuid();
+                    int testint = RandomNumberGenerator.GetInt32(int.MinValue, int.MaxValue);
+                    await db.ClearKVStore();
+                    if (await db.GetStruct<int>(key) != null)
+                    {
+                        return false;
+                    }
+                    await db.SetStruct<int>(key, testint);
+                    int? test2int = await db.GetStruct<int>(key);
+                    if (!test2int.HasValue || testint != test2int.Value)
+                    {
+                        return false;
+                    }
                 }
-                await db.SetStruct<DateTime>(key, Now);
-                DateTime? TestNow = await db.GetStruct<DateTime>(key);
-                return TestNow.HasValue && Now == TestNow.Value;
             }
+            return true;
         });
         public static bool GlobalDBValTest1() => AsyncTest(async () =>
         {
-            using (GlobalDB db = new GlobalDB(await GetTestDB()))
+            for (int i = 0; i < GetTestDB.Count; i++)
             {
-                Func<byte[], Guid> converterA = (br) => br == null ? Guid.Empty : new Guid(br);
-                Func<Guid, byte[]> converterB = (gd) => gd == Guid.Empty ? null : gd.ToByteArray();
-                Guid key = Guid.NewGuid();
-                Guid value = Guid.NewGuid();
-                await db.ClearKVStore();
-                if (await db.Get(key, converterA) != Guid.Empty)
+                using (GlobalDB db = new GlobalDB(await GetTestDB[i]()))
                 {
-                    return false;
+                    Func<byte[], Guid> converterA = (br) => br == null ? Guid.Empty : new Guid(br);
+                    Func<Guid, byte[]> converterB = (gd) => gd == Guid.Empty ? null : gd.ToByteArray();
+                    Guid key = Guid.NewGuid();
+                    Guid value = Guid.NewGuid();
+                    await db.ClearKVStore();
+                    if (await db.Get(key, converterA) != Guid.Empty)
+                    {
+                        return false;
+                    }
+                    await db.Set(key, value, converterB);
+                    Guid TestVal = await db.Get(key, converterA);
+                    if (TestVal != value)
+                    {
+                        return false;
+                    }
                 }
-                await db.Set(key, value, converterB);
-                Guid TestVal = await db.Get(key, converterA);
-                return TestVal == value;
             }
+            return true;
         });
         #endregion
         #region Encryption

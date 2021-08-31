@@ -1,6 +1,7 @@
 ﻿//using Npgsql;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Text;
 using System.Threading.Tasks;
 using static CSL.DependencyInjection;
@@ -12,21 +13,12 @@ namespace CSL.SQL
         public static bool TrustAllServerCertificates = false;
         public static async Task<PostgreSQL> Connect(string Server, string Database, string username, string password, string Schema = null, SslMode SslMode = SslMode.Prefer)
         {
-            PostgreSQL toReturn = new PostgreSQL(Server, Database, username, password, SslMode, TrustAllServerCertificates);
-            if (Schema != null)
-            {
-                await toReturn.ExecuteNonQuery("CREATE SCHEMA IF NOT EXISTS \"" + Common.NameParser(Schema) + "\"; SET search_path to \"" + Common.NameParser(Schema) + "\";");
-            }
-            return toReturn;
-        }
-        private PostgreSQL(string Server, string Database, string username, string password, SslMode SslMode, bool TrustAllServerCertificates = false)
-        {
             INpgsqlConnectionStringBuilder csb = CreateINpgsqlConnectionStringBuilder();
-            if(Server.Contains(":"))
+            if (Server.Contains(":"))
             {
                 string[] serversplit = Server.Split(':');
                 string dumbtest = serversplit[0].ToLower();
-                if(dumbtest == "http" || dumbtest == "https")
+                if (dumbtest == "http" || dumbtest == "https")
                 {
                     throw new ArgumentException("Postgres connections are not http connections.");
                 }
@@ -46,10 +38,31 @@ namespace CSL.SQL
             csb.Password = password;
             csb.SslMode = SslMode;
             csb.TrustServerCertificate = TrustAllServerCertificates;
-            
+
+            PostgreSQL toReturn = new PostgreSQL(CreateNpgsqlConnection(csb.ConnectionString));
+            await toReturn.SetSchema(Schema);
+            //if (Schema != null)
+            //{
+            //    await toReturn.ExecuteNonQuery("CREATE SCHEMA IF NOT EXISTS \"" + Common.NameParser(Schema) + "\"; SET search_path to \"" + Common.NameParser(Schema) + "\";");
+            //}
+            return toReturn;
+        }
+        public PostgreSQL(DbConnection connection)
+        {
+            InternalConnection = connection;
             currentTransaction = null;
-            InternalConnection = CreateNpgsqlConnection(csb.ConnectionString);
             InternalConnection.Open();
+        }
+        public Task SetSchema(string Schema)
+        {
+            if (Schema != null)
+            {
+                return ExecuteNonQuery("CREATE SCHEMA IF NOT EXISTS \"" + Common.NameParser(Schema) + "\"; SET search_path to \"" + Common.NameParser(Schema) + "\";");
+            }
+            else
+            {
+                return ExecuteNonQuery("SET search_path to \"$user\", public;");
+            }
         }
     }
 }

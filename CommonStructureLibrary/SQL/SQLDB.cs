@@ -25,7 +25,7 @@ namespace CSL.SQL
         protected DbTransaction currentTransaction = null;
         #region Server Calls
         #region Reader
-        [Obsolete("This version of ExecuteReader is deprecated. Please use the version with incrementing values.")]
+        [Obsolete("This version of ExecuteReader is deprecated. Please use the version with incrementing values.", true)]
         public Task<AutoClosingDataReader> ExecuteReader(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteReader(commandText, parameters, commandType);
         private async Task<AutoClosingDataReader> InnerExecuteReader(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType)
         {
@@ -91,7 +91,7 @@ namespace CSL.SQL
         }
         #endregion
         #region NonQuery
-        [Obsolete("This version of ExecuteNonQuery is deprecated. Please use the version with incrementing values.")]
+        [Obsolete("This version of ExecuteNonQuery is deprecated. Please use the version with incrementing values.", true)]
         public Task<int> ExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteNonQuery(commandText, parameters, commandType);
         private Task<int> InnerExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
         {
@@ -163,7 +163,7 @@ namespace CSL.SQL
         }
         #endregion
         #region Scalar
-        [Obsolete("This version of ExecuteScalar is deprecated. Please use the version with incrementing values.")]
+        [Obsolete("This version of ExecuteScalar is deprecated. Please use the version with incrementing values.", true)]
         public Task<T> ExecuteScalar<T>(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteScalar<T>(commandText, parameters, commandType);
         private async Task<T> InnerExecuteScalar<T>(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
         {

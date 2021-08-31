@@ -22,8 +22,15 @@ namespace CommonStructureLibraryTester
 
             CSL.DependencyInjection.AesGcmConstructor = (x) => new System.Security.Cryptography.AesGcm(x);
 
-            Tester.GetTestDB = () => PostgreSQL.Connect("localhost", "testdb", "testuser", "testpassword", "testschema");
-            Tester.GetTestDB2 = () => PostgreSQL.Connect("localhost:5432", "testdb", "testuser", "testpassword", "testschema");
+            Tester.GetTestDB.Add(() => PostgreSQL.Connect("localhost", "testdb", "testuser", "testpassword", "testschema"));
+            Tester.GetTestDB.Add(() => PostgreSQL.Connect("localhost:5432", "testdb", "testuser", "testpassword", "testschema"));
+            Tester.GetTestDB.Add(async () =>
+            {
+                Npgsql.NpgsqlConnection connection = new Npgsql.NpgsqlConnection("Host=localhost;Database=testdb;Username=testuser;Password=testpassword;SSL Mode=Prefer;Trust Server Certificate=False");
+                PostgreSQL sql = new PostgreSQL(connection);
+                await sql.SetSchema("testschema");
+                return sql;
+            });
             Tester.RunTests();
             //AsyncMain(args).GetAwaiter().GetResult();
         }
