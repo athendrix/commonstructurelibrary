@@ -35,12 +35,12 @@ namespace CSL.SQL
             }
         }
         #region Settings
-        public async Task<string> Get(string key)
+        public async Task<string?> Get(string key)
         {
             await InitDB();
             return await sql.ExecuteScalar<string>("SELECT \"Value\" FROM \"Settings\" WHERE \"Key\" = @0;", key);
         }
-        public async Task Set(string key, string value)
+        public async Task Set(string key, string? value)
         {
             await InitDB();
             if (value == null)
@@ -59,43 +59,37 @@ namespace CSL.SQL
         }
         #endregion
         #region KVStore
-        public Task<T?> GetStruct<T>(Guid key) where T : struct
+        public Task<T?> GetStruct<T>(Guid key) where T : struct => Get<T?>(key, (x) =>
         {
-            return Get<T?>(key, (x) =>
+            if (x == null) { return null; }
+            using (MemoryStream ms = new MemoryStream(x))
+            using (BinaryReader br = new BinaryReader(ms))
             {
-                if (x == null) { return null; }
-                using (MemoryStream ms = new MemoryStream(x))
-                using (BinaryReader br = new BinaryReader(ms))
-                {
-                    return br.ReadStruct<T>();
-                }
-            });
-        }
-        public async Task<T> Get<T>(Guid key, Func<byte[], T> Create)
+                return br.ReadStruct<T>();
+            }
+        });
+        public async Task<T?> Get<T>(Guid key, Func<byte[]?, T?> Create)
         {
             await InitDB();
-            byte[] data = await sql.ExecuteScalar<byte[]>("SELECT \"Value\" FROM \"KVStore\" WHERE \"Key\" = @0;", key);
+            byte[]? data = await sql.ExecuteScalar<byte[]>("SELECT \"Value\" FROM \"KVStore\" WHERE \"Key\" = @0;", key);
             return Create(data);
         }
-        public Task Set<T>(Guid key, T value) where T : IBinaryWritable => Set(key, value, (x) => (value?.ToByteArray()));
-        public Task Set(Guid key, byte[] value) => Set(key, value, (x) => x);
-        public Task SetStruct<T>(Guid key, T? value) where T : struct
+        public Task Set<T>(Guid key, T? value) where T : IBinaryWritable => Set(key, value, (x) => (value?.ToByteArray()));
+        public Task Set(Guid key, byte[]? value) => Set(key, value, (x) => x);
+        public Task SetStruct<T>(Guid key, T? value) where T : struct => Set(key, value, (x) =>
         {
-            return Set(key, value, (x) =>
+            if (x == null) { return null; }
+            using (MemoryStream ms = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(ms))
             {
-                if (x == null) { return null; }
-                using (MemoryStream ms = new MemoryStream())
-                using (BinaryWriter bw = new BinaryWriter(ms))
-                {
-                    bw.WriteStruct(value.Value);
-                    return ms.ToArray();
-                }
-            });
-        }
-        public async Task Set<T>(Guid key, T value, Func<T, byte[]> ToByteArray)
+                bw.WriteStruct(x.Value);
+                return ms.ToArray();
+            }
+        });
+        public async Task Set<T>(Guid key, T? value, Func<T?, byte[]?> ToByteArray)
         {
             await InitDB();
-            byte[] data = ToByteArray(value);
+            byte[]? data = ToByteArray(value);
             if (data == null)
             {
                 await sql.ExecuteNonQuery("DELETE FROM \"KVStore\" WHERE \"Key\" =  @0;", key);
@@ -112,7 +106,7 @@ namespace CSL.SQL
         }
 
         #endregion
-        public async Task Log(string Message, string LogEntryType = "Error", int eventID = 0, int categoryID = 0, byte[] rawData = null)
+        public async Task Log(string Message, string LogEntryType = "Error", int eventID = 0, int categoryID = 0, byte[]? rawData = null)
         {
             await InitDB();
             await sql.ExecuteNonQuery("INSERT INTO \"Log\" (\"Timestamp\",\"Message\",\"EntryType\",\"EventID\",\"CategoryID\",\"RawData\") VALUES (@0,@1,@2,@3,@4,@5);",
@@ -124,9 +118,6 @@ namespace CSL.SQL
             await sql.ExecuteNonQuery("TRUNCATE \"Log\";");
         }
 
-        public void Dispose()
-        {
-            ((IDisposable)sql).Dispose();
-        }
+        public void Dispose() => ((IDisposable)sql).Dispose();
     }
 }

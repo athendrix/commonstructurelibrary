@@ -19,8 +19,8 @@ namespace CSL.Encryption
 {
     public class AES256KeyBasedProtector : IProtector
     {
-        private static RandomNumberGenerator RNG = RandomNumberGenerator.Create();
-        private byte[] key;
+        private readonly static RandomNumberGenerator RNG = RandomNumberGenerator.Create();
+        private readonly byte[] key;
 
         public AES256KeyBasedProtector()
         {
@@ -36,43 +36,29 @@ namespace CSL.Encryption
             }
             this.key = (byte[])key.Clone();
         }
-        public byte[] GetKey()
-        {
-            return (byte[])key.Clone();
-        }
+        public byte[] GetKey() => (byte[])key.Clone();
 
-        public async Task<string> Protect(string input, string purpose = null)
-        {
-            if (input == null)
-            {
-                throw new ArgumentNullException("input cannot be null.");
-            }
-            return await Protect(Encoding.UTF8.GetBytes(input), purpose);
-        }
+        public async Task<string> Protect(string input, string? purpose = null) => await Protect(Encoding.UTF8.GetBytes(input), purpose);
 
-        public async Task<string> Protect(byte[] input, string purpose = null)
+        public async Task<string> Protect(byte[] input, string? purpose = null)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException("input cannot be null.");
-            }
             //int tagsize = AesGcm.TagByteSizes.MaxSize;
             int tagsize = 16;
             //int noncesize = AesGcm.NonceByteSizes.MaxSize;
             int noncesize = 12;
 
             byte[] toReturn;
-            byte[] purposebytes = purpose == null ? null : Encoding.UTF8.GetBytes(purpose);
+            byte[]? purposebytes = purpose == null ? null : Encoding.UTF8.GetBytes(purpose);
             using (IAesGcm cipher = CreateIAesGcm(key))
             {
-                byte[] plaintext = input;
+                byte[]? plaintext = input;
                 toReturn = await Task.Run(() => EasyEncrypt(cipher, plaintext, tagsize, noncesize, purposebytes));
                 plaintext = null;
             }
             return Convert.ToBase64String(toReturn);
         }
 
-        private static byte[] EasyEncrypt(IAesGcm cipher, byte[] plaintext, int tagsize, int noncesize, byte[] purposebytes)
+        private static byte[] EasyEncrypt(IAesGcm cipher, byte[] plaintext, int tagsize, int noncesize, byte[]? purposebytes)
         {
             byte[] tag = new byte[tagsize];
             byte[] nonce = new byte[noncesize];
@@ -87,22 +73,15 @@ namespace CSL.Encryption
         }
 
 
-        public async Task<string> Unprotect(string input, string purpose = null)
-        {
-            return Encoding.UTF8.GetString(await UnprotectRaw(input, purpose));
-        }
+        public async Task<string> Unprotect(string input, string? purpose = null) => Encoding.UTF8.GetString(await UnprotectRaw(input, purpose));
 
-        public async Task<byte[]> UnprotectRaw(string input, string purpose = null)
+        public async Task<byte[]> UnprotectRaw(string input, string? purpose = null)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException("input cannot be null.");
-            }
             //int tagsize = AesGcm.TagByteSizes.MaxSize;
             int tagsize = 16;
             //int noncesize = AesGcm.NonceByteSizes.MaxSize;
             int noncesize = 12;
-            byte[] purposebytes = purpose == null ? null : Encoding.UTF8.GetBytes(purpose);
+            byte[]? purposebytes = purpose == null ? null : Encoding.UTF8.GetBytes(purpose);
 
             using (IAesGcm cipher = CreateIAesGcm(key))
             {
@@ -112,7 +91,7 @@ namespace CSL.Encryption
             }
         }
 
-        private static byte[] EasyDecrypt(IAesGcm cipher, byte[] protectedText, int tagsize, int noncesize, byte[] purposebytes)
+        private static byte[] EasyDecrypt(IAesGcm cipher, byte[] protectedText, int tagsize, int noncesize, byte[]? purposebytes)
         {
             
             byte[] toReturn = new byte[protectedText.Length - (tagsize + noncesize)];
@@ -137,27 +116,14 @@ namespace CSL.Encryption
                         key[i] = 0;
                     }
                 }
-                key = null;
                 disposedValue = true;
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~AES256KeyBasedProtector()
-        // {
-        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-        //   Dispose(false);
-        // }
-
         // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            // GC.SuppressFinalize(this);
-        }
-#endregion
+        // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        public void Dispose() => Dispose(true);
+        #endregion
     }
     
 

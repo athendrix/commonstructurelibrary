@@ -54,21 +54,21 @@ namespace CSL.SQL
         {
         }
 
-        public async Task<string> Get(string key)
+        public async Task<string?> Get(string key)
         {
             await CreateDB();
             return await sql.ExecuteScalar<string>(
                 "INSERT OR IGNORE INTO `SETTINGS` (`KEY`,`VALUE`) VALUES (@0,null); " +
                 "SELECT `VALUE` FROM `SETTINGS` WHERE `KEY` = @0;", key);
         }
-        public async Task Set(string key, string value)
+        public async Task Set(string key, string? value)
         {
             await CreateDB();
             await sql.ExecuteNonQuery("INSERT OR REPLACE INTO `SETTINGS` (`KEY`,`VALUE`) VALUES (@0,@1);", key, value);
         }
 
 
-        public async Task Log(string Message, string LogEntryType = "Error", int eventID = 0, int categoryID = 0, byte[] rawData = null)
+        public async Task Log(string Message, string LogEntryType = "Error", int eventID = 0, int categoryID = 0, byte[]? rawData = null)
         {
 
             await CreateDB();
@@ -86,9 +86,6 @@ namespace CSL.SQL
             }
         }
 
-        public void Dispose()
-        {
-            ((IDisposable)sql).Dispose();
-        }
+        public void Dispose() => ((IDisposable)sql).Dispose();
     }
 }

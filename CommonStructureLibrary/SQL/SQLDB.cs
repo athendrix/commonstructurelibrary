@@ -13,16 +13,18 @@ namespace CSL.SQL
     public abstract class SQLDB : IDisposable
     {
         [Obsolete("With the obsoletion of other functions in this class, this function is no longer necessary.")]
-        public static string QueryIn<T>(IEnumerable<T> inputList, out IEnumerable<KeyValuePair<string, object>> parameters)
+        public static string QueryIn<T>(IEnumerable<T> inputList, out IEnumerable<KeyValuePair<string, object?>> parameters)
         {
             T[] enumerableArray = inputList as T[] ?? inputList.ToArray();
-            parameters = enumerableArray.Select((x, y) => new KeyValuePair<string, object>("@param" + y, x));
+            parameters = enumerableArray.Select((x, y) => new KeyValuePair<string, object?>("@param" + y, x));
             string joinedString = string.Join(", @param", Enumerable.Range(0, enumerableArray.Length));
-            return String.IsNullOrEmpty(joinedString) ? "(NULL)" : $"(@param{joinedString})";
+            return string.IsNullOrEmpty(joinedString) ? "(NULL)" : $"(@param{joinedString})";
         }
 
         public DbConnection InternalConnection { get; protected set; }
-        protected DbTransaction currentTransaction = null;
+        protected DbTransaction? currentTransaction = null;
+        protected SQLDB(DbConnection internalConnection) => InternalConnection = internalConnection;
+
         #region Server Calls
         #region Reader
         [Obsolete("This version of ExecuteReader is deprecated. Please use the version with incrementing values.")]
@@ -92,23 +94,20 @@ namespace CSL.SQL
         #endregion
         #region NonQuery
         [Obsolete("This version of ExecuteNonQuery is deprecated. Please use the version with incrementing values.")]
-        public Task<int> ExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteNonQuery(commandText, parameters, commandType);
-        private Task<int> InnerExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
+        public Task<int> ExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object?>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteNonQuery(commandText, parameters, commandType);
+        private Task<int> InnerExecuteNonQuery(string commandText, IEnumerable<KeyValuePair<string, object?>> parameters, CommandType commandType = CommandType.Text)
         {
             using (DbCommand cmd = InternalConnection.CreateCommand())
             {
                 cmd.CommandText = commandText;
                 cmd.CommandType = commandType;
                 cmd.Transaction = currentTransaction;
-                if (parameters != null)
+                foreach (KeyValuePair<string, object?> parameter in parameters)
                 {
-                    foreach (KeyValuePair<string, object> parameter in parameters)
-                    {
-                        DbParameter toAdd = cmd.CreateParameter();
-                        toAdd.ParameterName = parameter.Key;
-                        toAdd.Value = parameter.Value ?? DBNull.Value;
-                        cmd.Parameters.Add(toAdd);
-                    }
+                    DbParameter toAdd = cmd.CreateParameter();
+                    toAdd.ParameterName = parameter.Key;
+                    toAdd.Value = parameter.Value ?? DBNull.Value;
+                    cmd.Parameters.Add(toAdd);
                 }
                 return cmd.ExecuteNonQueryAsync();
             }
@@ -120,7 +119,7 @@ namespace CSL.SQL
         /// <param name="commandText">The SQL Text to execute.</param>
         /// <param name="parameters">The Parameters passed in.</param>
         /// <returns>An int representing how many rows were affected.</returns>
-        public Task<int> ExecuteNonQuery(string commandText, params object[] parameters)
+        public Task<int> ExecuteNonQuery(string commandText, params object?[] parameters)
         {
             using (DbCommand cmd = InternalConnection.CreateCommand())
             {
@@ -144,7 +143,7 @@ namespace CSL.SQL
         /// <param name="commandText">The SQL Text to execute.</param>
         /// <param name="parameters">The Parameters passed in.</param>
         /// <returns>An int representing how many rows were affected.</returns>
-        public int ExecuteNonQuerySync(string commandText, params object[] parameters)
+        public int ExecuteNonQuerySync(string commandText, params object?[] parameters)
         {
             using (DbCommand cmd = InternalConnection.CreateCommand())
             {
@@ -164,10 +163,10 @@ namespace CSL.SQL
         #endregion
         #region Scalar
         [Obsolete("This version of ExecuteScalar is deprecated. Please use the version with incrementing values.")]
-        public Task<T> ExecuteScalar<T>(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteScalar<T>(commandText, parameters, commandType);
-        private async Task<T> InnerExecuteScalar<T>(string commandText, IEnumerable<KeyValuePair<string, object>> parameters = null, CommandType commandType = CommandType.Text)
+        public Task<T?> ExecuteScalar<T>(string commandText, IEnumerable<KeyValuePair<string, object?>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteScalar<T>(commandText, parameters, commandType);
+        private async Task<T?> InnerExecuteScalar<T>(string commandText, IEnumerable<KeyValuePair<string, object?>> parameters, CommandType commandType = CommandType.Text)
         {
-            Debug.Assert(default(T) == null, "Type must be Nullable. Try adding a ? to the end of the type to make it Nullable. (e.g. 'int?')");
+            Debug.Assert(default(T?) == null, "Type must be Nullable. Try adding a ? to the end of the type to make it Nullable. (e.g. 'int?')");
             using (DbCommand cmd = InternalConnection.CreateCommand())
             {
                 cmd.CommandText = commandText;
@@ -175,7 +174,7 @@ namespace CSL.SQL
                 cmd.Transaction = currentTransaction;
                 if (parameters != null)
                 {
-                    foreach (KeyValuePair<string, object> parameter in parameters)
+                    foreach (KeyValuePair<string, object?> parameter in parameters)
                     {
                         DbParameter toAdd = cmd.CreateParameter();
                         toAdd.ParameterName = parameter.Key;
@@ -186,7 +185,7 @@ namespace CSL.SQL
                 object toReturn = await cmd.ExecuteScalarAsync();
                 if (DBNull.Value.Equals(toReturn))
                 {
-                    return default;
+                    return default(T?);
                 }
                 return (T)toReturn;
             }
@@ -198,7 +197,7 @@ namespace CSL.SQL
         /// <param name="commandText">The SQL Text to execute.</param>
         /// <param name="parameters">The Parameters passed in.</param>
         /// <returns>The value in the first column and first row of the result.</returns>
-        public async Task<T> ExecuteScalar<T>(string commandText, params object[] parameters)
+        public async Task<T?> ExecuteScalar<T>(string commandText, params object[] parameters)
         {
             using (DbCommand cmd = InternalConnection.CreateCommand())
             {
@@ -227,7 +226,7 @@ namespace CSL.SQL
         /// <param name="commandText">The SQL Text to execute.</param>
         /// <param name="parameters">The Parameters passed in.</param>
         /// <returns>The value in the first column and first row of the result.</returns>
-        public T ExecuteScalarSync<T>(string commandText, params object[] parameters)
+        public T? ExecuteScalarSync<T>(string commandText, params object[] parameters)
         {
             using (DbCommand cmd = InternalConnection.CreateCommand())
             {

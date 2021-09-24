@@ -59,118 +59,76 @@ namespace CSL.SQL.ClassCreator
         public readonly bool nullable;
         public readonly int length;
 
-        public string CSharpTypeName
+        public string CSharpTypeName => type switch
         {
-            get
-            {
-                switch(type)
-                {
-                    case ColumnType.Boolean: return "bool" + (nullable ? "?" : "");
-                    case ColumnType.Byte: return "byte" + (nullable ? "?" : "");
-                    case ColumnType.Char: return "char" + (nullable ? "?" : "");
-                    case ColumnType.Short: return "short" + (nullable ? "?" : "");
-                    case ColumnType.Integer: return "int" + (nullable ? "?" : "");
-                    case ColumnType.Long: return "long" + (nullable ? "?" : "");
-                    case ColumnType.UnsignedLong: return "ulong" + (nullable ? "?" : "");
-                    case ColumnType.Float: return "float" + (nullable ? "?" : "");
-                    case ColumnType.Double: return "double" + (nullable ? "?" : "");
-                    case ColumnType.Decimal: return "decimal" + (nullable ? "?" : "");
-                    case ColumnType.String: return "string";
-                    case ColumnType.ByteArray: return "byte[]";
-                    case ColumnType.Guid: return "Guid" + (nullable ? "?" : "");
-                    case ColumnType.DateTime: return "DateTime" + (nullable ? "?" : "");
-                    case ColumnType.Enum: return ColumnName + (nullable ? "?" : "");
-                    default: return "<FIXME>";
-                }
-            }
-        }
-        public string CSharpPrivateTypeName
+            ColumnType.Boolean => "bool" + (nullable ? "?" : ""),
+            ColumnType.Byte => "byte" + (nullable ? "?" : ""),
+            ColumnType.Char => "char" + (nullable ? "?" : ""),
+            ColumnType.Short => "short" + (nullable ? "?" : ""),
+            ColumnType.Integer => "int" + (nullable ? "?" : ""),
+            ColumnType.Long => "long" + (nullable ? "?" : ""),
+            ColumnType.UnsignedLong => "ulong" + (nullable ? "?" : ""),
+            ColumnType.Float => "float" + (nullable ? "?" : ""),
+            ColumnType.Double => "double" + (nullable ? "?" : ""),
+            ColumnType.Decimal => "decimal" + (nullable ? "?" : ""),
+            ColumnType.String => "string" + (nullable ? "?" : ""),
+            ColumnType.ByteArray => "byte[]" + (nullable ? "?" : ""),
+            ColumnType.Guid => "Guid" + (nullable ? "?" : ""),
+            ColumnType.DateTime => "DateTime" + (nullable ? "?" : ""),
+            ColumnType.Enum => ColumnName + (nullable ? "?" : ""),
+            _ => "<FIXME>" + (nullable ? "?" : ""),
+        };
+        public string CSharpPrivateTypeName => type switch
         {
-            get
-            {
-                switch (type)
-                {
-                    case ColumnType.Byte: return "byte[]";
-                    case ColumnType.UnsignedLong: return "long" + (nullable ? "?" : "");
-                    case ColumnType.Enum: return "long" + (nullable ? "?" : "");
-                    default: return CSharpTypeName;
-                }
-            }
-        }
+            ColumnType.Byte => "byte[]" + (nullable ? "?" : ""),
+            ColumnType.UnsignedLong => "long" + (nullable ? "?" : ""),
+            ColumnType.Enum => "long" + (nullable ? "?" : ""),
+            _ => CSharpTypeName,
+        };
         #region SpecialConversions
-        public string CSharpConvertPrivatePrepend
+        public string CSharpConvertPrivatePrepend => type switch
         {
-            get
-            {
-                switch (type)
-                {
-                    case ColumnType.Byte: return "new byte[] {";
-                    case ColumnType.UnsignedLong: return "(long" + (nullable ? "?" : "") + ")";
-                    case ColumnType.Enum: return "(long" + (nullable ? "?" : "") + ")";
-                    default: return "";
-                }
-            }
-        }
-        public string CSharpConvertPrivateAppend
+            ColumnType.Byte => "new byte[] {",
+            ColumnType.UnsignedLong => "(long" + (nullable ? "?" : "") + ")",
+            ColumnType.Enum => "(long" + (nullable ? "?" : "") + ")",
+            _ => "",
+        };
+        public string CSharpConvertPrivateAppend => type switch
         {
-            get
-            {
-                switch (type)
-                {
-                    case ColumnType.Byte: return (nullable ? ".Value":"") +"}";
-                    default: return "";
-                }
-            }
-        }
-        public string CSharpConvertPublicPrepend
+            ColumnType.Byte => (nullable ? ".Value" : "") + "}",
+            _ => "",
+        };
+        public string CSharpConvertPublicPrepend => type switch
         {
-            get
-            {
-                switch (type)
-                {
-                    case ColumnType.Enum: return "(" + CSharpTypeName + ")";
-                    case ColumnType.UnsignedLong: return "(ulong" + (nullable ? "?" : "") + ")";
-                    default: return "";
-                }
-            }
-        }
-        public string CSharpConvertPublicAppend
+            ColumnType.Enum => "(" + CSharpTypeName + ")",
+            ColumnType.UnsignedLong => "(ulong" + (nullable ? "?" : "") + ")",
+            _ => "",
+        };
+        public string CSharpConvertPublicAppend => type switch
         {
-            get
-            {
-                switch (type)
-                {
-                    case ColumnType.Byte: return "[0]";
-                    default: return "";
-                }
-            }
-        }
+            ColumnType.Byte => "[0]",
+            _ => "",
+        };
         #endregion
-        public string SQLTypeName
+        public string SQLTypeName => type switch
         {
-            get
-            {
-                switch (type)
-                {
-                    case ColumnType.Boolean: return "BOOLEAN" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Byte: return "BYTEA" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Char: return "CHAR(1)" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Short: return "SMALLINT" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Integer: return "INTEGER" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Long: return "BIGINT" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.UnsignedLong: return "BIGINT" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Float: return "FLOAT4" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Double: return "FLOAT8" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Decimal: return "NUMERIC" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.String: return (length >= 0 ? "VARCHAR(" + length.ToString() + ")" : "TEXT") + (nullable ? "" : " NOT NULL");
-                    case ColumnType.ByteArray: return "BYTEA" + (nullable ? "" : " NOT NULL");//TODO: Add Length?
-                    case ColumnType.Guid: return "UUID" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.DateTime: return "TIMESTAMP" + (nullable ? "" : " NOT NULL");
-                    case ColumnType.Enum: return "BIGINT" + (nullable ? "" : " NOT NULL");
-                    default: return "<FIXME>";
-                }
-            }
-        }
+            ColumnType.Boolean => "BOOLEAN" + (nullable ? "" : " NOT NULL"),
+            ColumnType.Byte => "BYTEA" + (nullable ? "" : " NOT NULL"),
+            ColumnType.Char => "CHAR(1)" + (nullable ? "" : " NOT NULL"),
+            ColumnType.Short => "SMALLINT" + (nullable ? "" : " NOT NULL"),
+            ColumnType.Integer => "INTEGER" + (nullable ? "" : " NOT NULL"),
+            ColumnType.Long => "BIGINT" + (nullable ? "" : " NOT NULL"),
+            ColumnType.UnsignedLong => "BIGINT" + (nullable ? "" : " NOT NULL"),
+            ColumnType.Float => "FLOAT4" + (nullable ? "" : " NOT NULL"),
+            ColumnType.Double => "FLOAT8" + (nullable ? "" : " NOT NULL"),
+            ColumnType.Decimal => "NUMERIC" + (nullable ? "" : " NOT NULL"),
+            ColumnType.String => (length >= 0 ? "VARCHAR(" + length.ToString() + ")" : "TEXT") + (nullable ? "" : " NOT NULL"),
+            ColumnType.ByteArray => "BYTEA" + (nullable ? "" : " NOT NULL"),//TODO: Add Length?
+            ColumnType.Guid => "UUID" + (nullable ? "" : " NOT NULL"),
+            ColumnType.DateTime => "TIMESTAMP" + (nullable ? "" : " NOT NULL"),
+            ColumnType.Enum => "BIGINT" + (nullable ? "" : " NOT NULL"),
+            _ => "<FIXME>",
+        };
 
         public Column(string Name, string StringType)
         {
@@ -186,7 +144,7 @@ namespace CSL.SQL.ClassCreator
             Match m;
             if ((m = LengthFinder.Match(StringType)).Success)
             {
-                string StrMaxLength = null;
+                string? StrMaxLength = null;
                 foreach(Group g in m.Groups)
                 {
                     StrMaxLength = g.Value;

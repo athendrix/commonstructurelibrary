@@ -6,14 +6,14 @@ namespace CSL.SQL.ClassCreator
 {
     public class Generator
     {
-        public static string Generate(string NameSpace, string TableName, List<Column> PrimaryKeys, List<Column> Columns, string[] ExtraSQLLines = null)
+        public static string Generate(string NameSpace, string TableName, List<Column> PrimaryKeys, List<Column> Columns, string[]? ExtraSQLLines = null)
         {
             Generator gen = new Generator();
             gen.Libraries();
             gen.BlankLine();
             gen.BeginNamespace(NameSpace);
             gen.BeginFactory(TableName, PrimaryKeys);
-            gen.CreateDB(TableName, PrimaryKeys, Columns, ExtraSQLLines);
+            gen.CreateDB(TableName, PrimaryKeys, Columns, ExtraSQLLines?? new string[0]);
             gen.GetEnumerator(TableName, PrimaryKeys);
             gen.Select(TableName, PrimaryKeys);
             gen.Delete(TableName, PrimaryKeys);
@@ -55,10 +55,7 @@ namespace CSL.SQL.ClassCreator
         public void EndNamespace() => ExitBlock();
         public void Region(string RegionName) => IndentAdd("#region " + RegionName);
         public void EndRegion() => IndentAdd("#endregion");
-        public override string ToString()
-        {
-            return string.Join(Environment.NewLine, toReturn);
-        }
+        public override string ToString() => string.Join(Environment.NewLine, toReturn);
         #endregion
         #region Factory Functions
         public void BeginFactory(string TableName, List<Column> PrimaryKeys)
@@ -69,7 +66,7 @@ namespace CSL.SQL.ClassCreator
         public void EndFactory() => ExitBlock();
         public void CreateDB(string TableName, List<Column> PrimaryKeys, List<Column> Columns, string[] ExtraSQLLines)
         {
-            bool extralines = ExtraSQLLines != null && ExtraSQLLines.Length != 0;
+            bool extralines = ExtraSQLLines.Length != 0;
             IndentAdd("public Task<int> CreateDB(SQLDB sql)");
             EnterBlock();
             IndentAdd("return sql.ExecuteNonQuery(");
@@ -78,19 +75,17 @@ namespace CSL.SQL.ClassCreator
             {
                 IndentAdd($@"""\""{Columns[i].ColumnName}\"" {Columns[i].SQLTypeName}, "" +");
             }
-            IndentAdd($"\"PRIMARY KEY(\\\"{string.Join("\\\", \\\"", PrimaryKeys.Select((x) => x.ColumnName))}\\\"){(extralines?", ":"")}\" +");
-            if (extralines)
+            IndentAdd($"\"PRIMARY KEY(\\\"{string.Join("\\\", \\\"", PrimaryKeys.Select((x) => x.ColumnName))}\\\"){(extralines ? ", " : "")}\" +");
+
+            for (int i = 0; i < ExtraSQLLines.Length; i++)
             {
-                for(int i = 0; i < ExtraSQLLines.Length;i++)
+                string SQLLine = ExtraSQLLines[i].Trim().TrimEnd(',');
+                string lineend = ", ";
+                if (i == ExtraSQLLines.Length - 1)
                 {
-                    string SQLLine = ExtraSQLLines[i].Trim().TrimEnd(',');
-                    string lineend = ", ";
-                    if(i == ExtraSQLLines.Length - 1)
-                    {
-                        lineend = " ";
-                    }
-                    IndentAdd("\"" + ExtraSQLLines[i].Trim().Replace("\"", "\\\"") + lineend + "\" +");
+                    lineend = " ";
                 }
+                IndentAdd("\"" + ExtraSQLLines[i].Trim().Replace("\"", "\\\"") + lineend + "\" +");
             }
             IndentAdd("\");\");");
             ExitBlock();
@@ -191,9 +186,9 @@ namespace CSL.SQL.ClassCreator
             {
                 CO[i].Item2 = i;
             }
-            IndentAdd((partial ? "" : "async ") + parentType + "<IDBSet<" + iReturnType + ">> IDBSetFactory<" + iReturnType + ">.SelectByPK" + FnNumSuffix + FnParams + " => " +
+            IndentAdd((partial ? "" : "async ") + parentType + "<IDBSet<" + iReturnType + ">" + (partial ? "" : "?") + "> IDBSetFactory<" + iReturnType + ">.SelectByPK" + FnNumSuffix + FnParams + " => " +
                 (partial ? "" : "await ") + "SelectByPK" + FnNumSuffix + "(sql, " + BareFnParams + ");");
-            IndentAdd("public async " + parentType + "<" + TableName + "Record> SelectByPK" + FnNumSuffix + FnParams);
+            IndentAdd("public async " + parentType + "<" + TableName + "Record" + (partial ? "" : "?") + "> SelectByPK" + FnNumSuffix + FnParams);
             EnterBlock();
             IndentAdd($@"using (IDataReader dr = await sql.ExecuteReader(""SELECT * FROM \""{TableName}\"" WHERE {string.Join(" AND ", CO.Select((x) => $@"\""{x.Item1.ColumnName}\"" = @{x.Item2}"))};"", " + BareFnParams + "))");
             EnterBlock();
@@ -308,12 +303,12 @@ namespace CSL.SQL.ClassCreator
                 bool nullable = Columns[i].nullable;
                 if (CSType != PrivCSType)
                 {
-                    IndentAdd($"{PrivCSType} _{Name} = dr.IsDBNull({i}) ? default : ({PrivCSType.TrimEnd('?')})dr[{i}];");
-                    IndentAdd($"{CSType} {Name} = {(nullable ? "_" + Name + " == null?default:" : "")}{pubpre}_{Name}{pubapp};");
+                    IndentAdd($"{PrivCSType} _{Name} = {(nullable ? "dr.IsDBNull("+i+") ? null :":"")} ({PrivCSType.TrimEnd('?')})dr[{i}];");
+                    IndentAdd($"{CSType} {Name} = {(nullable ? "_" + Name + " == null ? null :" : "")}{pubpre}_{Name}{pubapp};");
                 }
                 else
                 {
-                    IndentAdd($"{CSType} {Name} = dr.IsDBNull({i}) ? default : ({PrivCSType.TrimEnd('?')})dr[{i}];");
+                    IndentAdd($"{CSType} {Name} = {(nullable ? "dr.IsDBNull(" + i + ") ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[{i}];");
                 }
             }
             IndentAdd($"return new {TableName}Record({string.Join(", ",Columns.Select((x)=>x.ColumnName))});");
@@ -402,10 +397,7 @@ namespace CSL.SQL.ClassCreator
         }
         #endregion
         #region Helpers
-        public void IndentAdd(params string[] toAdd)
-        {
-            toReturn.Add(new string(' ', CurrentIndentationLevel) + string.Join("", toAdd));
-        }
+        public void IndentAdd(params string[] toAdd) => toReturn.Add(new string(' ', CurrentIndentationLevel) + string.Join("", toAdd));
         public void EnterBlock(bool commented = false)
         {
             IndentAdd(commented ? "//" : "" , "{");

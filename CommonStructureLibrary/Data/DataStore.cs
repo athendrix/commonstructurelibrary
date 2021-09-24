@@ -7,13 +7,13 @@ namespace CSL.Data
 {
     public class DataStore
     {
-        private readonly Dictionary<string, string> innerData;
+        private readonly Dictionary<string, string?> innerData;
         private readonly List<string> OrdinalValues;
         private readonly bool immutable;
         #region Constructors
         public DataStore()
         {
-            innerData = new Dictionary<string, string>();
+            innerData = new Dictionary<string, string?>();
             OrdinalValues = new List<string>();
             immutable = false;
         }
@@ -21,7 +21,7 @@ namespace CSL.Data
         public DataStore(IEnumerable<KeyValuePair<string, string>> input, bool immutable = false)
         {
             this.immutable = immutable;
-            innerData = new Dictionary<string, string>();
+            innerData = new Dictionary<string, string?>();
             OrdinalValues = new List<string>();
             
             foreach(KeyValuePair<string,string> entry in input)
@@ -31,14 +31,14 @@ namespace CSL.Data
             }
         }
 
-        public DataStore(string[] keys, string[] values, bool immutable = false)
+        public DataStore(string[] keys, string?[] values, bool immutable = false)
         {
             if(keys.Length != values.Length)
             {
                 throw new ArgumentException("keys length and values length must be the same!");
             }
             this.immutable = immutable;
-            innerData = new Dictionary<string, string>();
+            innerData = new Dictionary<string, string?>();
             OrdinalValues = new List<string>();
             for(int i = 0; i < keys.Length; i++)
             {
@@ -61,7 +61,7 @@ namespace CSL.Data
         }
         #endregion
         #region Base Types
-        public string GetString(string key)
+        public string? GetString(string key)
         {
             if (innerData.ContainsKey(key))
             {
@@ -72,38 +72,38 @@ namespace CSL.Data
                 return null;
             }
         }
-        public T Get<T>(string key)
+        public T? Get<T>(string key)
         {
-            string value = GetString(key);
-            if (Generics.TryParse(value, out T result))
+            string? value = GetString(key);
+            if (Generics.TryParse(value, out T? result))
             {
                 return result;
             }
-            throw new FormatException("Failed to parse key \"" + key + "\" with value \"" + value + "\" to " + typeof(T).Name + ".");
+            throw new FormatException("Failed to parse key \"" + key + "\" with value \"" + value + "\" to " + typeof(T?).Name + ".");
         }
         public int GetInt(string key) => Get<int>(key);
         public long GetLong(string key) => Get<long>(key);
         public bool GetBool(string key) => Get<bool>(key);
         public DateTime GetDateTime(string key) => Get<DateTime>(key);
-        public byte[] GetByteArray(string key) => Get<byte[]>(key);
+        public byte[]? GetByteArray(string key) => Get<byte[]>(key);
         #endregion
         #region AdvancedTypes
-        public T[] GetArray<T>(string key)
+        public T?[]? GetArray<T>(string key)
         {
             if (typeof(T) == typeof(byte))
             {
                 return Get<byte[]>(key) as T[];
             }
-            string strvalue = GetString(key);
+            string? strvalue = GetString(key);
             if (strvalue == null)
             {
                 return null;
             }
             string[] SplitArray = strvalue.Split(',');
-            T[] toReturn = new T[SplitArray.Length];
+            T?[] toReturn = new T[SplitArray.Length];
             for (int i = 0; i < toReturn.Length; i++)
             {
-                if (Generics.TryParse<T>(SplitArray[i].Trim(), out T result))
+                if (Generics.TryParse<T>(SplitArray[i].Trim(), out T? result))
                 {
                     toReturn[i] = result;
                 }
@@ -114,10 +114,10 @@ namespace CSL.Data
             }
             return toReturn;
         }
-        public Dictionary<T, U> GetDictionary<T, U>(string keyskey, string valueskey)
+        public Dictionary<T, U?>? GetDictionary<T, U>(string keyskey, string valueskey)
         {
-            T[] keys = GetArray<T>(keyskey);
-            U[] values = GetArray<U>(valueskey);
+            T?[]? keys = GetArray<T>(keyskey);
+            U?[]? values = GetArray<U>(valueskey);
             if (keys == null && values == null)
             {
                 return null;
@@ -125,10 +125,12 @@ namespace CSL.Data
             if (keys == null) { throw new FormatException("Failed to parse \"" + keyskey + "\" as keys to " + typeof(Dictionary<T,U>).Name + "."); }
             if (values == null) { throw new FormatException("Failed to parse \"" + valueskey + "\" as values to " + typeof(Dictionary<T, U>).Name + "."); }
             if (keys.Length != values.Length) { throw new FormatException("Failed to parse \"" + keyskey + "\" and \"" + valueskey + "\" to " + typeof(Dictionary<T, U>).Name + ". Lengths differ."); }
-            Dictionary<T, U> toReturn = new Dictionary<T, U>();
+            Dictionary<T, U?> toReturn = new Dictionary<T, U?>();
             for (int i = 0; i < keys.Length; i++)
             {
-                toReturn.Add(keys[i], values[i]);//throws exception on duplicate keys
+                T? key = keys[i];
+                if (key == null) { continue; }
+                toReturn.Add(key, values[i]);//throws exception on duplicate keys
             }
             return toReturn;
         }

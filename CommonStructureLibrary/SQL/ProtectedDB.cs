@@ -30,9 +30,9 @@ namespace CSL.SQL
             ((IDisposable)protector).Dispose();
         }
 
-        public async Task<string> Get(string key)
+        public async Task<string?> Get(string key)
         {
-            string toReturn = await innerDB.Get(key);
+            string? toReturn = await innerDB.Get(key);
             if (toReturn != null)
             {
                 return await protector.Unprotect(toReturn, key);
@@ -40,9 +40,9 @@ namespace CSL.SQL
             return null;
         }
 
-        public async Task Set(string key, string value)
+        public async Task Set(string key, string? value)
         {
-            string toInsert = value;
+            string? toInsert = value;
             if (toInsert == null)
             {
                 await innerDB.Set(key, null);

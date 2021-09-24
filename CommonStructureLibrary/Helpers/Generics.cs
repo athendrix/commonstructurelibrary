@@ -4,94 +4,106 @@ namespace CSL.Helpers
 {
     public static class Generics
     {
-        public static bool TryParse<T>(string s, out T result)
+        public static bool TryParse<T>(string? s, out T? result)
         {
             bool toReturn;
-            Type TType = typeof(T);
-            if (TType == typeof(String))
+            Type TType = typeof(T?);
+            #region Special Cases
+            if (TType == typeof(string))
             {
-                result = (T)(object)s;
+                result = (T?)(object?)s;
                 return true;
             }
-            if ((s == "" || s == null) && default(T) == null)
+            if(s == "" && TType == typeof(byte[]))
             {
-                result = default;
+                result = (T)(object)new byte[0];
                 return true;
             }
+            if (s == "" && (TType == typeof(Guid) || TType == typeof(Guid?)))
+            {
+                result = (T)(object)Guid.Empty;
+                return true;
+            }
+            if (s is "" or null)
+            {
+                result = default(T?);
+                return default(T?) == null;
+            }
+            #endregion
             #region Signed Integers
-            if (TType == typeof(SByte) || TType == typeof(SByte?))
+            if (TType == typeof(sbyte) || TType == typeof(sbyte?))
             {
-                toReturn = SByte.TryParse(s, out SByte Tresult);
+                toReturn = sbyte.TryParse(s, out sbyte Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
-            if (TType == typeof(Int16) || TType == typeof(Int16?))
+            if (TType == typeof(short) || TType == typeof(short?))
             {
-                toReturn = Int16.TryParse(s, out Int16 Tresult);
+                toReturn = short.TryParse(s, out short Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
-            if (TType == typeof(Int32) || TType == typeof(Int32?))
+            if (TType == typeof(int) || TType == typeof(int?))
             {
-                toReturn = Int32.TryParse(s, out Int32 Tresult);
+                toReturn = int.TryParse(s, out int Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
-            if (TType == typeof(Int64) || TType == typeof(Int64?))
+            if (TType == typeof(long) || TType == typeof(long?))
             {
-                toReturn = Int64.TryParse(s, out Int64 Tresult);
+                toReturn = long.TryParse(s, out long Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
             #endregion
             #region Unsigned Integers
-            if (TType == typeof(Byte) || TType == typeof(Byte?))
+            if (TType == typeof(byte) || TType == typeof(byte?))
             {
-                toReturn = Byte.TryParse(s, out Byte Tresult);
+                toReturn = byte.TryParse(s, out byte Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
-            if (TType == typeof(UInt16) || TType == typeof(UInt16?))
+            if (TType == typeof(ushort) || TType == typeof(ushort?))
             {
-                toReturn = UInt16.TryParse(s, out UInt16 Tresult);
+                toReturn = ushort.TryParse(s, out ushort Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
-            if (TType == typeof(UInt32) || TType == typeof(UInt32?))
+            if (TType == typeof(uint) || TType == typeof(uint?))
             {
-                toReturn = UInt32.TryParse(s, out UInt32 Tresult);
+                toReturn = uint.TryParse(s, out uint Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
-            if (TType == typeof(UInt64) || TType == typeof(UInt64?))
+            if (TType == typeof(ulong) || TType == typeof(ulong?))
             {
-                toReturn = UInt64.TryParse(s, out UInt64 Tresult);
+                toReturn = ulong.TryParse(s, out ulong Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
             #endregion
             #region Floating Point and Decimal
-            if (TType == typeof(Single) || TType == typeof(Single?))
+            if (TType == typeof(float) || TType == typeof(float?))
             {
-                toReturn = Single.TryParse(s, out Single Tresult);
+                toReturn = float.TryParse(s, out float Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
-            if (TType == typeof(Double) || TType == typeof(Double?))
+            if (TType == typeof(double) || TType == typeof(double?))
             {
-                toReturn = Double.TryParse(s, out Double Tresult);
+                toReturn = double.TryParse(s, out double Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
-            if (TType == typeof(Decimal) || TType == typeof(Decimal?))
+            if (TType == typeof(decimal) || TType == typeof(decimal?))
             {
-                toReturn = Decimal.TryParse(s, out Decimal Tresult);
+                toReturn = decimal.TryParse(s, out decimal Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
             #endregion
             #region Other
-            if (TType == typeof(Boolean) || TType == typeof(Boolean?))
+            if (TType == typeof(bool) || TType == typeof(bool?))
             {
                 string uppers = s.ToUpper();
                 if (s == "0" || uppers == "F" || uppers == "N" || uppers == "NO")
@@ -104,7 +116,7 @@ namespace CSL.Helpers
                     result = (T)(object)true;
                     return true;
                 }
-                toReturn = Boolean.TryParse(s, out Boolean Tresult);
+                toReturn = bool.TryParse(s, out bool Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
@@ -121,23 +133,9 @@ namespace CSL.Helpers
                 result = (T)(object)Tresult;
                 return toReturn;
             }
-            if (TType == typeof(Char) || TType == typeof(Char?))
+            if (TType == typeof(char) || TType == typeof(char?))
             {
-#if BRIDGE
-                        toReturn = true;
-                        char Tresult;
-                        try
-                        {
-                            Tresult = Char.Parse(s);
-                        }
-                        catch(Exception)
-                        {
-                            toReturn = false;
-                            Tresult = default;
-                        }
-#else
-                toReturn = Char.TryParse(s, out Char Tresult);
-#endif
+                toReturn = char.TryParse(s, out char Tresult);
                 result = (T)(object)Tresult;
                 return toReturn;
             }
@@ -152,7 +150,7 @@ namespace CSL.Helpers
                 try
                 {
                     toReturn = true;
-                    object Tresult;
+                    object? Tresult;
                     try
                     {
                         Tresult = Enum.Parse(TType, s, true);
@@ -160,14 +158,14 @@ namespace CSL.Helpers
                     catch (Exception)
                     {
                         toReturn = false;
-                        Tresult = default;
+                        Tresult = default(T?);
                     }
-                    result = (T)Tresult;
+                    result = (T?)Tresult;
                     return toReturn;
                 }
                 catch (Exception)
                 {
-                    result = default(T);
+                    result = default(T?);
                     return false;
                 }
             }
@@ -183,7 +181,7 @@ namespace CSL.Helpers
                 }
                 catch (Exception)
                 {
-                    result = default(T);
+                    result = default(T?);
                     return false;
                 }
             }
@@ -191,116 +189,95 @@ namespace CSL.Helpers
             #region Serialization
             try
             {
-                //Attribute[] attributes = Attribute.GetCustomAttributes(TType.Assembly, typeof(SerializableAttribute));
-                //if (attributes.Length > 0)
-                //{
                 result = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(s);
                 return true;
-                //}
             }
             catch { }
             #endregion
             result = default(T);
             return false;
         }
-        public static string ToString<T>(T input)
+        public static string? ToString<T>(T? input)
         {
             Type TType = typeof(T);
-            if (TType == typeof(String))
+            if (TType == typeof(string))
             {
-                return (String)(object)input;
+                return (string?)(object?)input;
             }
             if (input == null)
             {
                 return null;
             }
             #region Signed Integers
-            if (TType == typeof(SByte) || TType == typeof(SByte?))
+            if (TType == typeof(sbyte) || TType == typeof(sbyte?))
             {
-                SByte temp = (SByte)(object)input;
-                return temp.ToString();
+                return((sbyte)(object)input).ToString();
             }
-            if (TType == typeof(Int16) || TType == typeof(Int16?))
+            if (TType == typeof(short) || TType == typeof(short?))
             {
-                Int16 temp = (Int16)(object)input;
-                return temp.ToString();
+                return ((short)(object)input).ToString();
             }
-            if (TType == typeof(Int32) || TType == typeof(Int32?))
+            if (TType == typeof(int) || TType == typeof(int?))
             {
-                Int32 temp = (Int32)(object)input;
-                return temp.ToString();
+                return ((int)(object)input).ToString();
             }
-            if (TType == typeof(Int64) || TType == typeof(Int64?))
+            if (TType == typeof(long) || TType == typeof(long?))
             {
-                Int64 temp = (Int64)(object)input;
-                return temp.ToString();
+                return ((long)(object)input).ToString();
             }
             #endregion
             #region Unsigned Integers
-            if (TType == typeof(Byte) || TType == typeof(Byte?))
+            if (TType == typeof(byte) || TType == typeof(byte?))
             {
-                Byte temp = (Byte)(object)input;
-                return temp.ToString();
+                return ((byte)(object)input).ToString();
             }
-            if (TType == typeof(UInt16) || TType == typeof(UInt16?))
+            if (TType == typeof(ushort) || TType == typeof(ushort?))
             {
-                UInt16 temp = (UInt16)(object)input;
-                return temp.ToString();
+                return ((ushort)(object)input).ToString();
             }
-            if (TType == typeof(UInt32) || TType == typeof(UInt32?))
+            if (TType == typeof(uint) || TType == typeof(uint?))
             {
-                UInt32 temp = (UInt32)(object)input;
-                return temp.ToString();
+                return ((uint)(object)input).ToString();
             }
             if (TType == typeof(UInt64) || TType == typeof(UInt64?))
             {
-                UInt64 temp = (UInt64)(object)input;
-                return temp.ToString();
+                return ((ulong)(object)input).ToString();
             }
             #endregion
             #region Floating Point and Decimal
-            if (TType == typeof(Single) || TType == typeof(Single?))
+            if (TType == typeof(float) || TType == typeof(float?))
             {
-                Single temp = (Single)(object)input;
-                return temp.ToString("R");
+                return ((float)(object)input).ToString("R");
             }
-            if (TType == typeof(Double) || TType == typeof(Double?))
+            if (TType == typeof(double) || TType == typeof(double?))
             {
-                Double temp = (Double)(object)input;
-                return temp.ToString("R");
+                return ((double)(object)input).ToString("R");
             }
             if (TType == typeof(Decimal) || TType == typeof(Decimal?))
             {
-                Decimal temp = (Decimal)(object)input;
-                return temp.ToString();
+                return ((decimal)(object)input).ToString();
             }
             #endregion
             #region Other
-            if (TType == typeof(Boolean) || TType == typeof(Boolean?))
+            if (TType == typeof(bool) || TType == typeof(bool?))
             {
-                Boolean temp = (Boolean)(object)input;
-                return temp.ToString();
+                return((bool)(object)input).ToString();
             }
             if (TType == typeof(Guid) || TType == typeof(Guid?))
             {
-                Guid temp = (Guid)(object)input;
-                return temp.ToString("D");
+                return ((Guid)(object)input).ToString();
             }
             if (TType == typeof(DateTime) || TType == typeof(DateTime?))
             {
-                DateTime temp = (DateTime)(object)input;
-                temp = temp.ToUniversalTime();
-                return temp.ToString("O");
+                return ((DateTime)(object)input).ToUniversalTime().ToString("O");
             }
-            if (TType == typeof(Char) || TType == typeof(Char?))
+            if (TType == typeof(char) || TType == typeof(char?))
             {
-                Char temp = (Char)(object)input;
-                return temp.ToString();
+                return ((char)(object)input).ToString();
             }
             if (TType == typeof(TimeSpan) || TType == typeof(TimeSpan?))
             {
-                TimeSpan temp = (TimeSpan)(object)input;
-                return temp.ToString("G");
+                return ((TimeSpan)(object)input).ToString("G");
             }
             if (TType.IsEnum)
             {
@@ -308,18 +285,13 @@ namespace CSL.Helpers
             }
             if (TType == typeof(byte[]))
             {
-                byte[] temp = (byte[])(object)input;
-                return WebBase64.Encode(temp);
+                return WebBase64.Encode((byte[])(object)input);
             }
             #endregion
             #region Serialization
             try
             {
-                //object[] attributes = TType.GetCustomAttributes(typeof(SerializableAttribute), true);
-                //if (attributes.Length > 0)
-                //{
                 return Newtonsoft.Json.JsonConvert.SerializeObject(input);
-                //}
             }
             catch { }
             #endregion

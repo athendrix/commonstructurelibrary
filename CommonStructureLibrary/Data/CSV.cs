@@ -29,21 +29,34 @@ namespace CSL.Data
         /// <param name="startLine">How many lines to skip? This will skip after reading the header(if there is one), but before reading the data.</param>
         /// <param name="lineLimit">Maximum data lines to read. (Not counting the headerline, nor newlines within string values.)</param>
         /// <returns>An array of immutable DataStore objects representing the data.</returns>
-        public static DataStore[] ReadCSV(TextReader input, char separator = ',', string[] headers = null, string[] nullValues = null, char? escapechar = '"', int startLine = 0, int? lineLimit = null)
+        public static DataStore[] ReadCSV(TextReader input, char separator = ',', string[]? headers = null, string[]? nullValues = null, char? escapechar = '"', int startLine = 0, int? lineLimit = null)
         {
             if (nullValues == null) { nullValues = new string[] { "" }; }//Mostly to deal with R's NA values
             //List<object[]> readData = new List<object[]>();
             List<DataStore> readData = new List<DataStore>();
-            string firstLine = input.AdvancedReadLine(escapechar);
+            string? firstLine = input.AdvancedReadLine(escapechar);
             if (firstLine == null)
             {
-                return null;
+                return new DataStore[0];
             }
-            string[] firstLineArray = firstLine.AdvancedSplit(separator, nullValues, escapechar);
+            string?[] firstLineArray = firstLine.AdvancedSplit(separator, nullValues, escapechar);
             int linesRead = 0;
             if(headers == null)
             {
-                headers = firstLineArray;
+                headers = new string[firstLineArray.Length];
+                for(int i = 0; i < firstLineArray.Length; i++)
+                {
+                    string cell = firstLineArray[i] ?? "";
+                    if(headers.Contains(cell))
+                    {
+                        int HeaderCellAppend = 1;
+                        while (headers.Contains(cell + "(" + ++HeaderCellAppend + ")"))
+                        {
+                        }
+                        cell = cell + "(" + HeaderCellAppend + ")";
+                    }
+                    headers[i] = cell;
+                }
             }
             else if (startLine <= 0 && lineLimit != 0)
             {
@@ -55,10 +68,10 @@ namespace CSL.Data
             {
                 input.AdvancedReadLine(escapechar);//skip the lines while paying attention to the escape characters.
             }
-            string currLine;
+            string? currLine;
             while ((lineLimit == null || linesRead++ < lineLimit) && (currLine = input.AdvancedReadLine(escapechar)) != null)
             {
-                string[] currLineArray = currLine.AdvancedSplit(separator, nullValues, escapechar);
+                string?[] currLineArray = currLine.AdvancedSplit(separator, nullValues, escapechar);
                 readData.Add(new DataStore(headers,currLineArray,true));
             }
             return readData.ToArray();
@@ -97,7 +110,7 @@ namespace CSL.Data
         /// <param name="input">TextReader to use as input.</param>
         /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `.</param>
         /// <returns>Line from TextReader</returns>
-        private static string AdvancedReadLine(this TextReader input, char? escapechar)
+        private static string? AdvancedReadLine(this TextReader input, char? escapechar)
         {
             string toReturn = input.ReadLine();
             if (toReturn == null)
@@ -128,11 +141,11 @@ namespace CSL.Data
         /// <param name="nullValues">Values to treat as null. This defaults to only situations where there are no characters between two separators.</param>
         /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `.</param>
         /// <returns>Array of strings that have been singled out like String.Split would.</returns>
-        private static string[] AdvancedSplit(this string input, char separator, string[] nullValues, char? escapechar)
+        private static string?[] AdvancedSplit(this string input, char separator, string[] nullValues, char? escapechar)
         {
             if (nullValues == null) { nullValues = nullValues = new string[] { "" }; }
             string[] naiveArray = input.Split(new char[] { separator }, StringSplitOptions.None);
-            List<string> parsedLine = new List<string>();
+            List<string?> parsedLine = new List<string?>();
             for (int i = 0; i < naiveArray.Length; i++)
             {
                 string toAdd = naiveArray[i];

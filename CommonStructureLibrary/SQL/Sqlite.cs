@@ -1,27 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Data;
-using static CSL.DependencyInjection;
+﻿using static CSL.DependencyInjection;
 using System.Data.Common;
 
 namespace CSL.SQL
 {
     public class Sqlite : SQLDB
     {
-        public Sqlite(string Filename, SqliteOpenMode Mode = SqliteOpenMode.ReadWriteCreate, SqliteCacheMode Cache = SqliteCacheMode.Default)
+        private static DbConnection CreateConnection(string Filename, SqliteOpenMode Mode, SqliteCacheMode Cache)
         {
             ISqliteConnectionStringBuilder csb = CreateISqliteConnectionStringBuilder();
             csb.DataSource = Filename;
             csb.Mode = Mode;
             csb.Cache = Cache;
-            currentTransaction = null;
-            InternalConnection = CreateSqliteConnection(csb.ConnectionString);
+            return CreateSqliteConnection(csb.ConnectionString);
+        }
+        public Sqlite(string Filename, SqliteOpenMode Mode = SqliteOpenMode.ReadWriteCreate, SqliteCacheMode Cache = SqliteCacheMode.Default) : base(CreateConnection(Filename,Mode,Cache))
+        {
+            currentTransaction = null; ;
             InternalConnection.Open();
         }
-        public Sqlite(DbConnection connection)
+        public Sqlite(DbConnection connection) : base(connection)
         {
-            InternalConnection = connection;
+            currentTransaction = null;
             InternalConnection.Open();
         }
     }

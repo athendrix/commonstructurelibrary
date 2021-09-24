@@ -7,7 +7,7 @@ namespace CSL.Webserver
 {
     public class CachedZipHost
     {
-        private Dictionary<string, byte[]> cachedContent;
+        private readonly Dictionary<string, byte[]> cachedContent;
         private readonly Func<Stream> streamFunction;
         private readonly bool caseSensitive;
         public CachedZipHost(string path, bool caseSensitive = false):this(()=>new FileStream(path,FileMode.Open),caseSensitive)
@@ -18,6 +18,7 @@ namespace CSL.Webserver
         {
             this.streamFunction = streamFunction;
             this.caseSensitive = caseSensitive;
+            cachedContent = new Dictionary<string, byte[]>();
             Refresh();
         }
         public void Refresh()
@@ -25,7 +26,7 @@ namespace CSL.Webserver
             using (Stream s = streamFunction())
             using (ZipArchive za = new ZipArchive(s, ZipArchiveMode.Read))
             {
-                cachedContent = new Dictionary<string, byte[]>();
+                cachedContent.Clear();
                 foreach (ZipArchiveEntry zae in za.Entries)
                 {
                     int exceptioncount = 0;
@@ -56,13 +57,7 @@ namespace CSL.Webserver
                 }
             }
         }
-        public bool ContainsContent(string key)
-        {
-            return cachedContent.ContainsKey(caseSensitive ? key : key.ToLower());
-        }
-        public MemoryStream GetContent(string key)
-        {
-            return new MemoryStream(cachedContent[caseSensitive ? key : key.ToLower()], false);
-        }
+        public bool ContainsContent(string key) => cachedContent.ContainsKey(caseSensitive ? key : key.ToLower());
+        public MemoryStream GetContent(string key) => new MemoryStream(cachedContent[caseSensitive ? key : key.ToLower()], false);
     }
 }

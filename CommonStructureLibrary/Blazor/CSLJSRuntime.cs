@@ -13,13 +13,10 @@ namespace CSL.Blazor
     public class CSLJSRuntime
     {
         #region Main Stuff
-        private dynamic JSRuntime;
-        public CSLJSRuntime(dynamic JSRuntime)
-        {
-            this.JSRuntime = JSRuntime;
-        }
+        private readonly dynamic JSRuntime;
+        public CSLJSRuntime(dynamic JSRuntime) => this.JSRuntime = JSRuntime;
 
-        public async ValueTask InvokeVoidAsync(string identifier, params object[] args) => await JSRuntime.InvokeAsync<object>(identifier, args);
+        public async ValueTask InvokeVoidAsync(string identifier, params object?[] args) => await JSRuntime.InvokeAsync<object>(identifier, args);
 
         //
         // Summary:
@@ -42,7 +39,7 @@ namespace CSL.Blazor
         //
         // Returns:
         //     An instance of TValue obtained by JSON-deserializing the return value.
-        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, params object[] args) => JSRuntime.InvokeAsync<TValue>(identifier, args);
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, params object?[] args) => JSRuntime.InvokeAsync<TValue>(identifier, args);
         //
         // Summary:
         //     Invokes the specified JavaScript function asynchronously.
@@ -66,19 +63,19 @@ namespace CSL.Blazor
         //
         // Returns:
         //     An instance of TValue obtained by JSON-deserializing the return value.
-        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken, params object[] args) => InvokeAsync<TValue>(identifier, cancellationToken, args);
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken, params object?[] args) => InvokeAsync<TValue>(identifier, cancellationToken, args);
         #endregion
         #region Local Storage
-        public async Task<T> GetLocal<T>(string key)
+        public async Task<T?> GetLocal<T>(string key)
         {
             string item = await InvokeAsync<string>("localStorage.getItem", key);
-            if (Generics.TryParse(item, out T toReturn))
+            if (Generics.TryParse(item, out T? toReturn))
             {
                 return toReturn;
             }
-            return default(T);
+            return default(T?);
         }
-        public ValueTask SetLocal<T>(string key, T value)
+        public ValueTask SetLocal<T>(string key, T? value)
         {
             if (value == null)
             {
@@ -86,22 +83,19 @@ namespace CSL.Blazor
             }
             return InvokeVoidAsync("localStorage.setItem", key, Generics.ToString(value));
         }
-        public ValueTask ClearLocal()
-        {
-            return InvokeVoidAsync("localStorage.clear");
-        }
+        public ValueTask ClearLocal() => InvokeVoidAsync("localStorage.clear");
         #endregion
         #region Local Storage
-        public async Task<T> GetSession<T>(string key)
+        public async Task<T?> GetSession<T>(string key)
         {
             string item = await InvokeAsync<string>("sessionStorage.getItem", key);
-            if (Generics.TryParse(item, out T toReturn))
+            if (Generics.TryParse(item, out T? toReturn))
             {
                 return toReturn;
             }
-            return default(T);
+            return default(T?);
         }
-        public ValueTask SetSession<T>(string key, T value)
+        public ValueTask SetSession<T>(string key, T? value)
         {
             if (value == null)
             {
@@ -109,10 +103,7 @@ namespace CSL.Blazor
             }
             return InvokeVoidAsync("sessionStorage.setItem", key, Generics.ToString(value));
         }
-        public ValueTask ClearSession()
-        {
-            return InvokeVoidAsync("sessionStorage.clear");
-        }
+        public ValueTask ClearSession() => InvokeVoidAsync("sessionStorage.clear");
         #endregion
     }
 }

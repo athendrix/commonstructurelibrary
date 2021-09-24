@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -11,7 +12,7 @@ namespace CSL.SQL
 {
     public static class Common
     {
-        public static string NameParser(string input)
+        public static string NameParser(string? input)
         {
             if (input == null)
             {
@@ -43,38 +44,52 @@ namespace CSL.SQL
             return parsedname;
         }
         //Extentions
-        public static T Get<T>(this IDataReader reader, string item)
+        public static T? Get<T>(this IDataReader reader, string item)
         {
             object toReturn = reader[item];
-            return !DBNull.Value.Equals(toReturn) ? (T)toReturn : default;
+            if(DBNull.Value.Equals(toReturn))
+            {
+                Debug.Assert(default(T?) == null, "Type must be Nullable. Try adding a ? to the end of the type to make it Nullable. (e.g. 'int?')");
+                return default(T?);//null
+            }
+            return (T)toReturn;
         }
-        public static T Get<T>(this IDataReader reader, int index)
+        public static T? Get<T>(this IDataReader reader, int index)
         {
             object toReturn = reader[index];
-            return !DBNull.Value.Equals(toReturn) ? (T)toReturn : default;
+            if (DBNull.Value.Equals(toReturn))
+            {
+                Debug.Assert(default(T?) == null, "Type must be Nullable. Try adding a ? to the end of the type to make it Nullable. (e.g. 'int?')");
+                return default(T?);//null
+            }
+            return (T)toReturn;
         }
         public static bool IsDBNull(this IDataReader reader, string item) => DBNull.Value.Equals(reader[item]);
-        public static T Get<T>(this DataRow row, string item)
+        public static T? Get<T>(this DataRow row, string item)
         {
             object toReturn = row[item];
-            return !DBNull.Value.Equals(toReturn) ? (T)toReturn : default;
+            if (DBNull.Value.Equals(toReturn))
+            {
+                Debug.Assert(default(T?) == null, "Type must be Nullable. Try adding a ? to the end of the type to make it Nullable. (e.g. 'int?')");
+                return default(T?);//null
+            }
+            return (T)toReturn;
         }
-        public static T Get<T>(this DataRow row, int index)
+        public static T? Get<T>(this DataRow row, int index)
         {
             object toReturn = row[index];
-            return !DBNull.Value.Equals(toReturn) ? (T)toReturn : default;
+            if (DBNull.Value.Equals(toReturn))
+            {
+                Debug.Assert(default(T?) == null, "Type must be Nullable. Try adding a ? to the end of the type to make it Nullable. (e.g. 'int?')");
+                return default(T?);//null
+            }
+            return (T)toReturn;
         }
 
         [Obsolete("This method is obsolete. You can just cast from a long to a ulong and back safely.")]
-        public static ulong ToUlong(this long item)
-        {
-            return unchecked((ulong)(item - long.MinValue));
-        }
+        public static ulong ToUlong(this long item) => (ulong)item;
         [Obsolete("This method is obsolete. You can just cast from a ulong to a long and back safely.")]
-        public static long ToLong(this ulong item)
-        {
-            return unchecked((long)item + long.MinValue);
-        }
+        public static long ToLong(this ulong item) => (long)item;
 
         public static void WriteStruct<T>(this BinaryWriter bw, T value) where T : struct => bw.Write(value.ToByteArray());
         public static byte[] ToByteArray<T>(this T value) where T : struct => MemoryMarshal.AsBytes<T>(new T[] { value }).ToArray();

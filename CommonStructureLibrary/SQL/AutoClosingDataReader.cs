@@ -7,8 +7,9 @@ namespace CSL.SQL
 {
     public class AutoClosingDataReader : IDataReader, IDisposable
     {
-        readonly IDataReader innerReader;
-        readonly IDisposable toDispose;
+        private readonly IDataReader innerReader;
+        private readonly IDisposable toDispose;
+
         public AutoClosingDataReader(IDataReader innerReader, IDisposable toDispose)
         {
             this.innerReader = innerReader;
@@ -16,124 +17,39 @@ namespace CSL.SQL
         }
 
         public object this[int i] => innerReader[i];
-
         public object this[string name] => innerReader[name];
-
         public int Depth => innerReader.Depth;
-
         public bool IsClosed => innerReader.IsClosed;
-
         public int RecordsAffected => innerReader.RecordsAffected;
-
         public int FieldCount => innerReader.FieldCount;
+        public void Close() => innerReader.Close();
+        public bool GetBoolean(int i) => innerReader.GetBoolean(i);
+        public byte GetByte(int i) => innerReader.GetByte(i);
+        public long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length) => innerReader.GetBytes(i, fieldOffset, buffer, bufferoffset, length);
+        public char GetChar(int i) => innerReader.GetChar(i);
+        public long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length) => innerReader.GetChars(i, fieldoffset, buffer, bufferoffset, length);
+        public IDataReader GetData(int i) => innerReader.GetData(i);
+        public string GetDataTypeName(int i) => innerReader.GetDataTypeName(i);
+        public DateTime GetDateTime(int i) => innerReader.GetDateTime(i);
+        public decimal GetDecimal(int i) => innerReader.GetDecimal(i);
+        public double GetDouble(int i) => innerReader.GetDouble(i);
+        public Type GetFieldType(int i) => innerReader.GetFieldType(i);
+        public float GetFloat(int i) => innerReader.GetFloat(i);
+        public Guid GetGuid(int i) => innerReader.GetGuid(i);
+        public short GetInt16(int i) => innerReader.GetInt16(i);
+        public int GetInt32(int i) => innerReader.GetInt32(i);
+        public long GetInt64(int i) => innerReader.GetInt64(i);
+        public string GetName(int i) => innerReader.GetName(i);
+        public int GetOrdinal(string name) => innerReader.GetOrdinal(name);
+        public DataTable GetSchemaTable() => innerReader.GetSchemaTable();
+        public string GetString(int i) => innerReader.GetString(i);
+        public object GetValue(int i) => innerReader.GetValue(i);
+        public int GetValues(object[] values) => innerReader.GetValues(values);
+        public bool IsDBNull(int i) => innerReader.IsDBNull(i);
+        public bool NextResult() => innerReader.NextResult();
+        public bool Read() => innerReader.Read();
 
-        public void Close()
-        {
-            innerReader.Close();
-        }
-
-        public void Dispose()
-        {
-            innerReader.Dispose();
-            toDispose.Dispose();
-        }
-
-        public bool GetBoolean(int i)
-        {
-            return innerReader.GetBoolean(i);
-        }
-
-        public byte GetByte(int i)
-        {
-            return innerReader.GetByte(i);
-        }
-
-        public long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length)
-        {
-            return innerReader.GetBytes(i, fieldOffset, buffer, bufferoffset, length);
-        }
-
-        public char GetChar(int i)
-        {
-            return innerReader.GetChar(i);
-        }
-
-        public long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length)
-        {
-            return innerReader.GetChars(i, fieldoffset, buffer, bufferoffset, length);
-        }
-
-        public IDataReader GetData(int i)
-        {
-            return innerReader.GetData(i);
-        }
-
-        public string GetDataTypeName(int i)
-        {
-            return innerReader.GetDataTypeName(i);
-        }
-
-        public DateTime GetDateTime(int i)
-        {
-            return innerReader.GetDateTime(i);
-        }
-
-        public decimal GetDecimal(int i)
-        {
-            return innerReader.GetDecimal(i);
-        }
-
-        public double GetDouble(int i)
-        {
-            return innerReader.GetDouble(i);
-        }
-
-        public Type GetFieldType(int i)
-        {
-            return innerReader.GetFieldType(i);
-        }
-
-        public float GetFloat(int i)
-        {
-            return innerReader.GetFloat(i);
-        }
-
-        public Guid GetGuid(int i)
-        {
-            return innerReader.GetGuid(i);
-        }
-
-        public short GetInt16(int i)
-        {
-            return innerReader.GetInt16(i);
-        }
-
-        public int GetInt32(int i)
-        {
-            return innerReader.GetInt32(i);
-        }
-
-        public long GetInt64(int i)
-        {
-            return innerReader.GetInt64(i);
-        }
-
-        public string GetName(int i)
-        {
-            return innerReader.GetName(i);
-        }
-
-        public int GetOrdinal(string name)
-        {
-            return innerReader.GetOrdinal(name);
-        }
-
-        public DataTable GetSchemaTable()
-        {
-            return innerReader.GetSchemaTable();
-        }
-
-        public DataTable CreateDataTableFromSchema(string tableName = null)
+        public DataTable CreateDataTableFromSchema(string? tableName = null)
         {
             DataTable SchemaTable = GetSchemaTable();
             DataTable toReturn = new DataTable(tableName);
@@ -158,7 +74,7 @@ namespace CSL.SQL
             return toReturn;
         }
 
-        public DataTable DumpReader(string tableName = null, bool leaveOpen = false)
+        public DataTable DumpReader(string? tableName = null, bool leaveOpen = false)
         {
             if (!leaveOpen)
             {
@@ -180,34 +96,10 @@ namespace CSL.SQL
             return toReturn;
         }
 
-        public string GetString(int i)
+        public void Dispose()
         {
-            return innerReader.GetString(i);
-        }
-
-        public object GetValue(int i)
-        {
-            return innerReader.GetValue(i);
-        }
-
-        public int GetValues(object[] values)
-        {
-            return innerReader.GetValues(values);
-        }
-
-        public bool IsDBNull(int i)
-        {
-            return innerReader.IsDBNull(i);
-        }
-
-        public bool NextResult()
-        {
-            return innerReader.NextResult();
-        }
-
-        public bool Read()
-        {
-            return innerReader.Read();
+            innerReader.Dispose();
+            toDispose.Dispose();
         }
     }
 }

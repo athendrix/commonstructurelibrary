@@ -8,7 +8,7 @@ namespace CommonStructureLibraryTester
 {
     class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
             //Dependency Injection
             CSL.DependencyInjection.NpgsqlConnectionConstructor = (x) => new Npgsql.NpgsqlConnection(x);
@@ -22,42 +22,42 @@ namespace CommonStructureLibraryTester
 
             CSL.DependencyInjection.AesGcmConstructor = (x) => new System.Security.Cryptography.AesGcm(x);
 
-            Tester.GetTestDB.Add(() => PostgreSQL.Connect("localhost", "testdb", "testuser", "testpassword", "testschema"));
-            Tester.GetTestDB.Add(() => PostgreSQL.Connect("localhost:5432", "testdb", "testuser", "testpassword", "testschema"));
-            Tester.GetTestDB.Add(async () =>
+            Tests.GetTestDB.Add(() => PostgreSQL.Connect("localhost", "testdb", "testuser", "testpassword", "testschema"));
+            Tests.GetTestDB.Add(() => PostgreSQL.Connect("localhost:5432", "testdb", "testuser", "testpassword", "testschema"));
+            Tests.GetTestDB.Add(async () =>
             {
                 Npgsql.NpgsqlConnection connection = new Npgsql.NpgsqlConnection("Host=localhost;Database=testdb;Username=testuser;Password=testpassword;SSL Mode=Prefer;Trust Server Certificate=False");
                 PostgreSQL sql = new PostgreSQL(connection);
                 await sql.SetSchema("testschema");
                 return sql;
             });
-            Tester.RunTests();
+            Tests.RunTests();
             //AsyncMain(args).GetAwaiter().GetResult();
         }
-        public static async Task AsyncMain(string[] args)
+        public static async Task AsyncMain()
         {
             Console.WriteLine("Enter Decryption Key (Enter no key to Encrypt with new key.)");
-            string keybase = Console.ReadLine();
+            string? keybase = Console.ReadLine();
             if(string.IsNullOrWhiteSpace(keybase))
             {
                 using (AES256KeyBasedProtector protector = new AES256KeyBasedProtector())
                 {
                     Console.WriteLine("Key:" + Convert.ToBase64String(protector.GetKey()));
                     Console.WriteLine("Enter Plain Text");
-                    string PlaintextString = Console.ReadLine();
+                    string? PlaintextString = Console.ReadLine();
                     Console.WriteLine("Protected Text:");
-                    Console.WriteLine(await protector.Protect(PlaintextString));
+                    Console.WriteLine(await protector.Protect(PlaintextString??""));
                 }
             }
             else
             {
                 byte[] key = Convert.FromBase64String(keybase);
                 Console.WriteLine("Enter Protected Text");
-                string ProtectedString = Console.ReadLine();
+                string? ProtectedString = Console.ReadLine();
                 using (AES256KeyBasedProtector protector = new AES256KeyBasedProtector(key))
                 {
                     Console.WriteLine("Decrypted Text:");
-                    Console.WriteLine(await protector.Unprotect(ProtectedString));
+                    Console.WriteLine(await protector.Unprotect(ProtectedString??""));
                 }
             }
             Console.WriteLine("Press any key to exit.");
