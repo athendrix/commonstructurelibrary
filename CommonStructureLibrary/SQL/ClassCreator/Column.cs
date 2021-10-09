@@ -83,6 +83,7 @@ namespace CSL.SQL.ClassCreator
             ColumnType.Byte => "byte[]" + (nullable ? "?" : ""),
             ColumnType.UnsignedLong => "long" + (nullable ? "?" : ""),
             ColumnType.Enum => "long" + (nullable ? "?" : ""),
+            ColumnType.Char => "string" + (nullable ? "?" : ""),
             _ => CSharpTypeName,
         };
         #region SpecialConversions
@@ -96,6 +97,7 @@ namespace CSL.SQL.ClassCreator
         public string CSharpConvertPrivateAppend => type switch
         {
             ColumnType.Byte => (nullable ? ".Value" : "") + "}",
+            ColumnType.Char => (nullable ? "?":"") + ".ToString()",
             _ => "",
         };
         public string CSharpConvertPublicPrepend => type switch
@@ -107,6 +109,7 @@ namespace CSL.SQL.ClassCreator
         public string CSharpConvertPublicAppend => type switch
         {
             ColumnType.Byte => "[0]",
+            ColumnType.Char => "[0]",
             _ => "",
         };
         #endregion

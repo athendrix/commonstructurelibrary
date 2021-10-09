@@ -6,10 +6,7 @@ namespace CSL.Helpers
 {
     public static class WebBase64
     {
-        public static string Encode(byte[] input)
-        {
-            return Convert.ToBase64String(input).Replace('+', '-').Replace('/', '_').TrimEnd('=');
-        }
+        public static string Encode(byte[] input) => Convert.ToBase64String(input).Replace('+', '-').Replace('/', '_').TrimEnd('=');
         public static byte[] Decode(string input)
         {
             int len = input.Length;

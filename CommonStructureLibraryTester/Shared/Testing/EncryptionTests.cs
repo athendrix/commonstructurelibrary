@@ -1,55 +1,56 @@
-﻿using System;
+﻿using CSL.Encryption;
+using CSL.Testing;
+using System;
 using System.Collections.Generic;
-using CSL.Encryption;
+using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
-namespace CommonStructureLibraryTester
+namespace CommonStructureLibraryTester.Testing
 {
-    public static partial class Tests
+    public class EncryptionTests : Tests
     {
-        public static bool FriendlyPasswordTest() => SyncTest(() =>
+        protected static TestResponse FriendlyPasswordTest()
         {
             HashSet<string> testAdj = new HashSet<string>();
             testAdj.UnionWith(Passwords.Adjectives);
             if (testAdj.Count != 256)//256 Unique Values
             {
-                return false;
+                return FAIL("Test Adjective Count is " + testAdj.Count);
             }
             HashSet<string> testPoke = new HashSet<string>();
             testPoke.UnionWith(Passwords.Pokemon);
             if (testPoke.Count != 256)//256 Unique Values
             {
-                return false;
+                return FAIL("Test Pokemon Count is " + testPoke.Count);
             }
             HashSet<string> testVerb = new HashSet<string>();
             testVerb.UnionWith(Passwords.Verbs);
             if (testVerb.Count != 256)//256 Unique Values
             {
-                return false;
+                return FAIL("Test Verb Count is " + testVerb.Count);
             }
             Regex r = new Regex("^[A-Z][a-z]+$", RegexOptions.Compiled);
             for (int i = 0; i < 256; i++)
             {
                 if (!r.IsMatch(Passwords.Adjectives[i]))
                 {
-                    Console.WriteLine("\"" + Passwords.Adjectives[i] + "\" is not a proper password term.");
-                    return false;
+                    return FAIL("\"" + Passwords.Adjectives[i] + "\" is not a proper password term.");
                 }
                 if (!r.IsMatch(Passwords.Pokemon[i]))
                 {
-                    Console.WriteLine("\"" + Passwords.Pokemon[i] + "\" is not a proper password term.");
-                    return false;
+                    return FAIL("\"" + Passwords.Pokemon[i] + "\" is not a proper password term.");
                 }
                 if (!r.IsMatch(Passwords.Verbs[i]))
                 {
-                    Console.WriteLine("\"" + Passwords.Verbs[i] + "\" is not a proper password term.");
-                    return false;
+                    return FAIL("\"" + Passwords.Verbs[i] + "\" is not a proper password term.");
                 }
             }
-            return Passwords.FriendlyPassGen() != null &&
-            Passwords.FriendlyPassPhrase40Bit() != null &&
-            Passwords.FriendlyPassPhrase56Bit() != null &&
-            Passwords.ThreeLetterWordPassword(5) != null;
-        });
+            if((Passwords.FriendlyPassGen() ?? Passwords.FriendlyPassPhrase40Bit() ?? Passwords.FriendlyPassPhrase56Bit() ?? Passwords.ThreeLetterWordPassword(5)) != null)
+            {
+                return PASS();
+            }
+            return FAIL("Generated password was null!");
+        }
     }
 }

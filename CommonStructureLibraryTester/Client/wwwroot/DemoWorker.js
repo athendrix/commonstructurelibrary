@@ -1,0 +1,1 @@
+﻿onmessage = (e) => postMessage("Message received: " + e.data);

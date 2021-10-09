@@ -5,12 +5,18 @@ VisualStudioVersion = 16.0.29324.140
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibrary", "CommonStructureLibrary\CommonStructureLibrary.csproj", "{254D962D-EE52-40E6-8593-8CA8E7EEE537}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibraryTester", "CommonStructureLibraryTester\CommonStructureLibraryTester.csproj", "{41F69540-4ECF-4572-802C-8A6CB049DAA7}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B056C3A8-D5ED-4446-8084-042B7E2F1E4F}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibrary.DotNet5", "CommonStructureLibrary.DotNet5\CommonStructureLibrary.DotNet5.csproj", "{5292FE65-9A46-4050-8A1F-5D95F05276E6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibraryTester.Server", "CommonStructureLibraryTester\Server\CommonStructureLibraryTester.Server.csproj", "{02EF5337-E898-4C73-990F-E8113C349D49}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibraryTester.Client", "CommonStructureLibraryTester\Client\CommonStructureLibraryTester.Client.csproj", "{D6A18319-1B39-4388-8175-2DFF7117601F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonStructureLibraryTester.Shared", "CommonStructureLibraryTester\Shared\CommonStructureLibraryTester.Shared.csproj", "{A9A9E2F9-7FCB-4207-B8A7-B09A6CA79DF6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,10 +28,22 @@ Global
 		{254D962D-EE52-40E6-8593-8CA8E7EEE537}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{254D962D-EE52-40E6-8593-8CA8E7EEE537}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{254D962D-EE52-40E6-8593-8CA8E7EEE537}.Release|Any CPU.Build.0 = Release|Any CPU
-		{41F69540-4ECF-4572-802C-8A6CB049DAA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{41F69540-4ECF-4572-802C-8A6CB049DAA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{41F69540-4ECF-4572-802C-8A6CB049DAA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{41F69540-4ECF-4572-802C-8A6CB049DAA7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5292FE65-9A46-4050-8A1F-5D95F05276E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5292FE65-9A46-4050-8A1F-5D95F05276E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5292FE65-9A46-4050-8A1F-5D95F05276E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5292FE65-9A46-4050-8A1F-5D95F05276E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02EF5337-E898-4C73-990F-E8113C349D49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02EF5337-E898-4C73-990F-E8113C349D49}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02EF5337-E898-4C73-990F-E8113C349D49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02EF5337-E898-4C73-990F-E8113C349D49}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6A18319-1B39-4388-8175-2DFF7117601F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6A18319-1B39-4388-8175-2DFF7117601F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6A18319-1B39-4388-8175-2DFF7117601F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6A18319-1B39-4388-8175-2DFF7117601F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9A9E2F9-7FCB-4207-B8A7-B09A6CA79DF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9A9E2F9-7FCB-4207-B8A7-B09A6CA79DF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9A9E2F9-7FCB-4207-B8A7-B09A6CA79DF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9A9E2F9-7FCB-4207-B8A7-B09A6CA79DF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
