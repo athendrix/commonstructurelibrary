@@ -10,7 +10,7 @@ namespace ExtendedStructureLibraryTester
             Console.WriteLine("Tester Init!");
 
             //add logic
-            Console.WriteLine(Testers.Passwords.ThreeLetterPassb);
+            Console.WriteLine(Testers.Passwords.ThreeLetterPass);
         }
     }
 }
