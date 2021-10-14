@@ -9,9 +9,4 @@
   <ItemGroup>
     <ProjectReference Include="..\CommonStructureLibrary\CommonStructureLibrary.csproj" />
   </ItemGroup>
-
-
-  <ItemGroup>
-    <Folder Include="Testers\" />
-  </ItemGroup>
 </Project>
