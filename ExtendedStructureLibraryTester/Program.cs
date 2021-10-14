@@ -10,7 +10,9 @@ namespace ExtendedStructureLibraryTester
             Console.WriteLine("Tester Init!");
 
             //add logic
-            Console.WriteLine(Testers.Passwords.ThreeLetterPass);
+
+            CSL.Sockets.Server.TCPServer("25565", null, "127.0.0.1");
+            CSL.Sockets.Client.TCPClient("88081", "Hello World!");
         }
     }
 }
