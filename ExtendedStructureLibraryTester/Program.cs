@@ -30,11 +30,6 @@ namespace ExtendedStructureLibraryTester
             Console.WriteLine("Tester Init!");
 
             //add logic
-            Task Server = testServer();
-            Task Client = testClient();
-
-            Server.Start();
-            Client.Start();
         }
     }
 }
