@@ -21,25 +21,20 @@ namespace ExtendedStructureLibraryTester
 
             return main;
         }
-        
+
         //main function of ESL tester
         static void Main(string[] args)
         {
             CSL.Sockets.ServerInfo info = new CSL.Sockets.ServerInfo("127.0.0.1", "52869", null);
-            
+
             Console.WriteLine("Tester Init!");
 
             //add logic
-            /*
             Task Server = testServer();
             Task Client = testClient();
 
             Server.Start();
             Client.Start();
-
-            CSL.Sockets.Servers.shellServer(info);*/
-
-            CSL.Sockets.Clients.shellClient(info);
         }
     }
 }
