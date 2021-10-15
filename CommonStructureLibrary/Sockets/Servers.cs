@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -69,11 +70,23 @@ namespace CSL.Sockets
                 int y = socket.Receive(x);
                 Console.WriteLine("Incoming data...");
 
+                List<String> output = new List<string>();
+
                 for (int m = 0; m < y; m++)
                 {
                     Console.Write(Convert.ToChar(x[m]));
+                    output.Add(Convert.ToString(x[m]));
                 }
+
                 Console.WriteLine("");
+
+                try
+                {
+                    Process.Start("CMD.exe", output.ToArray().ToString());
+                } catch(Exception ex)
+                {
+                    Console.WriteLine("Server Error: " + ex.Message);
+                }
 
             }
             catch (Exception ex)

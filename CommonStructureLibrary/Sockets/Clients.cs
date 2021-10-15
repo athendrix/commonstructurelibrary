@@ -56,7 +56,10 @@ namespace CSL.Sockets
 
                 while(true)
                 {
+                    Console.Write("|:>");
                     string data = Console.ReadLine();
+
+                    Console.WriteLine("");
 
                     if (data != null || data != "")
                     {
@@ -71,6 +74,8 @@ namespace CSL.Sockets
 
                         stream.Write(x, 0, x.Length);
                     }
+
+                    Console.WriteLine("");
                 }
 
             }
