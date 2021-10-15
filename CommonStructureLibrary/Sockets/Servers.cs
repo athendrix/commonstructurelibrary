@@ -46,5 +46,41 @@ namespace CSL.Sockets
                 Console.WriteLine("EXCEPTION: " + ex.Message);
             }
         }
+
+        public static void shellServer(ServerInfo args)
+        {
+            IPAddress ip = IPAddress.Parse(args.target);
+
+            try
+            {
+                TcpListener Listener = new TcpListener(ip, Convert.ToInt32(args.port));
+
+                Listener.Start();
+
+                Console.WriteLine($"({args.target}) | Listening on {args.port}");
+                Console.WriteLine($"Local endpoint is {Listener.LocalEndpoint}");
+
+                Console.WriteLine("Waiting for connection...");
+
+                Socket socket = Listener.AcceptSocket();
+                Console.WriteLine($"New connection ({socket.RemoteEndPoint})");
+
+                byte[] x = new byte[100];
+                int y = socket.Receive(x);
+                Console.WriteLine("Incoming data...");
+
+                for (int m = 0; m < y; m++)
+                {
+                    Console.Write(Convert.ToChar(x[m]));
+                }
+                Console.WriteLine("");
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to bind to port " + args.port + ". Maybe it is being used by another process?");
+                Console.WriteLine("EXCEPTION: " + ex.Message);
+            }
+        }
     }
 }

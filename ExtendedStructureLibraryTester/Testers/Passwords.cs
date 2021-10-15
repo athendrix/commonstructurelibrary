@@ -9,6 +9,6 @@ namespace ExtendedStructureLibraryTester.Testers
 {
     public class Passwords
     {
-        public static readonly string ThreeLetterPass = CSL.Encryption.Passwords.ThreeLetterWordPassword(4);
+        
     }
 }

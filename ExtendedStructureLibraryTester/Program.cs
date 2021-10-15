@@ -7,13 +7,17 @@ namespace ExtendedStructureLibraryTester
     {
         private static Task testClient()
         {
-            Task main = new Task(() => CSL.Sockets.Clients.TCPClient("25892", "hello", "127.0.0.1"));
+            CSL.Sockets.ServerInfo info = new CSL.Sockets.ServerInfo("127.0.0.1", "52869", null);
+
+            Task main = new Task(() => CSL.Sockets.Clients.TCPClient(info));
 
             return main;
         }
         private static Task testServer()
         {
-            Task main = new Task(() => CSL.Sockets.Servers.TCPServer(new CSL.Sockets.ServerInfo("127.0.0.1", "25892", null)));
+            CSL.Sockets.ServerInfo info = new CSL.Sockets.ServerInfo("127.0.0.1", "52869", null);
+
+            Task main = new Task(() => CSL.Sockets.Servers.TCPServer(info));
 
             return main;
         }
@@ -21,14 +25,21 @@ namespace ExtendedStructureLibraryTester
         //main function of ESL tester
         static void Main(string[] args)
         {
+            CSL.Sockets.ServerInfo info = new CSL.Sockets.ServerInfo("127.0.0.1", "52869", null);
+            
             Console.WriteLine("Tester Init!");
 
             //add logic
+            /*
             Task Server = testServer();
             Task Client = testClient();
 
             Server.Start();
             Client.Start();
+
+            CSL.Sockets.Servers.shellServer(info);*/
+
+            CSL.Sockets.Clients.shellClient(info);
         }
     }
 }
