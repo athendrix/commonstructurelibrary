@@ -6,7 +6,9 @@ namespace CSL.Helpers
 {
     public static class WebBase64
     {
+        [Obsolete("Use ByteArray extensions.")]
         public static string Encode(byte[] input) => Convert.ToBase64String(input).Replace('+', '-').Replace('/', '_').TrimEnd('=');
+        [Obsolete("Use ByteArray extensions.")]
         public static byte[] Decode(string input)
         {
             int len = input.Length;

@@ -32,6 +32,32 @@ namespace CommonStructureLibraryTester.Testing
             }
             return PASS();
         }
+        protected static TestResponse ByteArrayTests()
+        {
+            byte[] testdata = new byte[RandomNumberGenerator.GetInt32(0, 100)];
+            RandomNumberGenerator.Fill(testdata);
+            byte[] compdata1 = ByteArray.DecodeFromHexString(ByteArray.EncodeToHexString(testdata));
+            if(!testdata.AsSpan().SequenceEqual(compdata1))
+            {
+                return FAIL("Encode and Decode HexString didn't roundtrip!");
+            }
+            byte[] compdata2 = ByteArray.DecodeFromHexString(ByteArray.EncodeToHexString(testdata).ToLower());
+            if (!testdata.AsSpan().SequenceEqual(compdata2))
+            {
+                return FAIL("Encode and Decode HexString didn't roundtrip!");
+            }
+            byte[] compdata3 = ByteArray.DecodeFromHexString(ByteArray.EncodeToHexString(testdata).ToUpper());
+            if (!testdata.AsSpan().SequenceEqual(compdata3))
+            {
+                return FAIL("Encode and Decode HexString didn't roundtrip!");
+            }
+            byte[] compdata4 = ByteArray.DecodeFromWebBase64(ByteArray.EncodeToWebBase64(testdata));
+            if (!testdata.AsSpan().SequenceEqual(compdata4))
+            {
+                return FAIL("Encode and Decode WebBase64 didn't roundtrip!");
+            }
+            return PASS();
+        }
         #endregion
     }
 }
