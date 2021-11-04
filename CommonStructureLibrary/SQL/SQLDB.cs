@@ -251,19 +251,19 @@ namespace CSL.SQL
         #endregion
         #endregion
         #region Transaction Management
-        public void BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.Serializable)
+        public virtual void BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.Serializable)
         {
             if (currentTransaction != null) { throw new NotSupportedException("Starting a transaction while in a transaction is not supported by this class."); }
             currentTransaction = InternalConnection.BeginTransaction(isolationLevel);
         }
-        public void CommitTransaction()
+        public virtual void CommitTransaction()
         {
             if (currentTransaction == null) { throw new NotSupportedException("Not currently in a transaction."); }
             currentTransaction.Commit();
             try { currentTransaction.Dispose(); } catch (Exception) { }
             currentTransaction = null;
         }
-        public void RollbackTransaction()
+        public virtual void RollbackTransaction()
         {
             if (currentTransaction == null) { throw new NotSupportedException("Not currently in a transaction."); }
             currentTransaction.Rollback();
@@ -273,7 +273,9 @@ namespace CSL.SQL
         #endregion
         public void Dispose()
         {
+            try { if (currentTransaction != null) { currentTransaction.Rollback(); } } catch (Exception) { }
             try { if (currentTransaction != null) { currentTransaction.Dispose(); } } catch (Exception) { }
+            try { if (InternalConnection != null) { InternalConnection.Close(); } } catch (Exception) { }
             try { if (InternalConnection != null) { InternalConnection.Dispose(); } } catch (Exception) { }
         }
     }
