@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.WebSockets;
 using System.Security.Claims;
 using System.Text;
@@ -52,6 +53,11 @@ namespace CSL.Webserver
             if (context.Request.ContentLength > 0)
             {
                 StreamContent streamContent = new StreamContent(context.Request.Body);
+                streamContent.Headers.ContentLength = context.Request.ContentLength;
+                if (MediaTypeHeaderValue.TryParse(context.Request.ContentType, out MediaTypeHeaderValue? contentType))
+                {
+                    streamContent.Headers.ContentType = contentType;
+                }
                 requestMessage.Content = streamContent;
             }
 

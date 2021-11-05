@@ -35,8 +35,7 @@ namespace CSL.Webserver
                     Headers.Remove("X-Forwarded-Host");
                     didanything = true;
                 }
-                IPAddress? address;
-                if (Headers.ContainsKey("X-Forwarded-For") && IPAddress.TryParse(Headers["X-Forwarded-For"][0], out address))
+                if (Headers.ContainsKey("X-Forwarded-For") && IPAddress.TryParse(Headers["X-Forwarded-For"][0], out IPAddress? address))
                 {
                     context.Connection.RemoteIpAddress = address;
                     Headers.Remove("X-Forwarded-For");

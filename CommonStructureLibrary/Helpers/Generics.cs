@@ -285,7 +285,7 @@ namespace CSL.Helpers
             }
             if (TType == typeof(byte[]))
             {
-                return WebBase64.Encode((byte[])(object)input);
+                return ((byte[])(object)input).EncodeToWebBase64();
             }
             #endregion
             #region Serialization

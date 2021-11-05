@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using CSL.Helpers;
 
 namespace CSL.Encryption
 {
@@ -12,7 +13,7 @@ namespace CSL.Encryption
             int templen = length/4 + (length %4 > 0?1:0);
             byte[] toReturn = new byte[templen * 3];
             RNG.GetBytes(toReturn);
-            return Helpers.WebBase64.Encode(toReturn).Substring(0, length);
+            return toReturn.EncodeToWebBase64().Substring(0, length);
         }
         public static string FriendlyPassGen()
         {
