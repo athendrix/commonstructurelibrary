@@ -98,7 +98,7 @@ namespace CSL.Webserver
             context.Response.Headers.Remove("etag");
         }
 
-        private static HttpMethod GetMethod(string method)
+        public static HttpMethod GetMethod(string method)
         {
             if (HttpMethods.IsDelete(method)) return HttpMethod.Delete;
             if (HttpMethods.IsGet(method)) return HttpMethod.Get;

@@ -7,12 +7,14 @@ namespace CSL.Helpers
 {
     public static class ByteArray
     {
-        public static string EncodeToWebBase64(this byte[] input) => Convert.ToBase64String(input).Replace('+', '-').Replace('/', '_').TrimEnd('=');
-        public static byte[] DecodeFromWebBase64(this string input)
+        public static string PadBase64(this string input)
         {
             int len = input.Length;
-            return Convert.FromBase64String(input.Replace('-', '+').Replace('_', '/').PadRight(len + ((4 - (len % 4)) % 4), '='));
+            return input.PadRight(len + ((4 - (len % 4)) % 4), '=');
         }
+        public static string TrimBase64(this string input) => input.Trim('=');
+        public static string EncodeToWebBase64(this byte[] input) => Convert.ToBase64String(input).Replace('+', '-').Replace('/', '_').TrimEnd('=');
+        public static byte[] DecodeFromWebBase64(this string input) => Convert.FromBase64String(input.Replace('-', '+').Replace('_', '/').PadBase64());
         public static string EncodeToHexString(this byte[] input) => BitConverter.ToString(input).Replace("-", "");
         public static byte[] DecodeFromHexString(this string input)
         {

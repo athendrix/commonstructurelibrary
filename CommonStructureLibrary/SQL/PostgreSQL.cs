@@ -33,6 +33,7 @@ namespace CSL.SQL
             csb.Username = username;
             csb.Password = password;
             csb.SslMode = SslMode;
+            csb.Pooling = false;
             csb.TrustServerCertificate = TrustAllServerCertificates;
 
             PostgreSQL toReturn = new PostgreSQL(CreateNpgsqlConnection(csb.ConnectionString));

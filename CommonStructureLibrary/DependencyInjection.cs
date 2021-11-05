@@ -64,6 +64,7 @@ namespace CSL
             public string Password { set => NpgsqlConnectionStringInstance.Password = value; }
             public SslMode SslMode { set => NpgsqlConnectionStringInstance.SslMode = SslModeConverter == null ? throw NpgsqlDependencyException : SslModeConverter(value); }
             public bool TrustServerCertificate { set => NpgsqlConnectionStringInstance.TrustServerCertificate = value; }
+            public bool Pooling { set => NpgsqlConnectionStringInstance.Pooling = value; }
 
             public string ConnectionString => NpgsqlConnectionStringInstance.ConnectionString;
         }
@@ -76,6 +77,7 @@ namespace CSL
             string Password { set; }
             SslMode SslMode { set; }
             bool TrustServerCertificate { set; }
+            bool Pooling { set; }
             string ConnectionString { get; }
         }
         #endregion
