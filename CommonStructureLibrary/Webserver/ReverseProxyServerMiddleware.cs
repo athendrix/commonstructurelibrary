@@ -21,7 +21,8 @@ namespace CSL.Webserver
             await SendToReverseProxy(context, next, baseURI, context.Request.Path + Helpers.WebUtils.BuildAsQueryString(context.Request.Query)));
         public static async Task SendToReverseProxy(HttpContext context, Func<Task> next, string baseURI, string remainingPath)
         {
-            using (HttpClient _httpClient = new HttpClient())
+            HttpClientHandler handler = new HttpClientHandler() { AllowAutoRedirect = false };
+            using (HttpClient _httpClient = new HttpClient(handler))
             {
                 Uri targetUri = BuildTargetUri(baseURI, remainingPath);
 
