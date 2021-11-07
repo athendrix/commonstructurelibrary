@@ -82,6 +82,7 @@ namespace CSL.Webserver
                 requestMessage.Headers.Add("security-wrapper-user", context.User.Identity.Name);
                 foreach (Claim claim in context.User.Claims)
                 {
+                    if(claim.Type is ClaimTypes.Name) { continue; }
                     requestMessage.Headers.Add("security-wrapper-" + Helpers.ByteArray.EncodeToHexString(Encoding.UTF8.GetBytes(claim.Type)).ToLower(), claim.Value);
                 }
             }
