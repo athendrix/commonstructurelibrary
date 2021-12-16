@@ -181,7 +181,7 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
 
             gen.IndentAdd("public static async Task<AutoClosingEnumerable<" + TableName.Replace(' ', '_') + ">> Select(SQLDB sql, string query, params object[] parameters)");
             gen.EnterBlock();
-            gen.IndentAdd($@"AutoClosingDataReader dr = await sql.ExecuteReader(""SELECT * FROM \""{TableName}\"" WHERE \"""" + query + ""\"" ;"", parameters);");
+            gen.IndentAdd($"AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{TableName}\\\" WHERE \" + query + \" ;\", parameters);");
             gen.IndentAdd($"return new AutoClosingEnumerable<{TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
             gen.ExitBlock();
 
