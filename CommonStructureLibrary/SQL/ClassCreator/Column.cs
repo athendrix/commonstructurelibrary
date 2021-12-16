@@ -57,6 +57,7 @@ namespace CSL.SQL.ClassCreator
         public readonly string ColumnName;
         public readonly ColumnType type;
         public readonly bool nullable;
+        //public readonly bool unique;
         public readonly int length;
 
         public string CSharpTypeName => type switch
@@ -113,23 +114,24 @@ namespace CSL.SQL.ClassCreator
             _ => "",
         };
         #endregion
-        public string SQLTypeName => type switch
+        public string SQLTypeName => SQLTypePlain + (nullable ? "" : " NOT NULL");
+        public string SQLTypePlain => type switch
         {
-            ColumnType.Boolean => "BOOLEAN" + (nullable ? "" : " NOT NULL"),
-            ColumnType.Byte => "BYTEA" + (nullable ? "" : " NOT NULL"),
-            ColumnType.Char => "CHAR(1)" + (nullable ? "" : " NOT NULL"),
-            ColumnType.Short => "SMALLINT" + (nullable ? "" : " NOT NULL"),
-            ColumnType.Integer => "INTEGER" + (nullable ? "" : " NOT NULL"),
-            ColumnType.Long => "BIGINT" + (nullable ? "" : " NOT NULL"),
-            ColumnType.UnsignedLong => "BIGINT" + (nullable ? "" : " NOT NULL"),
-            ColumnType.Float => "FLOAT4" + (nullable ? "" : " NOT NULL"),
-            ColumnType.Double => "FLOAT8" + (nullable ? "" : " NOT NULL"),
-            ColumnType.Decimal => "NUMERIC" + (nullable ? "" : " NOT NULL"),
-            ColumnType.String => (length >= 0 ? "VARCHAR(" + length.ToString() + ")" : "TEXT") + (nullable ? "" : " NOT NULL"),
-            ColumnType.ByteArray => "BYTEA" + (nullable ? "" : " NOT NULL"),//TODO: Add Length?
-            ColumnType.Guid => "UUID" + (nullable ? "" : " NOT NULL"),
-            ColumnType.DateTime => "TIMESTAMP" + (nullable ? "" : " NOT NULL"),
-            ColumnType.Enum => "BIGINT" + (nullable ? "" : " NOT NULL"),
+            ColumnType.Boolean => "BOOLEAN" ,
+            ColumnType.Byte => "BYTEA",
+            ColumnType.Char => "CHAR(1)",
+            ColumnType.Short => "SMALLINT",
+            ColumnType.Integer => "INTEGER",
+            ColumnType.Long => "BIGINT",
+            ColumnType.UnsignedLong => "BIGINT",
+            ColumnType.Float => "FLOAT4",
+            ColumnType.Double => "FLOAT8",
+            ColumnType.Decimal => "NUMERIC",
+            ColumnType.String => (length >= 0 ? "VARCHAR(" + length.ToString() + ")" : "TEXT"),
+            ColumnType.ByteArray => "BYTEA",//TODO: Add Length?
+            ColumnType.Guid => "UUID",
+            ColumnType.DateTime => "TIMESTAMP",
+            ColumnType.Enum => "BIGINT",
             _ => "<FIXME>",
         };
 
