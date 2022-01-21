@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-
+using System.Linq;
 using CSL.Encryption;
 using CSL.SQL;
 using CSL.Testing;
 using ExampleNamespace.SomeSubNamespace;
-using CommonStructureLibraryTester.Example;
 using static CommonStructureLibraryTester.Shared.Testing.TestingHelpers;
 
 namespace CommonStructureLibraryTester.Testing
@@ -19,14 +18,13 @@ namespace CommonStructureLibraryTester.Testing
         protected static async Task<TestResponse> Example1BasicFunctionalityTest()
         {
             #region DataInit
-            ExampleFactory example = new ExampleFactory();
             List<Func<Task<PostgreSQL>>> SQLDBs = SQLTests.GetTestDB;
-            Example.Data29 D29AllFlags = Example.Data29.Flag1 | Example.Data29.Flag2 | Example.Data29.Flag3 | Example.Data29.Flag4 | Example.Data29.Flag5 |
-                Example.Data29.Flag6 | Example.Data29.Flag7 | Example.Data29.Flag8 | Example.Data29.Flag9 | Example.Data29.Flag10 | Example.Data29.Flag11 |
-                Example.Data29.Flag12 | Example.Data29.Flag13 | Example.Data29.Flag14 | Example.Data29.Flag15 | Example.Data29.Flag16;
-            Example.Data30 D30AllFlags = Example.Data30.Flag1 | Example.Data30.Flag2 | Example.Data30.Flag3 | Example.Data30.Flag4 | Example.Data30.Flag5 |
-                Example.Data30.Flag6 | Example.Data30.Flag7 | Example.Data30.Flag8 | Example.Data30.Flag9 | Example.Data30.Flag10 | Example.Data30.Flag11 |
-                Example.Data30.Flag12 | Example.Data30.Flag13 | Example.Data30.Flag14 | Example.Data30.Flag15 | Example.Data30.Flag16;
+            Data29 D29AllFlags = Data29.Flag1 | Data29.Flag2 | Data29.Flag3 | Data29.Flag4 | Data29.Flag5 |
+                Data29.Flag6 | Data29.Flag7 | Data29.Flag8 | Data29.Flag9 | Data29.Flag10 | Data29.Flag11 |
+                Data29.Flag12 | Data29.Flag13 | Data29.Flag14 | Data29.Flag15 | Data29.Flag16;
+            Data30 D30AllFlags = Data30.Flag1 | Data30.Flag2 | Data30.Flag3 | Data30.Flag4 | Data30.Flag5 |
+                Data30.Flag6 | Data30.Flag7 | Data30.Flag8 | Data30.Flag9 | Data30.Flag10 | Data30.Flag11 |
+                Data30.Flag12 | Data30.Flag13 | Data30.Flag14 | Data30.Flag15 | Data30.Flag16;
             Guid Key0 = MinGuid;
             Guid Key1 = MaxGuid;
             Guid Key2 = RandomGuid;
@@ -34,21 +32,21 @@ namespace CommonStructureLibraryTester.Testing
             Guid Key4 = RandomGuid;
             Guid Key5 = RandomGuid;
             Guid Key6 = RandomGuid;
-            ExampleRecord[] exampleRecords = new ExampleRecord[7];
+            Example[] exampleRecords = new Example[7];
             //Min/Max vals
-            exampleRecords[0] = new ExampleRecord(Key0, MinBool, MaxBool, MinByte, MaxByte, MinChar, MaxChar, MinShort, MaxShort, MinInt, MaxInt, MinLong, MaxLong,
+            exampleRecords[0] = new Example(Key0, MinBool, MaxBool, MinByte, MaxByte, MinChar, MaxChar, MinShort, MaxShort, MinInt, MaxInt, MinLong, MaxLong,
                 MinULong, MaxULong, MinFloat, MaxFloat, MinDouble, MaxDouble, MinDecimal, MaxDecimal, MinString, MaxString, MinByteArray(0), MaxByteArray(255),
-                MinGuid, MaxGuid, MinDateTime, MaxDateTime, Example.Data29.NoFlags, D30AllFlags);
+                MinGuid, MaxGuid, MinDateTime, MaxDateTime, Data29.NoFlags, D30AllFlags);
             //Max/Min vals
-            exampleRecords[1] = new ExampleRecord(Key1, MaxBool, MinBool, MaxByte, MinByte, MaxChar, MinChar, MaxShort, MinShort, MaxInt, MinInt, MaxLong, MinLong,
+            exampleRecords[1] = new Example(Key1, MaxBool, MinBool, MaxByte, MinByte, MaxChar, MinChar, MaxShort, MinShort, MaxInt, MinInt, MaxLong, MinLong,
                 MaxULong, MinULong, MaxFloat, MinFloat, MaxDouble, MinDouble, MaxDecimal, MinDecimal, MaxString, MinString, MaxByteArray(255), MinByteArray(0),
-                MaxGuid, MinGuid, MaxDateTime, MinDateTime, D29AllFlags, Example.Data30.NoFlags);
+                MaxGuid, MinGuid, MaxDateTime, MinDateTime, D29AllFlags, Data30.NoFlags);
             //defaults
-            exampleRecords[2] = new ExampleRecord(Key2, default, default, default, default, (char)0x01, default, default, default, default, default, default, default,
+            exampleRecords[2] = new Example(Key2, default, default, default, default, (char)0x01, default, default, default, default, default, default, default,
                 default, default, default, default, default, default, default, default, "", default, new byte[0], default, default, default, default, default,
                 default, default);
             //Random
-            exampleRecords[3] = new ExampleRecord(Key3,
+            exampleRecords[3] = new Example(Key3,
                 RandomBool, Nullable<bool?>(RandomBool),
                 RandomByte, Nullable<byte?>(RandomByte),
                 RandomChar, Nullable<char?>(RandomChar),
@@ -63,16 +61,16 @@ namespace CommonStructureLibraryTester.Testing
                 RandomByteArray(RandomByte), Nullable<byte[]?>(RandomByteArray(RandomByte)),
                 RandomGuid, Nullable<Guid?>(RandomGuid),
                 RandomDateTime, Nullable<DateTime?>(RandomDateTime),
-                ReturnRandomValue((Example.Data29[])Enum.GetValues(typeof(Example.Data29))),
-                Nullable<Example.Data30?>(ReturnRandomValue((Example.Data30[])Enum.GetValues(typeof(Example.Data30)))));
+                ReturnRandomValue((Data29[])Enum.GetValues(typeof(Data29))),
+                Nullable<Data30?>(ReturnRandomValue((Data30[])Enum.GetValues(typeof(Data30)))));
             //Specials
-            exampleRecords[4] = new ExampleRecord(Key4, default, default, default, default, (char)0x01, default, default, default, default, default, default, default,
+            exampleRecords[4] = new Example(Key4, default, default, default, default, (char)0x01, default, default, default, default, default, default, default,
                 default, default, FInf, FNegInf, DInf, DNegInf, default, default, AltMinString, AltMinString, new byte[0], new byte[0], default, default, default, default,
                 default, default);
-            exampleRecords[5] = new ExampleRecord(Key5, default, default, default, default, (char)0x01, default, default, default, default, default, default, default,
+            exampleRecords[5] = new Example(Key5, default, default, default, default, (char)0x01, default, default, default, default, default, default, default,
                 default, default, FNaN, Fi, DNaN, Di, default, default, "", default, new byte[0], default, default, default, default, default,
                 default, default);
-            exampleRecords[6] = new ExampleRecord(Key6, default, default, default, default, (char)0x01, default, default, default, default, default, default, default,
+            exampleRecords[6] = new Example(Key6, default, default, default, default, (char)0x01, default, default, default, default, default, default, default,
                 default, default, FNegZero, FEps, DNegZero, Di, DecNegZero, default, "", default, new byte[0], default, default, default, default, default,
                 default, default);
             #endregion
@@ -83,15 +81,15 @@ namespace CommonStructureLibraryTester.Testing
                     using (PostgreSQL sql = await SQLTests.GetTestDB[i]())
                     {
                         await SQLTests.ClearData(sql);
-                        await example.CreateDB(sql);
+                        await Example.CreateDB(sql);
                         for (int j = 0; j < exampleRecords.Length; j++)
                         {
                             await exampleRecords[j].Insert(sql);
                         }
                         for (int j = 0; j < exampleRecords.Length; j++)
                         {
-                            ExampleRecord? testRecord = await example.SelectByPK(sql, exampleRecords[j].ID);
-                            ExampleRecord template = exampleRecords[j];
+                            Example? testRecord = await Example.SelectBy_ID(sql, exampleRecords[j].ID);
+                            Example template = exampleRecords[j];
                             if (testRecord != template)
                             {
                                 if (testRecord?.Data1 != template.Data1) return FAIL("Record not equal! Data1 did not match! " + testRecord?.Data1 + " != " + template.Data1);

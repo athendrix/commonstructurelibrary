@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SQLClassCreator": {
+      "commandName": "Project",
+      "commandLineArgs": "..\\..\\..\\.."
+    }
+  }
+}

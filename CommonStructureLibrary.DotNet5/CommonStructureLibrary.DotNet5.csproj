@@ -4,7 +4,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>CSL</RootNamespace>
     <Nullable>enable</Nullable>
-    <Version>2021.12.16.00-alpha</Version>
+    <Version>2022.01.21.00</Version>
     <Authors>Andrew Hendrix</Authors>
     <Description>A set of wrappers, functions, and utilities that I use frequently, and that I want to make available in perpetuity.</Description>
     <Copyright>Andrew Hendrix 2021</Copyright>
@@ -16,8 +16,8 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
-    <AssemblyVersion>2021.12.16.00</AssemblyVersion>
-    <FileVersion>2021.12.16.00</FileVersion>
+    <AssemblyVersion>2022.01.21.00</AssemblyVersion>
+    <FileVersion>2022.01.21.00</FileVersion>
     <AnalysisLevel>5.0</AnalysisLevel>
   </PropertyGroup>
 
@@ -37,7 +37,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommonStructureLibrary" Version="2021.11.4" />
     <PackageReference Include="Microsoft.JSInterop" Version="5.0.11" />
   </ItemGroup>
 

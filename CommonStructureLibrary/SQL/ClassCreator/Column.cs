@@ -113,6 +113,8 @@ namespace CSL.SQL.ClassCreator
             ColumnType.Char => "[0]",
             _ => "",
         };
+
+        public string ConvertPrivate => $"{(nullable ? ColumnName + " == null ? default : " : "")}{CSharpConvertPrivatePrepend}{ColumnName}{CSharpConvertPrivateAppend}";
         #endregion
         public string SQLTypeName => SQLTypePlain + (nullable ? "" : " NOT NULL");
         public string SQLTypePlain => type switch

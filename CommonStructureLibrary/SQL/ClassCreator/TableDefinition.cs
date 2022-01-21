@@ -9,8 +9,9 @@ namespace CSL.SQL.ClassCreator
 {
     public record TableDefinition(string Namespace, string TableName, Column[] Columns, int PrimaryKeyCount, int[][] UniqueKeyMaps, string[] SQLLines)
     {
+        public IEnumerable<Column> MapKeys(int[] KeyMap) => KeyMap.Select(y => Columns[y]);
         public IEnumerable<Column> PrimaryKeys => Columns.Take(PrimaryKeyCount);
-        public IEnumerable<IEnumerable<Column>> UniqueKeys => UniqueKeyMaps.Select((x) => x.Select((y) => Columns[y]));
+        public IEnumerable<IEnumerable<Column>> UniqueKeys => UniqueKeyMaps.Select(x => MapKeys(x));
         public IEnumerable<Column> DataColumns => Columns.Skip(PrimaryKeyCount);
         public string GenerateCode(bool ExampleEnums)
         {
@@ -24,8 +25,9 @@ namespace CSL.SQL.ClassCreator
             gen.Region("Static Functions");
             gen.CreateDB(this);
             gen.GetRecords(TableName, Columns);
-            gen.Select(TableName, PrimaryKeys.ToList());
-            gen.Delete(TableName, PrimaryKeys.ToList());
+            List<TableDefinitionMapping> Mappings = TableDefinitionMapping.GetMappings(PrimaryKeyCount, UniqueKeyMaps);
+            gen.Select(this, Mappings);
+            gen.Delete(this, Mappings);
             gen.TableManagement(TableName);
             gen.EndRegion();
 
@@ -163,33 +165,24 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
             gen.IndentAdd("\");\");");
             gen.Unindent();
         }
-        public static void Select(this CodeGenerator gen, string TableName, List<Column> PrimaryKeys)
+        public static void Select(this CodeGenerator gen, TableDefinition tabledef, List<TableDefinitionMapping> Mappings)
         {
-            string returnType = string.Join(",", PrimaryKeys.Select((x) => x.CSharpTypeName));
-            ValueTuple<Column, int>[] CO = new ValueTuple<Column, int>[PrimaryKeys.Count];
-            for (int i = 0; i < CO.Length; i++)
-            {
-                CO[i] = new ValueTuple<Column, int>(PrimaryKeys[i], i + 1);
-            }
-
             gen.Region("Select");
-            gen.IndentAdd("public static async Task<AutoClosingEnumerable<" + TableName.Replace(' ', '_') + ">> Select(SQLDB sql)");
+            gen.IndentAdd("public static async Task<AutoClosingEnumerable<" + tabledef.TableName.Replace(' ', '_') + ">> Select(SQLDB sql)");
             gen.EnterBlock();
-            gen.IndentAdd($@"AutoClosingDataReader dr = await sql.ExecuteReader(""SELECT * FROM \""{TableName}\"";"");");
-            gen.IndentAdd($"return new AutoClosingEnumerable<{TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
+            gen.IndentAdd($@"AutoClosingDataReader dr = await sql.ExecuteReader(""SELECT * FROM \""{tabledef.TableName}\"";"");");
+            gen.IndentAdd($"return new AutoClosingEnumerable<{tabledef.TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
             gen.ExitBlock();
 
-            gen.IndentAdd("public static async Task<AutoClosingEnumerable<" + TableName.Replace(' ', '_') + ">> Select(SQLDB sql, string query, params object[] parameters)");
+            gen.IndentAdd("public static async Task<AutoClosingEnumerable<" + tabledef.TableName.Replace(' ', '_') + ">> Select(SQLDB sql, string query, params object[] parameters)");
             gen.EnterBlock();
-            gen.IndentAdd($"AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{TableName}\\\" WHERE \" + query + \" ;\", parameters);");
-            gen.IndentAdd($"return new AutoClosingEnumerable<{TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
+            gen.IndentAdd($"AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{tabledef.TableName}\\\" WHERE \" + query + \" ;\", parameters);");
+            gen.IndentAdd($"return new AutoClosingEnumerable<{tabledef.TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
             gen.ExitBlock();
 
-            foreach (List<Column> iter in Enumerable.Range(0, 1 << PrimaryKeys.Count)
-                .Select((m) => Enumerable.Range(0, PrimaryKeys.Count).Where((i) => (m & (1 << i)) != 0).Select((i) => PrimaryKeys[i]).ToList()))//Power Set
+            foreach(TableDefinitionMapping mapping in Mappings)
             {
-                if (iter.Count == 0) { continue; }
-                SelectHelper(gen, TableName, iter.Count == CO.Length, iter);
+                SelectHelper(gen, tabledef.TableName, mapping.unique, tabledef.MapKeys(mapping.map).ToList());
             }
             gen.EndRegion();
         }
@@ -197,7 +190,7 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
         {
             string FnNumSuffix = string.Join("_", columns.Select((x) => x.ColumnName));
             string FnParams = "(SQLDB sql, " + string.Join(", ", columns.Select((x) => x.CSharpTypeName + " " + x.ColumnName)) + ")";
-            string BareFnParams = string.Join(", ", columns.Select((x) => x.ColumnName));
+            string BareFnParams = string.Join(", ", columns.Select((x) => x.ConvertPrivate));
             string[] ParameterMatching = new string[columns.Count];
             for (int i = 0; i < ParameterMatching.Length; i++)
             {
@@ -218,20 +211,18 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
             gen.ExitBlock();
             gen.ExitBlock();
         }
-        public static void Delete(this CodeGenerator gen, string TableName, List<Column> PrimaryKeys)
+        public static void Delete(this CodeGenerator gen, TableDefinition tabledef, List<TableDefinitionMapping> Mappings)
         {
             gen.Region("Delete");
-            foreach (List<Column> iter in Enumerable.Range(0, 1 << PrimaryKeys.Count)
-                .Select((m) => Enumerable.Range(0, PrimaryKeys.Count).Where((i) => (m & (1 << i)) != 0).Select((i) => PrimaryKeys[i]).ToList()))//Power Set
+            foreach (TableDefinitionMapping mapping in Mappings)
             {
-                if (iter.Count == 0) { continue; }
-                DeleteHelper(gen, TableName, iter);
+                DeleteHelper(gen, tabledef.TableName, tabledef.MapKeys(mapping.map).ToList());
             }
             gen.EndRegion();
         }
         private static void DeleteHelper(CodeGenerator gen, string TableName, List<Column> columns)
         {
-            string BareFnParams = string.Join(", ", columns.Select((x) => x.ColumnName));
+            string BareFnParams = string.Join(", ", columns.Select((x) => x.ConvertPrivate));
             string part1 = "public static Task<int> DeleteBy_" + string.Join("_", columns.Select((x) => x.ColumnName)) + "(SQLDB sql, "
             + string.Join(", ", columns.Select((x) => x.CSharpTypeName + " " + x.ColumnName)) + ") =>";
             string[] ParameterMatching = new string[columns.Count];
@@ -258,12 +249,8 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
             for (int i = 0; i < Columns.Length; i++)
             {
                 string PrivCSType = Columns[i].CSharpPrivateTypeName;
-                bool cast = Columns[i].CSharpTypeName == PrivCSType;
                 string Name = Columns[i].ColumnName;
-                string privpre = Columns[i].CSharpConvertPrivatePrepend;
-                string privapp = Columns[i].CSharpConvertPrivateAppend;
-                bool nullable = Columns[i].nullable;
-                gen.IndentAdd($"{PrivCSType} _{Name} = {(nullable ? Name + " == null?default:" : "")}{privpre}{Name}{privapp};");
+                gen.IndentAdd($"{PrivCSType} _{Name} = {Columns[i].ConvertPrivate};");
             }
             gen.IndentAdd("return new object?[] { " + ToObjectList + " };");
             gen.ExitBlock();

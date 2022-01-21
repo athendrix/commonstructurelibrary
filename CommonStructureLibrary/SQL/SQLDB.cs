@@ -28,8 +28,8 @@ namespace CSL.SQL
         #region Server Calls
         #region Reader
         [Obsolete("This version of ExecuteReader is deprecated. Please use the version with incrementing values.")]
-        public Task<AutoClosingDataReader> ExecuteReader(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteReader(commandText, parameters, commandType);
-        private async Task<AutoClosingDataReader> InnerExecuteReader(string commandText, IEnumerable<KeyValuePair<string, object>> parameters, CommandType commandType)
+        public Task<AutoClosingDataReader> ExecuteReader(string commandText, IEnumerable<KeyValuePair<string, object?>> parameters, CommandType commandType = CommandType.Text) => InnerExecuteReader(commandText, parameters, commandType);
+        private async Task<AutoClosingDataReader> InnerExecuteReader(string commandText, IEnumerable<KeyValuePair<string, object?>> parameters, CommandType commandType)
         {
             DbCommand cmd = InternalConnection.CreateCommand();
             cmd.CommandText = commandText;
@@ -37,7 +37,7 @@ namespace CSL.SQL
             cmd.Transaction = currentTransaction;
             if (parameters != null)
             {
-                foreach (KeyValuePair<string, object> parameter in parameters)
+                foreach (KeyValuePair<string, object?> parameter in parameters)
                 {
                     DbParameter toAdd = cmd.CreateParameter();
                     toAdd.ParameterName = parameter.Key;
@@ -54,7 +54,7 @@ namespace CSL.SQL
         /// <param name="commandText">The SQL Text to execute.</param>
         /// <param name="parameters">The Parameters passed in.</param>
         /// <returns>An AutoClosingDataReader object that should be wrapped in a using block.</returns>
-        public async Task<AutoClosingDataReader> ExecuteReader(string commandText, params object[] parameters)
+        public async Task<AutoClosingDataReader> ExecuteReader(string commandText, params object?[] parameters)
         {
             DbCommand cmd = InternalConnection.CreateCommand();
             cmd.CommandText = commandText;
@@ -76,7 +76,7 @@ namespace CSL.SQL
         /// <param name="commandText">The SQL Text to execute.</param>
         /// <param name="parameters">The Parameters passed in.</param>
         /// <returns>An AutoClosingDataReader object that should be wrapped in a using block.</returns>
-        public AutoClosingDataReader ExecuteReaderSync(string commandText, params object[] parameters)
+        public AutoClosingDataReader ExecuteReaderSync(string commandText, params object?[] parameters)
         {
             DbCommand cmd = InternalConnection.CreateCommand();
             cmd.CommandText = commandText;
@@ -197,7 +197,7 @@ namespace CSL.SQL
         /// <param name="commandText">The SQL Text to execute.</param>
         /// <param name="parameters">The Parameters passed in.</param>
         /// <returns>The value in the first column and first row of the result.</returns>
-        public async Task<T?> ExecuteScalar<T>(string commandText, params object[] parameters)
+        public async Task<T?> ExecuteScalar<T>(string commandText, params object?[] parameters)
         {
             using (DbCommand cmd = InternalConnection.CreateCommand())
             {
@@ -226,7 +226,7 @@ namespace CSL.SQL
         /// <param name="commandText">The SQL Text to execute.</param>
         /// <param name="parameters">The Parameters passed in.</param>
         /// <returns>The value in the first column and first row of the result.</returns>
-        public T? ExecuteScalarSync<T>(string commandText, params object[] parameters)
+        public T? ExecuteScalarSync<T>(string commandText, params object?[] parameters)
         {
             using (DbCommand cmd = InternalConnection.CreateCommand())
             {
