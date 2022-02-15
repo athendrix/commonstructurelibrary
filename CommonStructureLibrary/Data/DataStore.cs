@@ -7,57 +7,84 @@ namespace CSL.Data
 {
     public class DataStore
     {
-        private readonly Dictionary<string, string?> innerData;
-        private readonly List<string> OrdinalValues;
+        private readonly Dictionary<string, string> innerData;
         private readonly bool immutable;
+        private readonly bool caseInsensitiveLookup;
         #region Constructors
-        public DataStore()
+        public DataStore(bool caseInsensitiveLookup = false)
         {
-            innerData = new Dictionary<string, string?>();
-            OrdinalValues = new List<string>();
+            innerData = new Dictionary<string, string>();
             immutable = false;
+            this.caseInsensitiveLookup = caseInsensitiveLookup;
         }
-
-        public DataStore(IEnumerable<KeyValuePair<string, string>> input, bool immutable = false)
+        public DataStore(DataStore other, bool immutable)
         {
-            this.immutable = immutable;
-            innerData = new Dictionary<string, string?>();
-            OrdinalValues = new List<string>();
-            
-            foreach(KeyValuePair<string,string> entry in input)
-            {
-                innerData.Add(entry.Key, entry.Value);
-                OrdinalValues.Add(entry.Key);
-            }
-        }
+            this.immutable = false;
+            this.caseInsensitiveLookup = other.caseInsensitiveLookup;
+            innerData = new Dictionary<string, string>();
 
-        public DataStore(string[] keys, string?[] values, bool immutable = false)
+            foreach (KeyValuePair<string, string> entry in other.innerData)
+            {
+                Add(entry.Key, entry.Value);
+            }
+            this.immutable = immutable;
+        }
+        public DataStore(IEnumerable<KeyValuePair<string, string?>> input, bool immutable = false, bool caseInsensitiveLookup = false)
+        {
+            this.immutable = false;
+            this.caseInsensitiveLookup = caseInsensitiveLookup;
+            innerData = new Dictionary<string, string>();
+            
+            foreach(KeyValuePair<string,string?> entry in input)
+            {
+                Add(entry.Key, entry.Value);
+            }
+            this.immutable = immutable;
+        }
+        public DataStore(string[] keys, string?[] values, bool immutable = false, bool caseInsensitiveLookup = false)
         {
             if(keys.Length != values.Length)
             {
                 throw new ArgumentException("keys length and values length must be the same!");
             }
-            this.immutable = immutable;
-            innerData = new Dictionary<string, string?>();
-            OrdinalValues = new List<string>();
+            this.immutable = false;
+            this.caseInsensitiveLookup = caseInsensitiveLookup;
+            innerData = new Dictionary<string, string>();
             for(int i = 0; i < keys.Length; i++)
             {
-                innerData.Add(keys[i], values[i]);
-                OrdinalValues.Add(keys[i]);
+                Add(keys[i], values[i]);
             }
+            this.immutable = immutable;
         }
         #endregion
-        #region Mutable Functions
-        public void Add(string key, string value)
+        public string? this[string key]
         {
-            if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
-            innerData.Add(key, value);
-            OrdinalValues.Add(key);
+            get => GetString(key);
+            set => Set(key, value);
         }
-        public void Set(string key, string value)
+        #region Mutable Functions
+        public void Add(string key, string? value)
         {
             if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
-            innerData[key] = value;
+            if (value != null)
+            {
+                innerData.Add(caseInsensitiveLookup ? key.ToUpper() : key, value);
+            }
+        }
+        public void Set(string key, string? value)
+        {
+            if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
+            if(value == null)
+            {
+                if(innerData.ContainsKey(caseInsensitiveLookup ? key.ToUpper() : key))
+                {
+                    innerData.Remove(caseInsensitiveLookup ? key.ToUpper() : key);
+                }
+            }
+            else
+            {
+                innerData[caseInsensitiveLookup ? key.ToUpper() : key] = value;
+            }
         }
         #endregion
         #region Base Types
@@ -81,16 +108,16 @@ namespace CSL.Data
             }
             throw new FormatException("Failed to parse key \"" + key + "\" with value \"" + value + "\" to " + typeof(T?).Name + ".");
         }
-        public int GetInt(string key) => Get<int>(key);
-        public long GetLong(string key) => Get<long>(key);
-        public bool GetBool(string key) => Get<bool>(key);
-        public DateTime GetDateTime(string key) => Get<DateTime>(key);
+        public int? GetInt(string key) => Get<int?>(key);
+        public long? GetLong(string key) => Get<long?>(key);
+        public bool? GetBool(string key) => Get<bool?>(key);
+        public DateTime? GetDateTime(string key) => Get<DateTime?>(key);
         public byte[]? GetByteArray(string key) => Get<byte[]>(key);
         #endregion
         #region AdvancedTypes
         public T?[]? GetArray<T>(string key)
         {
-            if (typeof(T) == typeof(byte))
+            if (typeof(T) == typeof(byte) || typeof(T) == typeof(byte?))
             {
                 return Get<byte[]>(key) as T[];
             }
@@ -136,5 +163,4 @@ namespace CSL.Data
         }
         #endregion
     }
-
 }

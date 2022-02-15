@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CSL.ClassCreation;
 using CSL.SQL.ClassCreator.TableDefinitionExtensions;
 
 namespace CSL.SQL.ClassCreator
@@ -20,7 +21,7 @@ namespace CSL.SQL.ClassCreator
             gen.BlankLine();
             gen.Namespace(Namespace);
 
-            gen.BeginRecord(TableName, Columns, " : IDBSet");
+            gen.BeginRecord(TableName, Columns.Select(x => x.CSharpTypeName + " " + x.ColumnName), " : IDBSet");
 
             gen.Region("Static Functions");
             gen.CreateDB(this);
@@ -142,15 +143,15 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
             }
             SQLToAdd.AddRange(tabledef.SQLLines);
             bool extralines = SQLToAdd.Count != 0;
-            gen.IndentAdd("public static Task<int> CreateDB(SQLDB sql) => sql.ExecuteNonQuery(");
+            gen.Add("public static Task<int> CreateDB(SQLDB sql) => sql.ExecuteNonQuery(");
             gen.Indent();
 
-            gen.IndentAdd($@"""CREATE TABLE IF NOT EXISTS \""{tabledef.TableName}\"" ("" +");
+            gen.Add($@"""CREATE TABLE IF NOT EXISTS \""{tabledef.TableName}\"" ("" +");
             for (int i = 0; i < tabledef.Columns.Length; i++)
             {
-                gen.IndentAdd($@"""\""{tabledef.Columns[i].ColumnName}\"" {tabledef.Columns[i].SQLTypeName}, "" +");
+                gen.Add($@"""\""{tabledef.Columns[i].ColumnName}\"" {tabledef.Columns[i].SQLTypeName}, "" +");
             }
-            gen.IndentAdd($"\"PRIMARY KEY(\\\"{string.Join("\\\", \\\"", tabledef.PrimaryKeys.Select((x) => x.ColumnName))}\\\"){(extralines ? ", " : "")}\" +");
+            gen.Add($"\"PRIMARY KEY(\\\"{string.Join("\\\", \\\"", tabledef.PrimaryKeys.Select((x) => x.ColumnName))}\\\"){(extralines ? ", " : "")}\" +");
 
             for (int i = 0; i < SQLToAdd.Count; i++)
             {
@@ -160,24 +161,24 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
                 {
                     lineend = " ";
                 }
-                gen.IndentAdd("\"" + SQLToAdd[i].Trim().Replace("\"", "\\\"") + lineend + "\" +");
+                gen.Add("\"" + SQLToAdd[i].Trim().Replace("\"", "\\\"") + lineend + "\" +");
             }
-            gen.IndentAdd("\");\");");
+            gen.Add("\");\");");
             gen.Unindent();
         }
         public static void Select(this CodeGenerator gen, TableDefinition tabledef, List<TableDefinitionMapping> Mappings)
         {
             gen.Region("Select");
-            gen.IndentAdd("public static async Task<AutoClosingEnumerable<" + tabledef.TableName.Replace(' ', '_') + ">> Select(SQLDB sql)");
+            gen.Add("public static async Task<AutoClosingEnumerable<" + tabledef.TableName.Replace(' ', '_') + ">> Select(SQLDB sql)");
             gen.EnterBlock();
-            gen.IndentAdd($@"AutoClosingDataReader dr = await sql.ExecuteReader(""SELECT * FROM \""{tabledef.TableName}\"";"");");
-            gen.IndentAdd($"return new AutoClosingEnumerable<{tabledef.TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
+            gen.Add($@"AutoClosingDataReader dr = await sql.ExecuteReader(""SELECT * FROM \""{tabledef.TableName}\"";"");");
+            gen.Add($"return new AutoClosingEnumerable<{tabledef.TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
             gen.ExitBlock();
 
-            gen.IndentAdd("public static async Task<AutoClosingEnumerable<" + tabledef.TableName.Replace(' ', '_') + ">> Select(SQLDB sql, string query, params object[] parameters)");
+            gen.Add("public static async Task<AutoClosingEnumerable<" + tabledef.TableName.Replace(' ', '_') + ">> Select(SQLDB sql, string query, params object[] parameters)");
             gen.EnterBlock();
-            gen.IndentAdd($"AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{tabledef.TableName}\\\" WHERE \" + query + \" ;\", parameters);");
-            gen.IndentAdd($"return new AutoClosingEnumerable<{tabledef.TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
+            gen.Add($"AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{tabledef.TableName}\\\" WHERE \" + query + \" ;\", parameters);");
+            gen.Add($"return new AutoClosingEnumerable<{tabledef.TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
             gen.ExitBlock();
 
             foreach(TableDefinitionMapping mapping in Mappings)
@@ -196,17 +197,17 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
             {
                 ParameterMatching[i] = $@"\""{columns[i].ColumnName}\"" = @{i}";
             }
-            gen.IndentAdd("public static async Task<" + (unique ? "" : "AutoClosingEnumerable<") + TableName.Replace(' ', '_') + (unique ? "?" : ">") + "> SelectBy_" + FnNumSuffix + FnParams);
+            gen.Add("public static async Task<" + (unique ? "" : "AutoClosingEnumerable<") + TableName.Replace(' ', '_') + (unique ? "?" : ">") + "> SelectBy_" + FnNumSuffix + FnParams);
             gen.EnterBlock();
-            gen.IndentAdd($@"{(unique ? "using(" : "")}AutoClosingDataReader dr = await sql.ExecuteReader(""SELECT * FROM \""{TableName}\"" WHERE {string.Join(" AND ", ParameterMatching)};"", {BareFnParams}){(unique ? ")":";")}");
+            gen.Add($@"{(unique ? "using(" : "")}AutoClosingDataReader dr = await sql.ExecuteReader(""SELECT * FROM \""{TableName}\"" WHERE {string.Join(" AND ", ParameterMatching)};"", {BareFnParams}){(unique ? ")":";")}");
             gen.EnterBlock();
             if (unique)
             {
-                gen.IndentAdd("return GetRecords(dr).FirstOrDefault();");
+                gen.Add("return GetRecords(dr).FirstOrDefault();");
             }
             else
             {
-                gen.IndentAdd($"return new AutoClosingEnumerable<{TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
+                gen.Add($"return new AutoClosingEnumerable<{TableName.Replace(' ', '_')}>(GetRecords(dr),dr);");
             }
             gen.ExitBlock();
             gen.ExitBlock();
@@ -230,29 +231,86 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
             {
                 ParameterMatching[i] = $@"\""{columns[i].ColumnName}\"" = @{i}";
             }
-            gen.IndentAdd($@"{part1} sql.ExecuteNonQuery(""DELETE FROM \""{TableName}\"" WHERE {string.Join(" AND ", ParameterMatching)};"", " + BareFnParams + ");");
+            gen.Add($@"{part1} sql.ExecuteNonQuery(""DELETE FROM \""{TableName}\"" WHERE {string.Join(" AND ", ParameterMatching)};"", " + BareFnParams + ");");
         }
         public static void TableManagement(this CodeGenerator gen, string TableName)
         {
             gen.Region("Table Management");
-            gen.IndentAdd($"public static Task Truncate(SQLDB sql, bool cascade = false) => sql.ExecuteNonQuery($\"TRUNCATE \\\"{TableName}\\\"{{(cascade?\" CASCADE\":\"\")}};\");");
-            gen.IndentAdd($"public static Task Drop(SQLDB sql, bool cascade = false) => sql.ExecuteNonQuery($\"DROP TABLE IF EXISTS \\\"{TableName}\\\"{{(cascade?\" CASCADE\":\"\")}};\");");
+            gen.Add($"public static Task Truncate(SQLDB sql, bool cascade = false) => sql.ExecuteNonQuery($\"TRUNCATE \\\"{TableName}\\\"{{(cascade?\" CASCADE\":\"\")}};\");");
+            gen.Add($"public static Task Drop(SQLDB sql, bool cascade = false) => sql.ExecuteNonQuery($\"DROP TABLE IF EXISTS \\\"{TableName}\\\"{{(cascade?\" CASCADE\":\"\")}};\");");
             gen.EndRegion();
         }
+        public static void GetRecords(this CodeGenerator gen, string RecordName, Column[] Columns)
+        {
+            if (Columns.Length == 0) { return; }
+            if (Columns.Length == 1)
+            {
+                gen.Add($"public static IEnumerable<{Columns[0].CSharpTypeName}> GetRecords(IDataReader dr)");
+                gen.EnterBlock();
+                gen.Add("while(dr.Read())");
+                gen.EnterBlock();
+                string PrivCSType = Columns[0].CSharpPrivateTypeName;
+                string CSType = Columns[0].CSharpTypeName;
+                string Name = Columns[0].ColumnName;
+                string pubpre = Columns[0].CSharpConvertPublicPrepend;
+                string pubapp = Columns[0].CSharpConvertPublicAppend;
+                bool nullable = Columns[0].nullable;
+                if (CSType != PrivCSType)
+                {
+                    gen.Add($"{PrivCSType} _{Name} = {(nullable ? "dr.IsDBNull(0) ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[0];");
+                    gen.Add($"yield return {pubpre}_{Name}{(nullable && !string.IsNullOrEmpty(pubapp) ? "?" : "")}{pubapp};");
+                }
+                else
+                {
+                    gen.Add($"yield return {(nullable ? "dr.IsDBNull(0) ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[0];");
+                }
+                gen.ExitBlock();
+                gen.Add("yield break;");
+                gen.ExitBlock();
+                return;
+            }
+            gen.Add($"public static IEnumerable<{RecordName.Replace(' ', '_')}> GetRecords(IDataReader dr)");
+            gen.EnterBlock();
+            gen.Add("while(dr.Read())");
+            gen.EnterBlock();
+            for (int i = 0; i < Columns.Length; i++)
+            {
+                string PrivCSType = Columns[i].CSharpPrivateTypeName;
+                string CSType = Columns[i].CSharpTypeName;
+                string Name = Columns[i].ColumnName;
+                string pubpre = Columns[i].CSharpConvertPublicPrepend;
+                string pubapp = Columns[i].CSharpConvertPublicAppend;
+                bool nullable = Columns[i].nullable;
+                if (CSType != PrivCSType)
+                {
+                    gen.Add($"{PrivCSType} _{Name} = {(nullable ? "dr.IsDBNull(" + i + ") ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[{i}];");
+                    gen.Add($"{CSType} {Name} = {pubpre}_{Name}{(nullable && !string.IsNullOrEmpty(pubapp) ? "?" : "")}{pubapp};");
+                }
+                else
+                {
+                    gen.Add($"{CSType} {Name} = {(nullable ? "dr.IsDBNull(" + i + ") ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[{i}];");
+                }
+            }
+            gen.Add($"yield return new {RecordName.Replace(' ', '_')}({string.Join(", ", Columns.Select((x) => x.ColumnName))});");
+            gen.ExitBlock();
+            gen.Add("yield break;");
+            gen.ExitBlock();
+        }
+
         #endregion
         #region Instance Functions
         public static void ToArray(this CodeGenerator gen, Column[] Columns)
         {
             string ToObjectList = string.Join(", ", Columns.Select((x) => "_" + x.ColumnName));
-            gen.IndentAdd("public object?[] ToArray()");
+            gen.Add("public object?[] ToArray()");
             gen.EnterBlock();
             for (int i = 0; i < Columns.Length; i++)
             {
                 string PrivCSType = Columns[i].CSharpPrivateTypeName;
                 string Name = Columns[i].ColumnName;
-                gen.IndentAdd($"{PrivCSType} _{Name} = {Columns[i].ConvertPrivate};");
+                gen.Add($"{PrivCSType} _{Name} = {Columns[i].ConvertPrivate};");
             }
-            gen.IndentAdd("return new object?[] { " + ToObjectList + " };");
+            gen.Add("return new object?[] { " + ToObjectList + " };");
             gen.ExitBlock();
         }
         public static void IDBSetFunctions(this CodeGenerator gen, TableDefinition tabledef)
@@ -270,25 +328,26 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
             string WhereData = string.Join(" AND ", tabledef.PrimaryKeys.Select((x) => "\\\"" + x.ColumnName + "\\\" = " + CN[x.ColumnName]));
             string ConflictKeys = string.Join(", ", tabledef.PrimaryKeys.Select((x) => "\\\"" + x.ColumnName + "\\\""));
             string ToObjectList = string.Join(", ", tabledef.Columns.Select((x) => "_" + x.ColumnName));
-            gen.IndentAdd("public Task<int> Insert(SQLDB sql) =>");
+            gen.Add("public Task<int> Insert(SQLDB sql) =>");
             gen.Indent();
-            gen.IndentAdd($@"sql.ExecuteNonQuery(""INSERT INTO \""{tabledef.TableName}\"" ({SQLCols}) "" +");
-            gen.IndentAdd($"\"VALUES({SQLParams});\", ToArray());");
+            gen.Add($@"sql.ExecuteNonQuery(""INSERT INTO \""{tabledef.TableName}\"" ({SQLCols}) "" +");
+            gen.Add($"\"VALUES({SQLParams});\", ToArray());");
             gen.Unindent();
-            gen.IndentAdd("public Task<int> Update(SQLDB sql) =>");
+            gen.Add("public Task<int> Update(SQLDB sql) =>");
             gen.Indent();
-            gen.IndentAdd($@"sql.ExecuteNonQuery(""UPDATE \""{tabledef.TableName}\"" "" +");
-            gen.IndentAdd($"\"SET {SetData} \" +");
-            gen.IndentAdd($"\"WHERE {WhereData};\", ToArray());");
+            gen.Add($@"sql.ExecuteNonQuery(""UPDATE \""{tabledef.TableName}\"" "" +");
+            gen.Add($"\"SET {SetData} \" +");
+            gen.Add($"\"WHERE {WhereData};\", ToArray());");
             gen.Unindent();
-            gen.IndentAdd("public Task<int> Upsert(SQLDB sql) =>");
+            gen.Add("public Task<int> Upsert(SQLDB sql) =>");
             gen.Indent();
-            gen.IndentAdd($@"sql.ExecuteNonQuery(""INSERT INTO \""{tabledef.TableName}\"" ({SQLCols}) "" +");
-            gen.IndentAdd($"\"VALUES({SQLParams}) \" +");
-            gen.IndentAdd($"\"ON CONFLICT ({ConflictKeys}) DO UPDATE \" +");
-            gen.IndentAdd($"\"SET {SetData};\", ToArray());");
+            gen.Add($@"sql.ExecuteNonQuery(""INSERT INTO \""{tabledef.TableName}\"" ({SQLCols}) "" +");
+            gen.Add($"\"VALUES({SQLParams}) \" +");
+            gen.Add($"\"ON CONFLICT ({ConflictKeys}) DO UPDATE \" +");
+            gen.Add($"\"SET {SetData};\", ToArray());");
             gen.Unindent();
         }
+
         #endregion
         #region Enums
         public static void Enums(this CodeGenerator gen, Column[] Columns)
@@ -298,17 +357,19 @@ namespace CSL.SQL.ClassCreator.TableDefinitionExtensions
                 if (c.type == ColumnType.Enum)
                 {
                     gen.BlankLine();
-                    gen.IndentAdd("////", "Example Enum");
-                    gen.IndentAdd("//", "[Flags]");
-                    gen.IndentAdd("////", "Specifying ulong allows data to be auto converted for your convenience into the database.");
-                    gen.IndentAdd("//", "public enum " + c.CSharpTypeName.TrimEnd('?') + " : ulong");
-                    gen.EnterBlock(commented: true);
-                    gen.IndentAdd("//", "NoFlags = 0,");
+                    gen.EnterComment();
+                    gen.Add("//", "Example Enum");
+                    gen.Add("[Flags]");
+                    gen.Add("//", "Specifying ulong allows data to be auto converted for your convenience into the database.");
+                    gen.Add("public enum " + c.CSharpTypeName.TrimEnd('?') + " : ulong");
+                    gen.EnterBlock();
+                    gen.Add("NoFlags = 0,");
                     for (int i = 0; i < 64; i++)
                     {
-                        gen.IndentAdd("//", "Flag" + (i + 1).ToString() + ((i + 1) >= 10 ? "  " : "   ") + "= 1UL << " + i.ToString() + ",");
+                        gen.Add("Flag" + (i + 1).ToString() + ((i + 1) >= 10 ? "  " : "   ") + "= 1UL << " + i.ToString() + ",");
                     }
-                    gen.ExitBlock(commented: true);
+                    gen.ExitBlock();
+                    gen.ExitComment();
                 }
             }
         }
