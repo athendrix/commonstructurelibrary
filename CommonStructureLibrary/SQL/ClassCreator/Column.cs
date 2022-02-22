@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using CSL.ClassCreation;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -191,5 +192,64 @@ namespace CSL.SQL.ClassCreator
         DateTime,              //TIMESTAMP
         Enum, //Unsigned Long for maximum values. //BIGINT with C# conversion
         Unknown
+    }
+    public static class ColumnExtensions
+    {
+        public static void GetRecords(this CodeGenerator gen, string RecordName, Column[] Columns)
+        {
+            if (Columns.Length == 0) { return; }
+            if (Columns.Length == 1)
+            {
+                gen.Add($"public static IEnumerable<{Columns[0].CSharpTypeName}> GetRecords(IDataReader dr)");
+                gen.EnterBlock();
+                gen.Add("while(dr.Read())");
+                gen.EnterBlock();
+                string PrivCSType = Columns[0].CSharpPrivateTypeName;
+                string CSType = Columns[0].CSharpTypeName;
+                string Name = Columns[0].ColumnName;
+                string pubpre = Columns[0].CSharpConvertPublicPrepend;
+                string pubapp = Columns[0].CSharpConvertPublicAppend;
+                bool nullable = Columns[0].nullable;
+                if (CSType != PrivCSType)
+                {
+                    gen.Add($"{PrivCSType} _{Name} = {(nullable ? "dr.IsDBNull(0) ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[0];");
+                    gen.Add($"yield return {pubpre}_{Name}{(nullable && !string.IsNullOrEmpty(pubapp) ? "?" : "")}{pubapp};");
+                }
+                else
+                {
+                    gen.Add($"yield return {(nullable ? "dr.IsDBNull(0) ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[0];");
+                }
+                gen.ExitBlock();
+                gen.Add("yield break;");
+                gen.ExitBlock();
+                return;
+            }
+            gen.Add($"public static IEnumerable<{RecordName.Replace(' ', '_')}> GetRecords(IDataReader dr)");
+            gen.EnterBlock();
+            gen.Add("while(dr.Read())");
+            gen.EnterBlock();
+            for (int i = 0; i < Columns.Length; i++)
+            {
+                string PrivCSType = Columns[i].CSharpPrivateTypeName;
+                string CSType = Columns[i].CSharpTypeName;
+                string Name = Columns[i].ColumnName;
+                string pubpre = Columns[i].CSharpConvertPublicPrepend;
+                string pubapp = Columns[i].CSharpConvertPublicAppend;
+                bool nullable = Columns[i].nullable;
+                if (CSType != PrivCSType)
+                {
+                    gen.Add($"{PrivCSType} _{Name} = {(nullable ? "dr.IsDBNull(" + i + ") ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[{i}];");
+                    gen.Add($"{CSType} {Name} = {pubpre}_{Name}{(nullable && !string.IsNullOrEmpty(pubapp) ? "?" : "")}{pubapp};");
+                }
+                else
+                {
+                    gen.Add($"{CSType} {Name} = {(nullable ? "dr.IsDBNull(" + i + ") ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[{i}];");
+                }
+            }
+            gen.Add($"yield return new {RecordName.Replace(' ', '_')}({string.Join(", ", Columns.Select((x) => x.ColumnName))});");
+            gen.ExitBlock();
+            gen.Add("yield break;");
+            gen.ExitBlock();
+        }
     }
 }

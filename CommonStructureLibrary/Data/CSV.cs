@@ -29,15 +29,15 @@ namespace CSL.Data
         /// <param name="startLine">How many lines to skip? This will skip after reading the header(if there is one), but before reading the data.</param>
         /// <param name="lineLimit">Maximum data lines to read. (Not counting the headerline, nor newlines within string values.)</param>
         /// <returns>An array of immutable DataStore objects representing the data.</returns>
-        public static DataStore[] ReadCSV(TextReader input, char separator = ',', string[]? headers = null, string[]? nullValues = null, char? escapechar = '"', int startLine = 0, int? lineLimit = null)
+        public static DataStore<string>[] ReadCSV(TextReader input, char separator = ',', string[]? headers = null, string[]? nullValues = null, char? escapechar = '"', int startLine = 0, int? lineLimit = null)
         {
             if (nullValues == null) { nullValues = new string[] { "" }; }//Mostly to deal with R's NA values
             //List<object[]> readData = new List<object[]>();
-            List<DataStore> readData = new List<DataStore>();
+            List<DataStore<string>> readData = new List<DataStore<string>>();
             string? firstLine = input.AdvancedReadLine(escapechar);
             if (firstLine == null)
             {
-                return new DataStore[0];
+                return new DataStore<string>[0];
             }
             string?[] firstLineArray = firstLine.AdvancedSplit(separator, nullValues, escapechar);
             int linesRead = 0;
@@ -60,7 +60,7 @@ namespace CSL.Data
             }
             else if (startLine <= 0 && lineLimit != 0)
             {
-                readData.Add(new DataStore(headers,firstLineArray,true));
+                readData.Add(new DataStore<string> (headers,firstLineArray,true));
                 linesRead = 1;
             }
             
@@ -72,7 +72,7 @@ namespace CSL.Data
             while ((lineLimit == null || linesRead++ < lineLimit) && (currLine = input.AdvancedReadLine(escapechar)) != null)
             {
                 string?[] currLineArray = currLine.AdvancedSplit(separator, nullValues, escapechar);
-                readData.Add(new DataStore(headers,currLineArray,true));
+                readData.Add(new DataStore<string> (headers,currLineArray,true));
             }
             return readData.ToArray();
         }

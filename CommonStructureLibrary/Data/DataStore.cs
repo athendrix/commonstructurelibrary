@@ -1,127 +1,260 @@
 ﻿using CSL.Helpers;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace CSL.Data
 {
-    public class DataStore
+    public class DataStore<T> : IDictionary<string,T?>, IList<KeyValuePair<string, T?>>
     {
-        private readonly Dictionary<string, string> innerData;
-        private readonly bool immutable;
-        private readonly bool caseInsensitiveLookup;
+        private readonly Dictionary<string, T> innerData;
+        protected readonly bool immutable;
+        protected readonly bool caseInsensitiveLookup;
+        private readonly List<string> ordinalOrder;
         #region Constructors
         public DataStore(bool caseInsensitiveLookup = false)
         {
-            innerData = new Dictionary<string, string>();
+            if (default(T?) != null) { throw new Exception("DataStore only works if T is a nullable type! Try adding a ? after the type name!"); }
+            innerData = new Dictionary<string, T>();
             immutable = false;
+            ordinalOrder = new List<string>();
             this.caseInsensitiveLookup = caseInsensitiveLookup;
         }
-        public DataStore(DataStore other, bool immutable)
+        public DataStore(DataStore<T> other, bool immutable)
         {
+            if (default(T?) != null) { throw new Exception("DataStore only works if T is a nullable type! Try adding a ? after the type name!"); }
             this.immutable = false;
             this.caseInsensitiveLookup = other.caseInsensitiveLookup;
-            innerData = new Dictionary<string, string>();
-
-            foreach (KeyValuePair<string, string> entry in other.innerData)
+            innerData = new Dictionary<string, T>();
+            ordinalOrder = new List<string>();
+            foreach (KeyValuePair<string, T> entry in other.innerData)
             {
                 Add(entry.Key, entry.Value);
             }
             this.immutable = immutable;
         }
-        public DataStore(IEnumerable<KeyValuePair<string, string?>> input, bool immutable = false, bool caseInsensitiveLookup = false)
+        public DataStore(IEnumerable<KeyValuePair<string, T?>> input, bool immutable = false, bool caseInsensitiveLookup = false)
         {
+            if (default(T?) != null) { throw new Exception("DataStore only works if T is a nullable type! Try adding a ? after the type name!"); }
             this.immutable = false;
             this.caseInsensitiveLookup = caseInsensitiveLookup;
-            innerData = new Dictionary<string, string>();
-            
-            foreach(KeyValuePair<string,string?> entry in input)
+            innerData = new Dictionary<string, T>();
+            ordinalOrder = new List<string>();
+            foreach (KeyValuePair<string, T?> entry in input)
             {
                 Add(entry.Key, entry.Value);
             }
             this.immutable = immutable;
         }
-        public DataStore(string[] keys, string?[] values, bool immutable = false, bool caseInsensitiveLookup = false)
+        public DataStore(string[] keys, T?[] values, bool immutable = false, bool caseInsensitiveLookup = false)
         {
-            if(keys.Length != values.Length)
+            if (default(T?) != null) { throw new Exception("DataStore only works if T is a nullable type! Try adding a ? after the type name!"); }
+            if (keys.Length != values.Length)
             {
                 throw new ArgumentException("keys length and values length must be the same!");
             }
             this.immutable = false;
             this.caseInsensitiveLookup = caseInsensitiveLookup;
-            innerData = new Dictionary<string, string>();
-            for(int i = 0; i < keys.Length; i++)
+            innerData = new Dictionary<string, T>();
+            ordinalOrder = new List<string>();
+            for (int i = 0; i < keys.Length; i++)
             {
                 Add(keys[i], values[i]);
             }
             this.immutable = immutable;
         }
         #endregion
-        public string? this[string key]
+        #region Interface Compatibility
+        #region IDictionary
+        public int Count => ordinalOrder.Count;
+        public bool IsReadOnly => immutable;
+
+        public ICollection<string> Keys => ordinalOrder.AsReadOnly();
+
+        public ICollection<T?> Values => System.Linq.Enumerable.ToList<T?>(System.Linq.Enumerable.Select(ordinalOrder, x => innerData[x]));
+
+        public void Add(KeyValuePair<string, T?> keyValuePair) => Add(keyValuePair.Key, keyValuePair.Value);
+        //Clear is met by Clear in Mutable Functions
+        public bool Contains(KeyValuePair<string, T?> keyValuePair)
         {
-            get => GetString(key);
-            set => Set(key, value);
+            T? toCompare = Get(keyValuePair.Key);
+            T? value = keyValuePair.Value;
+            if(value == null && toCompare == null) { return true; }
+            if(value == null || toCompare == null) { return false; }
+            return toCompare.Equals(value);
         }
-        #region Mutable Functions
-        public void Add(string key, string? value)
+        public void CopyTo(KeyValuePair<string,T?>[] array, int arrayIndex)
         {
-            if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
-            if (value != null)
+            if (array == null) throw new ArgumentNullException("array");
+            if (arrayIndex < 0) throw new ArgumentOutOfRangeException();
+            for(int i = 0; i < ordinalOrder.Count; i++)
             {
-                innerData.Add(caseInsensitiveLookup ? key.ToUpper() : key, value);
+                array[arrayIndex + i] = new KeyValuePair<string,T?>(ordinalOrder[i], innerData[ordinalOrder[i]]);
             }
         }
-        public void Set(string key, string? value)
+        public bool Remove(string key)
+        {
+            Debug.Assert(default(T?) == null);
+            Set(key, default(T?));
+            return true;
+        }
+        public bool TryGetValue(string key, out T? value)
+        {
+            value = Get(key);
+            return value != null;
+        }
+
+        public bool Remove(KeyValuePair<string, T?> item)
+        {
+            if(Contains(item))
+            {
+                return Remove(item.Key);
+            }
+            return false;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        public IEnumerator<KeyValuePair<string, T?>> GetEnumerator()
+        {
+            int StartCount = ordinalOrder.Count;
+            for(int i = 0;i < StartCount; i++)
+            {
+                if (ordinalOrder.Count != StartCount) throw new Exception("DataStore changed during enumeration! State is invalid!");
+                yield return new KeyValuePair<string, T?>(ordinalOrder[i], innerData[ordinalOrder[i]]);
+            }
+            yield break;
+        }
+        #endregion
+        #region IList
+        KeyValuePair<string, T?> IList<KeyValuePair<string, T?>>.this[int index]
+        {
+            get => new KeyValuePair<string, T?>(ordinalOrder[index], innerData[ordinalOrder[index]]);
+            set => Insert(index, value);
+        }
+        public int IndexOf(KeyValuePair<string, T?> item) => ordinalOrder.IndexOf(item.Key);
+        public void Insert(int index, KeyValuePair<string, T?> item)
+        {
+            Set(item.Key, item.Value);
+            Reorder(item.Key, index);
+        }
+        public void RemoveAt(int index)
+        {
+            Debug.Assert(default(T?) == null);
+            this[index] = default;
+        }
+        #endregion
+        #region Array Indexers
+        public T? this[string key]
+        {
+            get => Get(key);
+            set => Set(key, value);
+        }
+        public T? this[int index]
+        {
+            get => Get(ordinalOrder[index]);
+            set => Set(ordinalOrder[index], value);
+        }
+        #endregion
+        #endregion
+        #region Universal Functions
+        public int GetOrdinal(string key) => ordinalOrder.IndexOf(caseInsensitiveLookup ? key.ToUpper() : key);
+        public T? Get(string key)
+        {
+            if (innerData.ContainsKey(caseInsensitiveLookup ? key.ToUpper() : key))
+            {
+                return innerData[caseInsensitiveLookup ? key.ToUpper() : key];
+            }
+            else
+            {
+                return default(T?);
+            }
+        }
+        public bool ContainsKey(string key) => innerData.ContainsKey(key);
+        #endregion
+        //These are the only functions that actually change the state of innerData and ordinalOrder, and they won't if immutable is set.
+        #region Mutable Functions
+        public void Add(string key, T? value)
         {
             if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
-            if(value == null)
+            string CompKey = caseInsensitiveLookup ? key.ToUpper() : key;
+            if (value != null)
             {
-                if(innerData.ContainsKey(caseInsensitiveLookup ? key.ToUpper() : key))
+                innerData.Add(CompKey, value);
+                ordinalOrder.Add(CompKey);
+            }
+        }
+        public void Set(string key, T? value)
+        {
+            if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
+            string CompKey = caseInsensitiveLookup ? key.ToUpper() : key;
+            if (innerData.ContainsKey(CompKey))
+            {
+                if (value == null)
                 {
-                    innerData.Remove(caseInsensitiveLookup ? key.ToUpper() : key);
+                    innerData.Remove(CompKey);
+                    ordinalOrder.Remove(CompKey);
+                }
+                else
+                {
+                    innerData[CompKey] = value;
                 }
             }
             else
             {
-                innerData[caseInsensitiveLookup ? key.ToUpper() : key] = value;
+                Add(key, value);
             }
+        }
+        public void Clear()
+        {
+            if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
+            innerData.Clear();
+            ordinalOrder.Clear();
+        }
+        /// <summary>
+        /// This function reorders the List so that key is in the position index.
+        /// The key will be removed from it's original index, and then added to the new index. Letting other elements shift around it.
+        /// </summary>
+        /// <param name="key">The key whose position to change.</param>
+        /// <param name="position">The new position of key.</param>
+        public void Reorder(string key, int position)
+        {
+            if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
+            if(position < 0 || position >= ordinalOrder.Count) { throw new ArgumentOutOfRangeException("position"); }
+            if(!ordinalOrder.Contains(key)) { throw new ArgumentException("key does not exist in DataStore!"); }
+            ordinalOrder.Remove(key);
+            ordinalOrder.Insert(position, key);
         }
         #endregion
-        #region Base Types
-        public string? GetString(string key)
+    }
+    public static class DataStoreExtensions
+    {
+        #region String Translated Types
+        public static T? Get<T>(this DataStore<string> ds, string key)
         {
-            if (innerData.ContainsKey(key))
-            {
-                return innerData[key];
-            }
-            else
-            {
-                return null;
-            }
-        }
-        public T? Get<T>(string key)
-        {
-            string? value = GetString(key);
+            string? value = ds.Get(key);
             if (Generics.TryParse(value, out T? result))
             {
                 return result;
             }
             throw new FormatException("Failed to parse key \"" + key + "\" with value \"" + value + "\" to " + typeof(T?).Name + ".");
         }
-        public int? GetInt(string key) => Get<int?>(key);
-        public long? GetLong(string key) => Get<long?>(key);
-        public bool? GetBool(string key) => Get<bool?>(key);
-        public DateTime? GetDateTime(string key) => Get<DateTime?>(key);
-        public byte[]? GetByteArray(string key) => Get<byte[]>(key);
+        public static int? GetShort(this DataStore<string> ds, string key) => ds.Get<short?>(key);
+        public static int? GetInt(this DataStore<string> ds, string key) => ds.Get<int?>(key);
+        public static long? GetLong(this DataStore<string> ds, string key) => ds.Get<long?>(key);
+        public static bool? GetBool(this DataStore<string> ds, string key) => ds.Get<bool?>(key);
+        public static DateTime? GetDateTime(this DataStore<string> ds, string key) => ds.Get<DateTime?>(key);
+        public static byte[]? GetByteArray(this DataStore<string> ds, string key) => ds.Get<byte[]>(key);
         #endregion
         #region AdvancedTypes
-        public T?[]? GetArray<T>(string key)
+        public static T?[]? GetArray<T>(this DataStore<string> ds, string key)
         {
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(byte?))
             {
-                return Get<byte[]>(key) as T[];
+                return ds.Get<byte[]>(key) as T[];
             }
-            string? strvalue = GetString(key);
+            string? strvalue = ds.Get(key);
             if (strvalue == null)
             {
                 return null;
@@ -141,15 +274,15 @@ namespace CSL.Data
             }
             return toReturn;
         }
-        public Dictionary<T, U?>? GetDictionary<T, U>(string keyskey, string valueskey)
+        public static Dictionary<T, U?>? GetDictionary<T, U>(this DataStore<string> ds, string keyskey, string valueskey)
         {
-            T?[]? keys = GetArray<T>(keyskey);
-            U?[]? values = GetArray<U>(valueskey);
+            T?[]? keys = ds.GetArray<T>(keyskey);
+            U?[]? values = ds.GetArray<U>(valueskey);
             if (keys == null && values == null)
             {
                 return null;
             }
-            if (keys == null) { throw new FormatException("Failed to parse \"" + keyskey + "\" as keys to " + typeof(Dictionary<T,U>).Name + "."); }
+            if (keys == null) { throw new FormatException("Failed to parse \"" + keyskey + "\" as keys to " + typeof(Dictionary<T, U>).Name + "."); }
             if (values == null) { throw new FormatException("Failed to parse \"" + valueskey + "\" as values to " + typeof(Dictionary<T, U>).Name + "."); }
             if (keys.Length != values.Length) { throw new FormatException("Failed to parse \"" + keyskey + "\" and \"" + valueskey + "\" to " + typeof(Dictionary<T, U>).Name + ". Lengths differ."); }
             Dictionary<T, U?> toReturn = new Dictionary<T, U?>();

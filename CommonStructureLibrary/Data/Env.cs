@@ -22,7 +22,7 @@ namespace CSL.Data
             }
             return toReturn;
         }
-        private static DataStore? _DS = null;
+        private static DataStore<string>? _DS = null;
         static Env() => RefreshEnv();
         public static void RefreshEnv()
         {
@@ -35,6 +35,6 @@ namespace CSL.Data
         }
         public static void SetDefault(string key, string value) => Defaults[key.ToUpper()] = value;
 
-        public static DataStore Vars => _DS ??= new DataStore(GetEnv(), true);
+        public static DataStore<string> Vars => _DS ??= new DataStore<string>(GetEnv(), true);
     }
 }

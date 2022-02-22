@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CSL.ClassCreation;
 using CSL.SQL.ClassCreator.FunctionDefinitionExtensions;
 
 namespace CSL.SQL.ClassCreator
@@ -15,7 +16,7 @@ namespace CSL.SQL.ClassCreator
             gen.Libraries("System", "System.Collections.Generic", "System.Data", "System.Linq", "System.Threading.Tasks", "CSL.SQL");
             gen.BlankLine();
             gen.Namespace(Namespace);
-            gen.BeginRecord(FunctionName, Output);
+            gen.BeginRecord(FunctionName, Output.Select(x => x.CSharpTypeName + " " + x.ColumnName));
             gen.Region("Static Functions");
             gen.CreateFunction(this);
             gen.DropFunction(FunctionName);
@@ -135,42 +136,42 @@ namespace CSL.SQL.ClassCreator.FunctionDefinitionExtensions
     {
         public static void CreateFunction(this CodeGenerator gen, FunctionDefinition funcdef)
         {
-            gen.IndentAdd("public static Task<int> CreateFunction(SQLDB sql) => sql.ExecuteNonQuery(");
+            gen.Add("public static Task<int> CreateFunction(SQLDB sql) => sql.ExecuteNonQuery(");
             gen.Indent();
-            gen.IndentAddQuoted($"CREATE OR REPLACE FUNCTION \"{funcdef.FunctionName}\" ( ");
+            gen.AddQuoted($"CREATE OR REPLACE FUNCTION \"{funcdef.FunctionName}\" ( ");
             for (int i = 0; i < funcdef.Input.Length; i++)
             {
-                gen.IndentAddQuoted($"\"{funcdef.Input[i].ColumnName}\" {funcdef.Input[i].SQLTypePlain}{(i == funcdef.Input.Length - 1?"":",")} ");
+                gen.AddQuoted($"\"{funcdef.Input[i].ColumnName}\" {funcdef.Input[i].SQLTypePlain}{(i == funcdef.Input.Length - 1?"":",")} ");
             }
-            gen.IndentAddQuoted(") ");
+            gen.AddQuoted(") ");
             switch(funcdef.Output.Length)
             {
                 case 0:
-                    gen.IndentAddQuoted("RETURNS void ");
+                    gen.AddQuoted("RETURNS void ");
                     break;
                 case 1:
                     if (funcdef.SingleRow)
                     {
-                        gen.IndentAddQuoted($"RETURNS {funcdef.Output[0].SQLTypePlain} ");
+                        gen.AddQuoted($"RETURNS {funcdef.Output[0].SQLTypePlain} ");
                     }
                     else
                     {
-                        gen.IndentAddQuoted($"RETURNS TABLE(\"{funcdef.Output[0].ColumnName}\" {funcdef.Output[0].SQLTypePlain}) ");
+                        gen.AddQuoted($"RETURNS TABLE(\"{funcdef.Output[0].ColumnName}\" {funcdef.Output[0].SQLTypePlain}) ");
                     }
                     break;
                 default:
-                    gen.IndentAddQuoted($"RETURNS TABLE({string.Join(", ", funcdef.Output.Select(x => "\"" + x.ColumnName + "\" " + x.SQLTypePlain))}) ");
+                    gen.AddQuoted($"RETURNS TABLE({string.Join(", ", funcdef.Output.Select(x => "\"" + x.ColumnName + "\" " + x.SQLTypePlain))}) ");
                     break;
             }
-            gen.IndentAddQuoted("AS ");
-            gen.IndentAddQuoted("$$ ");
+            gen.AddQuoted("AS ");
+            gen.AddQuoted("$$ ");
             foreach(string s in funcdef.SQLFunctionCode)
             {
-                gen.IndentAddQuoted(s.Replace("$$","") + " ");
+                gen.AddQuoted(s.Replace("$$","") + " ");
             }
-            gen.IndentAddQuoted("$$ ");
-            gen.IndentAddQuoted($"Language {funcdef.Language} ");
-            gen.IndentAddQuoted(funcdef.Volitility.ToString().ToUpper() + ";",");");
+            gen.AddQuoted("$$ ");
+            gen.AddQuoted($"Language {funcdef.Language} ");
+            gen.AddQuoted(funcdef.Volitility.ToString().ToUpper() + ";",");");
             gen.Unindent();
         }
         public static void CallFunction(this CodeGenerator gen, FunctionDefinition funcdef)
@@ -181,49 +182,49 @@ namespace CSL.SQL.ClassCreator.FunctionDefinitionExtensions
             switch (funcdef.Output.Length)
             {
                 case 0:
-                    gen.IndentAdd($"public static Task CallFunction(SQLDB sql{funcparams}) => ");
+                    gen.Add($"public static Task CallFunction(SQLDB sql{funcparams}) => ");
                     gen.Indent();
-                    gen.IndentAdd($"sql.ExecuteNonQuery(\"\\\"{funcdef.FunctionName}\\\"({numparams});\"{standalonefuncparams});");
+                    gen.Add($"sql.ExecuteNonQuery(\"\\\"{funcdef.FunctionName}\\\"({numparams});\"{standalonefuncparams});");
                     gen.Unindent();
                     break;
                 case 1:
                     if (funcdef.SingleRow)
                     {
                         bool hasNull = funcdef.Output[0].CSharpTypeName.EndsWith("?");
-                        gen.IndentAdd($"public static async Task<{funcdef.Output[0].CSharpTypeName}{(hasNull?"":"?")}> CallFunction(SQLDB sql{funcparams})");
+                        gen.Add($"public static async Task<{funcdef.Output[0].CSharpTypeName}{(hasNull?"":"?")}> CallFunction(SQLDB sql{funcparams})");
                         gen.EnterBlock();
-                        gen.IndentAdd($"using(AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{funcdef.FunctionName}\\\"({numparams});\"{standalonefuncparams}))");
+                        gen.Add($"using(AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{funcdef.FunctionName}\\\"({numparams});\"{standalonefuncparams}))");
                         gen.EnterBlock();
-                        gen.IndentAdd("return GetRecords(dr).FirstOrDefault();");
+                        gen.Add("return GetRecords(dr).FirstOrDefault();");
                         gen.ExitBlock();
                         gen.ExitBlock();
                     }
                     else
                     {
-                        gen.IndentAdd($"public static async Task<AutoClosingEnumerable<{funcdef.Output[0].CSharpTypeName}>> CallFunction(SQLDB sql{funcparams})");
+                        gen.Add($"public static async Task<AutoClosingEnumerable<{funcdef.Output[0].CSharpTypeName}>> CallFunction(SQLDB sql{funcparams})");
                         gen.EnterBlock();
-                        gen.IndentAdd($"AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{funcdef.FunctionName}\\\"({numparams});\"{standalonefuncparams});");
-                        gen.IndentAdd($"return new AutoClosingEnumerable<{funcdef.Output[0].CSharpTypeName}>(GetRecords(dr), dr);");
+                        gen.Add($"AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{funcdef.FunctionName}\\\"({numparams});\"{standalonefuncparams});");
+                        gen.Add($"return new AutoClosingEnumerable<{funcdef.Output[0].CSharpTypeName}>(GetRecords(dr), dr);");
                         gen.ExitBlock();
                     }
                     break;
                 default:
                     if (funcdef.SingleRow)
                     {
-                        gen.IndentAdd($"public static async Task<{funcdef.FunctionName}?> CallFunction(SQLDB sql{funcparams})");
+                        gen.Add($"public static async Task<{funcdef.FunctionName}?> CallFunction(SQLDB sql{funcparams})");
                         gen.EnterBlock();
-                        gen.IndentAdd($"using(AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{funcdef.FunctionName}\\\"({numparams});\"{standalonefuncparams}))");
+                        gen.Add($"using(AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{funcdef.FunctionName}\\\"({numparams});\"{standalonefuncparams}))");
                         gen.EnterBlock();
-                        gen.IndentAdd("return GetRecords(dr).FirstOrDefault();");
+                        gen.Add("return GetRecords(dr).FirstOrDefault();");
                         gen.ExitBlock();
                         gen.ExitBlock();
                     }
                     else
                     {
-                        gen.IndentAdd($"public static async Task<AutoClosingEnumerable<{funcdef.FunctionName}>> CallFunction(SQLDB sql{funcparams})");
+                        gen.Add($"public static async Task<AutoClosingEnumerable<{funcdef.FunctionName}>> CallFunction(SQLDB sql{funcparams})");
                         gen.EnterBlock();
-                        gen.IndentAdd($"AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{funcdef.FunctionName}\\\"({numparams});\"{standalonefuncparams});");
-                        gen.IndentAdd($"return new AutoClosingEnumerable<{funcdef.FunctionName}>(GetRecords(dr), dr);");
+                        gen.Add($"AutoClosingDataReader dr = await sql.ExecuteReader(\"SELECT * FROM \\\"{funcdef.FunctionName}\\\"({numparams});\"{standalonefuncparams});");
+                        gen.Add($"return new AutoClosingEnumerable<{funcdef.FunctionName}>(GetRecords(dr), dr);");
                         gen.ExitBlock();
                     }
                     break;
@@ -231,9 +232,9 @@ namespace CSL.SQL.ClassCreator.FunctionDefinitionExtensions
         }
         public static void DropFunction(this CodeGenerator gen, string FunctionName)
         {
-            gen.IndentAdd($"public static Task DropFunction(SQLDB sql) => ");
+            gen.Add($"public static Task DropFunction(SQLDB sql) => ");
             gen.Indent();
-            gen.IndentAdd($"sql.ExecuteNonQuery(\"DROP FUNCTION \\\"{FunctionName}\\\";\");");
+            gen.Add($"sql.ExecuteNonQuery(\"DROP FUNCTION \\\"{FunctionName}\\\";\");");
             gen.Unindent();
         }
     }
