@@ -1,9 +1,10 @@
-﻿using System;
+﻿using CSL.SQL.ClassCreator;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace CSL.SQL.ClassCreator
+namespace CSL.ClassCreation
 {
     public static class FileConverter
     {
