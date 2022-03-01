@@ -24,11 +24,11 @@ namespace CommonStructureLibraryTester.Server
 
             CSL.DependencyInjection.AesGcmConstructor = (x) => new System.Security.Cryptography.AesGcm(x);
 
-            CommonStructureLibraryTester.Testing.SQLTests.GetTestDB.Add(() => CSL.SQL.PostgreSQL.Connect("localhost", "testdb", "testuser", "testpassword", "testschema"));
-            CommonStructureLibraryTester.Testing.SQLTests.GetTestDB.Add(() => CSL.SQL.PostgreSQL.Connect("localhost:5432", "testdb", "testuser", "testpassword", "testschema"));
+            CommonStructureLibraryTester.Testing.SQLTests.GetTestDB.Add(() => CSL.SQL.PostgreSQL.Connect("localhost", "postgres", "postgres", "testpassword", "testschema"));
+            CommonStructureLibraryTester.Testing.SQLTests.GetTestDB.Add(() => CSL.SQL.PostgreSQL.Connect("localhost:5432", "postgres", "postgres", "testpassword", "testschema"));
             CommonStructureLibraryTester.Testing.SQLTests.GetTestDB.Add(async () =>
             {
-                Npgsql.NpgsqlConnection connection = new Npgsql.NpgsqlConnection("Host=localhost;Database=testdb;Username=testuser;Password=testpassword;SSL Mode=Prefer;Trust Server Certificate=False");
+                Npgsql.NpgsqlConnection connection = new Npgsql.NpgsqlConnection("Host=localhost;Database=postgres;Username=postgres;Password=testpassword;SSL Mode=Prefer;Trust Server Certificate=False");
                 CSL.SQL.PostgreSQL sql = new CSL.SQL.PostgreSQL(connection);
                 await sql.SetSchema("testschema");
                 return sql;
