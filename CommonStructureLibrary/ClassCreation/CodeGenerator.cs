@@ -96,13 +96,18 @@ namespace CSL.ClassCreation
         public void Comment(string comment) => Add("//" , comment);
         #endregion
         #region Advanced
-        public void BeginRecord(string RecordName, IEnumerable<string> ColumnTypesAndNames, string Append = "")
+        //public void BeginRecord(string RecordName, IEnumerable<string> ColumnTypesAndNames, string Append = "")
+        public void BeginRecord(string RecordName, IEnumerable<ParameterDefinition> Parameters, string Append = "")
         {
-            string TypeColumns = string.Join(", ", ColumnTypesAndNames);
+            string TypeColumns = string.Join(", ", Parameters);
             Add("public record " + RecordName.Replace(' ', '_') + "(" + TypeColumns + ")" + Append);
             EnterBlock();
         }
         public void EndRecord() => ExitBlock();
         #endregion
+    }
+    public record ParameterDefinition(string parameterType, string parameterName)
+    {
+        public override string ToString() => parameterType + " " + parameterName;
     }
 }

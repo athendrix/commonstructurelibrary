@@ -21,7 +21,7 @@ namespace CSL.SQL.ClassCreator
             gen.BlankLine();
             gen.Namespace(Namespace);
 
-            gen.BeginRecord(TableName, Columns.Select(x => x.CSharpTypeName + " " + x.ColumnName), " : IDBSet");
+            gen.BeginRecord(TableName, Columns.Select(x => new ParameterDefinition(x.CSharpTypeName, x.ColumnName)), " : IDBSet");
 
             gen.Region("Static Functions");
             gen.CreateDB(this);

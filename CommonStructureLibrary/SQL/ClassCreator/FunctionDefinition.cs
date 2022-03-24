@@ -16,7 +16,7 @@ namespace CSL.SQL.ClassCreator
             gen.Libraries("System", "System.Collections.Generic", "System.Data", "System.Linq", "System.Threading.Tasks", "CSL.SQL");
             gen.BlankLine();
             gen.Namespace(Namespace);
-            gen.BeginRecord(FunctionName, Output.Select(x => x.CSharpTypeName + " " + x.ColumnName));
+            gen.BeginRecord(FunctionName, Output.Select(x => new ParameterDefinition(x.CSharpTypeName, x.ColumnName)));
             gen.Region("Static Functions");
             gen.CreateFunction(this);
             gen.DropFunction(FunctionName);
