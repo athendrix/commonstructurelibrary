@@ -6,11 +6,133 @@ using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using CSL.Helpers;
+using CSL.ClassCreation;
 
 namespace CSL.API
 {
     public abstract record APIRecord
     {
+        #region TemplateProcessing
+        public static string CreateRecordFromJSONTemplate(string JSON, string rootName, string Namespace)
+        {
+            CodeGenerator gen = new CodeGenerator();
+            gen.Libraries("CSL.API");
+            gen.BlankLine();
+            gen.Namespace(Namespace);
+            Dictionary<string, Dictionary<string, string?>> RecordInfo = AddRecord(rootName, JObject.Parse(JSON));
+            foreach(KeyValuePair<string, Dictionary<string, string?>> rinfo in RecordInfo)
+            {
+                gen.BeginRecord(rinfo.Key, rinfo.Value.Select(x => new ParameterDefinition(x.Value ?? "string?", x.Key)), " : APIRecord", true);
+            }
+            gen.EndNamespace();
+            return gen.ToString();
+        }
+        #region JSONRecordGeneration
+        private static Dictionary<string, Dictionary<string, string?>> AddRecord(string name, JObject jobj)
+        {
+            Dictionary<string, Dictionary<string, string?>> toReturn = new Dictionary<string, Dictionary<string, string?>>();
+            AddRecord(name, jobj, toReturn);
+            return toReturn;
+        }
+        private static void AddRecord(string name, JObject jobj, Dictionary<string,Dictionary<string,string?>> ObjectRecord)
+        {
+            if (jobj.Type != JTokenType.Object) { return; }
+            Dictionary<string, string?> Items = new Dictionary<string, string?>();
+            foreach (KeyValuePair<string, JToken?> item in jobj)
+            {
+                if(item.Value == null) { continue; }
+                Items.Add(item.Key, ProcessType(item.Key, item.Value, ObjectRecord));
+            }
+            if(ObjectRecord.ContainsKey(name))
+            {
+                foreach(KeyValuePair<string, string?> item in Items)
+                {
+                    if(ObjectRecord[name].ContainsKey(item.Key))
+                    {
+                        if (ObjectRecord[name][item.Key] != null && item.Value != null && ObjectRecord[name][item.Key] != item.Value)
+                        {
+                            ObjectRecord[name][item.Key] = "string?";
+                        }
+                        if (ObjectRecord[name][item.Key] == null && item.Value != null)
+                        {
+                            ObjectRecord[name][item.Key] = item.Value;
+                        }
+                    }
+                    else
+                    {
+                        ObjectRecord[name][item.Key] = item.Value;
+                    }
+                }
+            }
+            else
+            {
+                ObjectRecord.Add(name, Items);
+            }
+            
+        }
+        private static string? ProcessType(string name, JToken item, Dictionary<string, Dictionary<string, string?>> ObjectRecord)
+        {
+            switch (item.Type)
+            {
+                case JTokenType.None://0
+                    return null;
+                case JTokenType.Object://1
+                    if (item is JObject childobj)
+                    {
+                        AddRecord(name, childobj, ObjectRecord);
+                        return name + "?";
+                    }
+                    break;
+                case JTokenType.Array://2
+                    if (item is JArray arrayobj)
+                    {
+                        JToken? first = arrayobj.First;
+                        if(first != null)
+                        {
+                            string? childPT = ProcessType(name, first, ObjectRecord);
+                            if (childPT != null)
+                            {
+                                return childPT + "[]";
+                            }
+                        }
+                        return null;
+                    }
+                    break;
+                case JTokenType.Constructor://3
+                    return "string?";
+                case JTokenType.Property://4
+                    return "string?";
+                case JTokenType.Comment://5
+                    return null;
+                case JTokenType.Integer://6
+                    return "long?";
+                case JTokenType.Float://7
+                    return "double?";
+                case JTokenType.String://8
+                    return "string?";
+                case JTokenType.Boolean://9
+                    return "bool?";
+                case JTokenType.Null://10
+                    return null;
+                case JTokenType.Undefined://11
+                    return null;
+                case JTokenType.Date://12
+                    return "DateTime?";
+                case JTokenType.Raw://13
+                    return "string?";
+                case JTokenType.Bytes://14
+                    return "byte[]?";
+                case JTokenType.Guid://15
+                    return "Guid?";
+                case JTokenType.Uri://16
+                    return "string?";
+                case JTokenType.TimeSpan://17
+                    return "TimeSpan?";
+            }
+            return null;
+        }
+        #endregion
+        #endregion
         #region ToJSON
         private static JToken GetToken(object? obj)
         {

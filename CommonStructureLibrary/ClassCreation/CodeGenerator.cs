@@ -97,11 +97,14 @@ namespace CSL.ClassCreation
         #endregion
         #region Advanced
         //public void BeginRecord(string RecordName, IEnumerable<string> ColumnTypesAndNames, string Append = "")
-        public void BeginRecord(string RecordName, IEnumerable<ParameterDefinition> Parameters, string Append = "")
+        public void BeginRecord(string RecordName, IEnumerable<ParameterDefinition> Parameters, string Append = "", bool oneliner = false)
         {
             string TypeColumns = string.Join(", ", Parameters);
-            Add("public record " + RecordName.Replace(' ', '_') + "(" + TypeColumns + ")" + Append);
-            EnterBlock();
+            Add("public record " + RecordName.Replace(' ', '_') + "(" + TypeColumns + ")" + Append + (oneliner ? ";" : ""));
+            if(!oneliner)
+            {
+                EnterBlock();
+            }
         }
         public void EndRecord() => ExitBlock();
         #endregion
