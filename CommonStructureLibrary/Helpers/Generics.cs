@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace CSL.Helpers
 {
     public static class Generics
     {
+        #region TryParse
         /// <summary>
         /// Tries to parse the string s as the given TType.
         /// If successful, will return true, otherwise it will return false.
@@ -23,17 +25,17 @@ namespace CSL.Helpers
             {
                 throw new ArgumentException("Cannot parse a string to void!");
             }
-            if (TType == typeof(string))
+            if (TType == typeof(string) || TType == typeof(object))
             {
                 result = s;
                 return true;
             }
-            if (s == "" && TType == typeof(byte[]))
+            if (s is "" && TType == typeof(byte[]))
             {
                 result = new byte[0];
                 return true;
             }
-            if (s == "" && (TType == typeof(Guid) || TType == typeof(Guid?)))
+            if (s is "" && (TType == typeof(Guid) || TType == typeof(Guid?)))
             {
                 result = Guid.Empty;
                 return true;
@@ -127,12 +129,12 @@ namespace CSL.Helpers
             if (TType == typeof(bool) || TType == typeof(bool?))
             {
                 string uppers = s.ToUpper();
-                if (s == "0" || uppers == "F" || uppers == "N" || uppers == "NO")
+                if (uppers is "0" or "F" or "N" or "NO")
                 {
                     result = false;
                     return true;
                 }
-                if (s == "1" || uppers == "T" || uppers == "Y" || uppers == "YES")
+                if (uppers is "1" or "T" or "Y" or "YES")
                 {
                     result = true;
                     return true;
@@ -241,6 +243,8 @@ namespace CSL.Helpers
             result = (T?)objresult;
             return toReturn;
         }
+        #endregion
+        #region ToStringRT
         /// <summary>
         /// Mostly the same as the built-in ToString function.
         /// But for certain values, it will provide a better roundtripable default.
@@ -356,5 +360,134 @@ namespace CSL.Helpers
         /// <param name="input">The value to convert into a string.</param>
         /// <returns>The string version of the value.</returns>
         public static string? ToStringRT(this object? input) => ToString(input);
+        #endregion
+        #region BasicType
+        public static Type FindType(this IEnumerable<string> strings) => FindBasicType(strings, out bool nullable).FromBasicType(nullable);
+        public static string FindTypeString(this IEnumerable<string> strings) => FindBasicType(strings, out bool nullable).ToString(nullable);
+        public static BasicType FindBasicType(this IEnumerable<string> strings, out bool nullable)
+        {
+
+            bool[] validTypes = new bool[(int)BasicType.String];
+            bool[] nullvalues = new bool[(int)BasicType.String];
+            bool[] nonnullvalues = new bool[(int)BasicType.String];
+            for (int i = 0; i < validTypes.Length; i++)
+            {
+                validTypes[i] = true;
+                nullvalues[i] = false;
+                nonnullvalues[i] = false;
+            }
+
+            foreach (string s in strings)
+            {
+                for (int i = 0; i < validTypes.Length; i++)
+                {
+                    if (validTypes[i])
+                    {
+                        if (TryParse(s, out object? nulltest, ((BasicType)(i + 1)).FromBasicType(true)))
+                        {
+                            if (nulltest == null)
+                            {
+                                nullvalues[i] = true;
+                            }
+                            else
+                            {
+                                nonnullvalues[i] = true;
+                            }
+                        }
+                        else
+                        {
+                            validTypes[i] = false;
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < validTypes.Length; i++)
+            {
+                if(validTypes[i] && nonnullvalues[i])
+                {
+                    nullable = nullvalues[i];
+                    return (BasicType)(i + 1);
+                }
+            }
+            for (int i = 0; i < validTypes.Length; i++)
+            {
+                if (validTypes[i] && nullvalues[i])
+                {
+                    nullable = true;
+                    return BasicType.None;
+                }
+            }
+            nullable = false;
+            return BasicType.None;
+        }
+        public enum BasicType
+        {
+            None      = 0,
+            Boolean   = 1,
+            Byte      = 2,
+            Sbyte     = 3,
+            UShort    = 4,
+            Short     = 5,
+            UInt      = 6,
+            Int       = 7,
+            ULong     = 8,
+            Long      = 9,
+            Single    = 10,
+            Double    = 11,
+            Decimal   = 12,
+            Char      = 13,
+            Guid      = 14,
+            TimeSpan  = 15,
+            DateTime  = 16,
+            ByteArray = 17,
+            String    = 18,
+        }
+        public static Type FromBasicType(this BasicType bt, bool nullable) => bt switch
+        {
+            BasicType.None => typeof(object),
+            BasicType.Boolean => nullable ? typeof(bool?) : typeof(bool),
+            BasicType.Byte => nullable ? typeof(byte?) : typeof(byte),
+            BasicType.Sbyte => nullable ? typeof(sbyte?) : typeof(sbyte),
+            BasicType.UShort => nullable ? typeof(ushort?) : typeof(ushort),
+            BasicType.Short => nullable ? typeof(short?) : typeof(short),
+            BasicType.UInt => nullable ? typeof(uint?) : typeof(uint),
+            BasicType.Int => nullable ? typeof(int?) : typeof(int),
+            BasicType.ULong => nullable ? typeof(ulong?) : typeof(ulong),
+            BasicType.Long => nullable ? typeof(long?):typeof(long),
+            BasicType.Single => nullable ? typeof(float?):typeof(float),
+            BasicType.Double => nullable ? typeof(double?):typeof(double),
+            BasicType.Decimal => nullable ? typeof(decimal?):typeof(decimal),
+            BasicType.Char => nullable ? typeof(char?):typeof(char),
+            BasicType.Guid => nullable ? typeof(Guid?):typeof(Guid),
+            BasicType.TimeSpan => nullable ? typeof(TimeSpan?):typeof(TimeSpan),
+            BasicType.DateTime => nullable ? typeof(DateTime?): typeof(DateTime),
+            BasicType.ByteArray => typeof(byte[]),
+            BasicType.String => typeof(string),
+            _ => throw new NotImplementedException()
+        };
+        public static string ToString(this BasicType bt, bool nullable) => bt switch
+        {
+            BasicType.None => "object" + (nullable ?"?":""),
+            BasicType.Boolean => "bool" + (nullable ? "?" : ""),
+            BasicType.Byte => "byte" + (nullable ? "?" : ""),
+            BasicType.Sbyte => "sbyte" + (nullable ? "?" : ""),
+            BasicType.UShort => "ushort" + (nullable ? "?" : ""),
+            BasicType.Short => "short" + (nullable ? "?" : ""),
+            BasicType.UInt => "uint" + (nullable ? "?" : ""),
+            BasicType.Int => "int" + (nullable ? "?" : ""),
+            BasicType.ULong => "ulong" + (nullable ? "?" : ""),
+            BasicType.Long => "long" + (nullable ? "?" : ""),
+            BasicType.Single => "float" + (nullable ? "?" : ""),
+            BasicType.Double => "double" + (nullable ? "?" : ""),
+            BasicType.Decimal => "decimal" + (nullable ? "?" : ""),
+            BasicType.Char => "char" + (nullable ? "?" : ""),
+            BasicType.Guid => "Guid" + (nullable ? "?" : ""),
+            BasicType.TimeSpan => "TimeSpan" + (nullable ? "?" : ""),
+            BasicType.DateTime => "DateTime" + (nullable ? "?" : ""),
+            BasicType.ByteArray => "byte[]" + (nullable ? "?" : ""),
+            BasicType.String => "string" + (nullable ? "?" : ""),
+            _ => throw new NotImplementedException()
+        };
+        #endregion
     }
 }

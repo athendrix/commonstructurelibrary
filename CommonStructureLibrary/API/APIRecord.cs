@@ -5,6 +5,7 @@ using System.Text;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Xml;
 using CSL.Helpers;
 using CSL.ClassCreation;
 
@@ -21,6 +22,21 @@ namespace CSL.API
             gen.Namespace(Namespace);
             Dictionary<string, Dictionary<string, string?>> RecordInfo = AddRecord(rootName, JObject.Parse(JSON));
             foreach(KeyValuePair<string, Dictionary<string, string?>> rinfo in RecordInfo)
+            {
+                gen.BeginRecord(rinfo.Key, rinfo.Value.Select(x => new ParameterDefinition(x.Value ?? "string?", x.Key)), " : APIRecord", true);
+            }
+            gen.EndNamespace();
+            return gen.ToString();
+        }
+        public static string CreateRecordFromXMLTemplate(string XML, string rootName, string Namespace)
+        {
+#warning Unfinished
+            CodeGenerator gen = new CodeGenerator();
+            gen.Libraries("CSL.API");
+            gen.BlankLine();
+            gen.Namespace(Namespace);
+            Dictionary<string, Dictionary<string, string?>> RecordInfo = AddRecord(rootName, JObject.Parse(JSON));
+            foreach (KeyValuePair<string, Dictionary<string, string?>> rinfo in RecordInfo)
             {
                 gen.BeginRecord(rinfo.Key, rinfo.Value.Select(x => new ParameterDefinition(x.Value ?? "string?", x.Key)), " : APIRecord", true);
             }
