@@ -15,157 +15,271 @@ namespace CSL.Data
     public static class CSV
     {
         /// <summary>
-        /// Reads a CSV file, separated by a separator, escaped by an escape character into a DataTable, and attempts to guess the Type of each Column based on the typeDictionary which is editable.
-        /// <para>The defaults are appropriate for most csv files, but if you have custom data types you want to read, you'll have to make a typeDictionary. Use the default for guidance.</para>
-        /// <para>Does not name the table, but will not change the name if a name exists.</para>
-        /// <para>Can also append data to an existing table if the columns and datatypes match.</para>
+        /// Lazily reads a CSV file line by line, using a designated a separator, escape character, and list of values to consider null, into an IEnumerable of string arrays.
+        /// <para>Headers are treated like any other row, and beyond handling escape characters and new lines, no additional formatting is performed.</para>
+        /// <para>The defaults are appropriate for most csv files, but if you have CSVs that use alternative separators, escape characters, or null values, you'll need to specify them.</para>
         /// </summary>
-        /// <param name="input">TextReader to use as input.</param>
-        /// <param name="separator">Character to separate on. Usually a comma ,sometimes a tab.</param>
-        /// <param name="headers">If headers are not supplied, we'll grab them from the first row. If the first row contains data, then you need to supply headers.</param>
+        /// <param name="CSVString">CSV in string form to use as input.</param>
         /// <param name="nullValues">Values to treat as null. This defaults to only situations where there are no characters between two separators.</param>
-        /// <param name="typeDictionary">An ordered dictionary of types with methods for processing them from the underlying data. See the DefaultTypeDictionary for more info.</param>
-        /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `, or even nothing at all.</param>
-        /// <param name="startLine">How many lines to skip? This will skip after reading the header(if there is one), but before reading the data.</param>
-        /// <param name="lineLimit">Maximum data lines to read. (Not counting the headerline, nor newlines within string values.)</param>
-        /// <returns>An array of immutable DataStore objects representing the data.</returns>
-        public static DataStore<string>[] ReadCSV(TextReader input, char separator = ',', string[]? headers = null, string[]? nullValues = null, char? escapechar = '"', int startLine = 0, int? lineLimit = null)
+        /// <param name="separator">Character to separate on. Usually a comma, sometimes a tab.</param>
+        /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `</param>
+        /// <returns>An IEnumerable of string arrays each containing a single line of the parsed data.</returns>
+        /// <exception cref="ArgumentException">Will throw an ArgumentException if the separator and escapechar are the same.</exception>
+        public static IEnumerable<string?[]> ReadCSVRawFromString(string CSVString, string[]? nullValues = null, char separator = ',', char escapechar = '"')
         {
-            if (nullValues == null) { nullValues = new string[] { "" }; }//Mostly to deal with R's NA values
-            //List<object[]> readData = new List<object[]>();
-            List<DataStore<string>> readData = new List<DataStore<string>>();
-            string? firstLine = input.AdvancedReadLine(escapechar);
-            if (firstLine == null)
+            using (TextReader reader = new StringReader(CSVString))
             {
-                return new DataStore<string>[0];
-            }
-            string?[] firstLineArray = firstLine.AdvancedSplit(separator, nullValues, escapechar);
-            int linesRead = 0;
-            if(headers == null)
-            {
-                headers = new string[firstLineArray.Length];
-                for(int i = 0; i < firstLineArray.Length; i++)
+                foreach(string?[] row in reader.ReadCSVRaw(nullValues,separator,escapechar))
                 {
-                    string cell = firstLineArray[i] ?? "";
-                    if(headers.Contains(cell))
-                    {
-                        int HeaderCellAppend = 1;
-                        while (headers.Contains(cell + "(" + ++HeaderCellAppend + ")"))
-                        {
-                        }
-                        cell = cell + "(" + HeaderCellAppend + ")";
-                    }
-                    headers[i] = cell;
+                    yield return row;
                 }
             }
-            else if (startLine <= 0 && lineLimit != 0)
+            yield break;
+        }
+        /// <summary>
+        /// Lazily reads a CSV file line by line, using a designated a separator, escape character, and list of values to consider null, into an IEnumerable of string arrays.
+        /// <para>Headers are treated like any other row, and beyond handling escape characters and new lines, no additional formatting is performed.</para>
+        /// <para>The defaults are appropriate for most csv files, but if you have CSVs that use alternative separators, escape characters, or null values, you'll need to specify them.</para>
+        /// </summary>
+        /// <param name="CSVFile">File path to CSV file to use as input.</param>
+        /// <param name="nullValues">Values to treat as null. This defaults to only situations where there are no characters between two separators.</param>
+        /// <param name="separator">Character to separate on. Usually a comma, sometimes a tab.</param>
+        /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `</param>
+        /// <returns>An IEnumerable of string arrays each containing a single line of the parsed data.</returns>
+        /// <exception cref="ArgumentException">Will throw an ArgumentException if the separator and escapechar are the same.</exception>
+        public static IEnumerable<string?[]> ReadCSVRawFromFile(string CSVFile, string[]? nullValues = null, char separator = ',', char escapechar = '"')
+        {
+            using (TextReader reader = new StreamReader(CSVFile))
             {
-                readData.Add(new DataStore<string> (headers,firstLineArray,true));
-                linesRead = 1;
+                foreach (string?[] row in reader.ReadCSVRaw(nullValues, separator, escapechar))
+                {
+                    yield return row;
+                }
             }
-            
-            for (int i = 0; i < startLine; i++)
+            yield break;
+        }
+        /// <summary>
+        /// Lazily reads a CSV file line by line, using a designated a separator, escape character, and list of values to consider null, into an IEnumerable of string arrays.
+        /// <para>Headers are treated like any other row, and beyond handling escape characters and new lines, no additional formatting is performed.</para>
+        /// <para>The defaults are appropriate for most csv files, but if you have CSVs that use alternative separators, escape characters, or null values, you'll need to specify them.</para>
+        /// </summary>
+        /// <param name="input">TextReader to use as input.</param>
+        /// <param name="nullValues">Values to treat as null. This defaults to only situations where there are no characters between two separators.</param>
+        /// <param name="separator">Character to separate on. Usually a comma, sometimes a tab.</param>
+        /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `</param>
+        /// <returns>An IEnumerable of string arrays each containing a single line of the parsed data.</returns>
+        /// <exception cref="ArgumentException">Will throw an ArgumentException if the separator and escapechar are the same.</exception>
+        public static IEnumerable<string?[]> ReadCSVRaw(this TextReader input, string[]? nullValues = null, char separator = ',', char escapechar = '"')
+        {
+            if (nullValues == null) { nullValues = new string[] { "" }; }//We let users specify, because some programs (Looking at you R with your NA values) have custom null values.
+            if (escapechar == separator) { throw new ArgumentException("The separator and the escape character cannot be the same!"); }
+            StringBuilder sb = new StringBuilder();
+            List<string?> toReturn = new List<string?>();
+            bool escaped = false;
+            int c;
+            while ((c = input.Read()) != -1)
             {
-                input.AdvancedReadLine(escapechar);//skip the lines while paying attention to the escape characters.
+                char cc = (char)c;
+                if (cc == escapechar)
+                {
+                    sb.Append(cc);
+                    escaped = !escaped;
+                    continue;
+                }
+                if (!escaped && (cc == separator || cc == '\n'))
+                {
+                    string protoval = sb.ToString();
+                    if (cc == '\n' && protoval.EndsWith("\r")) { protoval = protoval.Substring(0, protoval.Length - 1); }
+                    if (nullValues.Contains(protoval))
+                    {
+                        toReturn.Add(null);
+                    }
+                    else
+                    {
+                        toReturn.Add(protoval.Trim().UnescapeString(escapechar));
+                    }
+                    sb.Clear();
+                    if (cc == '\n')
+                    {
+                        yield return toReturn.ToArray();
+                        toReturn.Clear();
+                    }
+                    continue;
+                }
+                else
+                {
+                    sb.Append(cc);
+                }
             }
-            string? currLine;
-            while ((lineLimit == null || linesRead++ < lineLimit) && (currLine = input.AdvancedReadLine(escapechar)) != null)
+            if (toReturn.Count > 0 || sb.Length > 0)
             {
-                string?[] currLineArray = currLine.AdvancedSplit(separator, nullValues, escapechar);
-                readData.Add(new DataStore<string> (headers,currLineArray,true));
+                string protoval = sb.ToString();
+                if (protoval.EndsWith("\r")) { protoval = protoval.Substring(0, protoval.Length - 1); }
+                if (nullValues.Contains(protoval))
+                {
+                    toReturn.Add(null);
+                }
+                else
+                {
+                    toReturn.Add(protoval.Trim().UnescapeString(escapechar));
+                }
+                yield return toReturn.ToArray();
             }
-            return readData.ToArray();
+            yield break;
         }
 
         /// <summary>
-        /// Suggested to call from certain custom TypeConverters to remove external escape characters and replace double escaped escape characters with just one copy.
+        /// Lazily reads a CSV file line by line, using a designated a separator, escape character, and list of values to consider null, into an IEnumerable of DataStores.
+        /// <para>If headers are not supplied, we'll grab them from the first row. If the first row contains data, then you'll need to supply headers.</para>
+        /// <para>The defaults are appropriate for most csv files, but if you have CSVs that use alternative separators, escape characters, or null values, you'll need to specify them.</para>
         /// </summary>
-        /// <param name="input">String to prune escape characters from.</param>
-        /// <param name="escapechar"></param>
+        /// <param name="CSVString">CSV in string form to use as input.</param>
+        /// <param name="headers">If headers are not supplied, we'll grab them from the first row. If the first row contains data, then you'll need to supply headers.</param>
+        /// <param name="nullValues">Values to treat as null. This defaults to only situations where there are no characters between two separators.</param>
+        /// <param name="separator">Character to separate on. Usually a comma, sometimes a tab.</param>
+        /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `</param>
+        /// <returns>An IEnumerable of immutable DataStore objects representing the parsed data.</returns>
+        public static IEnumerable<DataStore<string>> ReadCSVFromString(string CSVString, string[]? headers = null, string[]? nullValues = null, char separator = ',', char escapechar = '"')
+        {
+            using (TextReader reader = new StringReader(CSVString))
+            {
+                foreach (DataStore<string> row in reader.ReadCSV(headers, nullValues, separator, escapechar))
+                {
+                    yield return row;
+                }
+            }
+            yield break;
+        }
+        /// <summary>
+        /// Lazily reads a CSV file line by line, using a designated a separator, escape character, and list of values to consider null, into an IEnumerable of DataStores.
+        /// <para>If headers are not supplied, we'll grab them from the first row. If the first row contains data, then you'll need to supply headers.</para>
+        /// <para>The defaults are appropriate for most csv files, but if you have CSVs that use alternative separators, escape characters, or null values, you'll need to specify them.</para>
+        /// </summary>
+        /// <param name="CSVFile">File path to CSV file to use as input.</param>
+        /// <param name="headers">If headers are not supplied, we'll grab them from the first row. If the first row contains data, then you'll need to supply headers.</param>
+        /// <param name="nullValues">Values to treat as null. This defaults to only situations where there are no characters between two separators.</param>
+        /// <param name="separator">Character to separate on. Usually a comma, sometimes a tab.</param>
+        /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `</param>
+        /// <returns>An IEnumerable of immutable DataStore objects representing the parsed data.</returns>
+        public static IEnumerable<DataStore<string>> ReadCSVFromFile(string CSVFile, string[]? headers = null, string[]? nullValues = null, char separator = ',', char escapechar = '"')
+        {
+            using (TextReader reader = new StreamReader(CSVFile))
+            {
+                foreach (DataStore<string> row in reader.ReadCSV(headers, nullValues, separator, escapechar))
+                {
+                    yield return row;
+                }
+            }
+            yield break;
+        }
+        /// <summary>
+        /// Lazily reads a CSV file line by line, using a designated a separator, escape character, and list of values to consider null, into an IEnumerable of DataStores.
+        /// <para>If headers are not supplied, we'll grab them from the first row. If the first row contains data, then you'll need to supply headers.</para>
+        /// <para>The defaults are appropriate for most csv files, but if you have CSVs that use alternative separators, escape characters, or null values, you'll need to specify them.</para>
+        /// </summary>
+        /// <param name="input">TextReader to use as input.</param>
+        /// <param name="headers">If headers are not supplied, we'll grab them from the first row. If the first row contains data, then you'll need to supply headers.</param>
+        /// <param name="nullValues">Values to treat as null. This defaults to only situations where there are no characters between two separators.</param>
+        /// <param name="separator">Character to separate on. Usually a comma, sometimes a tab.</param>
+        /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `</param>
+        /// <returns>An IEnumerable of immutable DataStore objects representing the parsed data.</returns>
+        public static IEnumerable<DataStore<string>> ReadCSV(this TextReader input, string[]? headers = null, string[]? nullValues = null, char separator = ',',  char escapechar = '"')
+        {
+            if (nullValues == null) { nullValues = new string[] { "" }; }//We let users specify, because some programs (Looking at you R with your NA values) have custom null values.
+            IEnumerable<string?[]> CSV = ReadCSVRaw(input, nullValues,separator, escapechar);
+            bool skipheader = false;
+            if(headers == null)
+            {
+                skipheader = true;
+                headers = CSV.FirstOrDefault()?.Select(x => x ?? "NULL").ToArray();
+            }
+            if (headers == null)
+            {
+                yield break;
+            }
+            for (int i = 0; i < headers.Length - 1; i++)
+            {
+                int count = 0;
+                for (int j = i + 1; j < headers.Length; j++)
+                {
+                    if (headers[i] == headers[j])
+                    {
+                        headers[j] = headers[j] + $"({++count})";
+                    }
+                }
+            }
+
+            foreach(string?[] CSVRow in CSV)
+            {
+                if (skipheader)
+                {
+                    skipheader = false;
+                    continue;
+                }
+                string?[] values = CSVRow;
+                if(values.Length != headers.Length)
+                {
+                    string?[] newValues = new string?[headers.Length];
+                    Array.Copy(values, newValues, Math.Min(values.Length,headers.Length));//any unfilled in slots will default to null, and any extra values will be ignored.
+                    values = newValues;
+                }
+                yield return new DataStore<string>(headers, values, true);
+            }
+            yield break;
+        }
+
+        /// <summary>
+        /// Replace double escaped escape characters with just one copy.
+        /// </summary>
+        /// <param name="input">String to unescape.</param>
+        /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `.</param>
         /// <returns></returns>
-        //public static string PruneEscapeCharacters(this string input, char escapechar)
-        //{
-        //    int firstpos;
-        //    if ((firstpos = input.IndexOf(escapechar)) > -1)
-        //    {
-        //        input = input.Remove(firstpos, 1);
-        //        input = input.Remove(input.LastIndexOf(escapechar), 1);
-        //    }
-        //    input = input.Replace(new string(escapechar, 2), new string(escapechar, 1));
-        //    return input;
-        //}
+        private static string? UnescapeString(this string? input, char escapechar)
+        {
+            string e1 = new string(escapechar, 1);
+            string e2 = new string(escapechar, 2);
+            if(input != null && input.StartsWith(e1) && input.EndsWith(e1) && (input.Where(x => x == escapechar).Count() % 2 == 0))
+            {
+                return input.Substring(1, input.Length - 2).Replace(e2, e1);
+            }
+            return input;
+        }
         /// <summary>
         /// Escapes the String prepatory to writing to a CSV File
         /// </summary>
         /// <param name="input">String to escape.</param>
         /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `.</param>
         /// <returns></returns>
-        //public static string EscapeString(this string input, char escapechar)
-        //{
-        //    return escapechar + input.Replace(new string(escapechar, 1), new string(escapechar, 2)) + escapechar;
-        //}
-        /// <summary>
-        /// Reads a line from the TextReader, but ignores newlines that have been escaped.
-        /// </summary>
-        /// <param name="input">TextReader to use as input.</param>
-        /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `.</param>
-        /// <returns>Line from TextReader</returns>
-        private static string? AdvancedReadLine(this TextReader input, char? escapechar)
+        private static string? EscapeString(this string? input, char separator, char escapechar)
         {
-            string toReturn = input.ReadLine();
-            if (toReturn == null)
+            string e1 = new string(escapechar, 1);
+            string e2 = new string(escapechar, 2);
+            if (input == null) { return null; }
+            if (input == "") { return e2; }
+            if(input.Where(x => x == separator || x == escapechar || x == '\n').Any() || input.Trim() != input)
             {
-                return null;
+                return e1 + input.Replace(e1, e2) + e1;
             }
-            if (escapechar != null)
-            {
-                int currCount = toReturn.Count(c => c == escapechar);
-                while (currCount % 2 != 0)
-                {
-                    string nextLine = input.ReadLine();
-                    if (nextLine == null)
-                    {
-                        return toReturn;
-                    }
-                    toReturn += "\r\n" + nextLine;
-                    currCount += nextLine.Count(c => c == escapechar);
-                }
-            }
-            return toReturn;
+            return input;
         }
         /// <summary>
-        /// Like String.Split, but ignores separators that have been escaped, and returns certain values as null.
+        /// Writes a CSV out line by line allowing the caller to end a line with whichever NewLine method they want.
+        /// Each string is a new line, and can be directly written as such.
         /// </summary>
-        /// <param name="input">String to split</param>
-        /// <param name="separator">Character to separate on. Usually a comma.</param>
-        /// <param name="nullValues">Values to treat as null. This defaults to only situations where there are no characters between two separators.</param>
-        /// <param name="escapechar">Character to escape on. Usually a Double Quote " but may be a single ' or back quote `.</param>
-        /// <returns>Array of strings that have been singled out like String.Split would.</returns>
-        private static string?[] AdvancedSplit(this string input, char separator, string[] nullValues, char? escapechar)
+        /// <param name="DataStores">The datastores to pull data from.</param>
+        /// <param name="headers">The headers to write on the first line, and to use to lookup data in the datastores.</param>
+        /// <param name="nullValue">The string to write when a null value is encountered. This defaults to the empty string. (i.e. no space between separators)</param>
+        /// <param name="separator">The character to use to separate values on a line. Usually a comma ,</param>
+        /// <param name="escapechar">The character to use to escape. Usually a double quote "</param>
+        /// <returns></returns>
+        public static IEnumerable<string> WriteCSV(this IEnumerable<DataStore<string>> DataStores, string[] headers, string nullValue = "", char separator = ',', char escapechar = '"')
         {
-            if (nullValues == null) { nullValues = nullValues = new string[] { "" }; }
-            string[] naiveArray = input.Split(new char[] { separator }, StringSplitOptions.None);
-            List<string?> parsedLine = new List<string?>();
-            for (int i = 0; i < naiveArray.Length; i++)
+            yield return string.Join(new string(separator, 1), headers.Select(x => EscapeString(x, separator, escapechar) ?? nullValue));
+            foreach(DataStore<string> DS in DataStores)
             {
-                string toAdd = naiveArray[i];
-                if (escapechar != null)
-                {
-                    int currCount = toAdd.Count(c => c == escapechar);
-                    while (currCount % 2 != 0 && i < naiveArray.Length - 1)
-                    {
-                        toAdd += "," + naiveArray[++i];
-                        currCount += naiveArray[i].Count(c => c == escapechar);
-                    }
-                }
-                if (nullValues.Contains(toAdd))
-                {
-                    parsedLine.Add(null);
-                    continue;
-                }
-                parsedLine.Add(toAdd);
+                yield return string.Join(new string(separator, 1), headers.Select(x => EscapeString(DS[x], separator, escapechar) ?? nullValue));
             }
-            return parsedLine.ToArray();
+            yield break;
         }
     }
 }

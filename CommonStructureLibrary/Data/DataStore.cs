@@ -22,6 +22,7 @@ namespace CSL.Data
             ordinalOrder = new List<string>();
             this.caseInsensitiveLookup = caseInsensitiveLookup;
         }
+        public DataStore(DataStore<T> other) : this(other, other.immutable) { }
         public DataStore(DataStore<T> other, bool immutable)
         {
             if (default(T?) != null) { throw new Exception("DataStore only works if T is a nullable type! Try adding a ? after the type name!"); }
@@ -240,19 +241,19 @@ namespace CSL.Data
             }
             throw new FormatException("Failed to parse key \"" + key + "\" with value \"" + value + "\" to " + typeof(T?).Name + ".");
         }
-        public static int? GetShort(this DataStore<string> ds, string key) => ds.Get<short?>(key);
+        public static short? GetShort(this DataStore<string> ds, string key) => ds.Get<short?>(key);
         public static int? GetInt(this DataStore<string> ds, string key) => ds.Get<int?>(key);
         public static long? GetLong(this DataStore<string> ds, string key) => ds.Get<long?>(key);
         public static bool? GetBool(this DataStore<string> ds, string key) => ds.Get<bool?>(key);
         public static DateTime? GetDateTime(this DataStore<string> ds, string key) => ds.Get<DateTime?>(key);
-        public static byte[]? GetByteArray(this DataStore<string> ds, string key) => ds.Get<byte[]>(key);
+        public static byte[]? GetByteArray(this DataStore<string> ds, string key) => ds.Get<byte[]?>(key);
         #endregion
         #region AdvancedTypes
         public static T?[]? GetArray<T>(this DataStore<string> ds, string key)
         {
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(byte?))
             {
-                return ds.Get<byte[]>(key) as T[];
+                return ds.Get<byte?[]?>(key) as T[];
             }
             string? strvalue = ds.Get(key);
             if (strvalue == null)

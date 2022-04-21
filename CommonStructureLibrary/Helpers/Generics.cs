@@ -362,9 +362,9 @@ namespace CSL.Helpers
         public static string? ToStringRT(this object? input) => ToString(input);
         #endregion
         #region BasicType
-        public static Type FindType(this IEnumerable<string> strings) => FindBasicType(strings, out bool nullable).FromBasicType(nullable);
-        public static string FindTypeString(this IEnumerable<string> strings) => FindBasicType(strings, out bool nullable).ToString(nullable);
-        public static BasicType FindBasicType(this IEnumerable<string> strings, out bool nullable)
+        public static Type FindType(this IEnumerable<string?> strings) => FindBasicType(strings, out bool nullable).FromBasicType(nullable);
+        public static string FindTypeString(this IEnumerable<string?> strings) => FindBasicType(strings, out bool nullable).ToString(nullable);
+        public static BasicType FindBasicType(this IEnumerable<string?> strings, out bool nullable)
         {
 
             bool[] validTypes = new bool[(int)BasicType.String];
@@ -377,21 +377,30 @@ namespace CSL.Helpers
                 nonnullvalues[i] = false;
             }
 
-            foreach (string s in strings)
+            foreach (string? s in strings)
             {
                 for (int i = 0; i < validTypes.Length; i++)
                 {
                     if (validTypes[i])
                     {
-                        if (TryParse(s, out object? nulltest, ((BasicType)(i + 1)).FromBasicType(true)))
+                        BasicType bt = (BasicType)(i + 1);
+                        if (TryParse(s, out object? nulltest, bt.FromBasicType(true)))
                         {
+                            
                             if (nulltest == null)
                             {
                                 nullvalues[i] = true;
                             }
                             else
                             {
-                                nonnullvalues[i] = true;
+                                if (bt == BasicType.ByteArray && s!.Length % 4 != 0)
+                                {
+                                    validTypes[i] = false;
+                                }
+                                else
+                                {
+                                    nonnullvalues[i] = true;
+                                }
                             }
                         }
                         else
