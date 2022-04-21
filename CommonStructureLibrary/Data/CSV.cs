@@ -187,10 +187,8 @@ namespace CSL.Data
         {
             if (nullValues == null) { nullValues = new string[] { "" }; }//We let users specify, because some programs (Looking at you R with your NA values) have custom null values.
             IEnumerable<string?[]> CSV = ReadCSVRaw(input, nullValues,separator, escapechar);
-            bool skipheader = false;
             if(headers == null)
             {
-                skipheader = true;
                 headers = CSV.FirstOrDefault()?.Select(x => x ?? "NULL").ToArray();
             }
             if (headers == null)
@@ -209,13 +207,8 @@ namespace CSL.Data
                 }
             }
 
-            foreach(string?[] CSVRow in CSV)
+            foreach(string?[] CSVRow in CSV)//Skips the header because the IEnumerable remembers it's already read the header.
             {
-                if (skipheader)
-                {
-                    skipheader = false;
-                    continue;
-                }
                 string?[] values = CSVRow;
                 if(values.Length != headers.Length)
                 {
