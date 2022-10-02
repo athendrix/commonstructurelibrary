@@ -231,7 +231,7 @@ namespace CSL.Data
         {
             string e1 = new string(escapechar, 1);
             string e2 = new string(escapechar, 2);
-            if(input != null && input.StartsWith(e1) && input.EndsWith(e1) && (input.Where(x => x == escapechar).Count() % 2 == 0))
+            if (input != null && input.Length >= 2 && input[0] == escapechar && input[input.Length - 1] == escapechar && (input.Where(x => x == escapechar).Count() % 2 == 0))
             {
                 return input.Substring(1, input.Length - 2).Replace(e2, e1);
             }

@@ -3,6 +3,10 @@
     "SQLClassCreator": {
       "commandName": "Project",
       "commandLineArgs": "..\\..\\..\\.."
+    },
+    "C Repos": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\ahendrix\\source\\repos\\"
     }
   }
 }
