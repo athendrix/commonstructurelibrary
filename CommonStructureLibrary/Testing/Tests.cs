@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Text;
 using System.IO;
 using System.Threading;
+using System.Diagnostics;
 
 namespace CSL.Testing
 {
@@ -15,7 +16,7 @@ namespace CSL.Testing
         #region Protected Nested Types
         protected enum TestType { ServerSide, ClientSide, Both};
         protected record TestInstance(string Assembly, string Class, string Name, Func<Task<TestResult?>> Test, int ClassPriority, int Priority, TestType TestType);
-        public record TestResult(string Assembly, string Class, string Method, bool? Result, string? Note);
+        public record TestResult(string Assembly, string Class, string Method, bool? Result, string? Note, long milliseconds);
         protected record TestResponse(bool? Result = null, string? Note = null);
         
         [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
@@ -49,6 +50,7 @@ namespace CSL.Testing
                         }
                         return false;
                     }, null);
+                    Stopwatch sw = new Stopwatch();
                     foreach(MethodInfo mi in SubclassMemberList)
                     {
                         PriorityAttribute? ClassPriorityAttr = (PriorityAttribute?)Attribute.GetCustomAttribute(Subclass, typeof(PriorityAttribute));
@@ -61,18 +63,19 @@ namespace CSL.Testing
                         {
                             yield return new TestInstance(Assembly.GetName().Name, Subclass.Name, mi.Name, () =>
                             {
+                                sw.Restart();
                                 try
                                 {
                                     object? InvokeResult = mi.Invoke(null, null);
                                     if (InvokeResult is not null and TestResponse response)
                                     {
-                                        return Task.FromResult<TestResult?>(new TestResult(Assembly.GetName().Name, Subclass.Name, mi.Name, response.Result, response.Note));
+                                        return Task.FromResult<TestResult?>(new TestResult(Assembly.GetName().Name, Subclass.Name, mi.Name, response.Result, response.Note,sw.ElapsedMilliseconds));
                                     }
                                     return Task.FromResult<TestResult?>(null);
                                 }
                                 catch(Exception e)
                                 {
-                                    return Task.FromResult<TestResult?>(new TestResult(Assembly.GetName().Name, Subclass.Name, mi.Name, false, "Exception" + Environment.NewLine + e.ToString()));
+                                    return Task.FromResult<TestResult?>(new TestResult(Assembly.GetName().Name, Subclass.Name, mi.Name, false, "Exception" + Environment.NewLine + e.ToString(), sw.ElapsedMilliseconds));
                                 }
                             }, ClassPriority, Priority, TestType);
                         }
@@ -80,19 +83,20 @@ namespace CSL.Testing
                         {
                             yield return new TestInstance(Assembly.GetName().Name, Subclass.Name, mi.Name, async () =>
                             {
+                                sw.Restart();
                                 try
                                 {
                                     object? InvokeResult = mi.Invoke(null, null);
                                     if (InvokeResult is not null and Task<TestResponse> TaskResponse)
                                     {
                                         TestResponse response = await TaskResponse;
-                                        return new TestResult(Assembly.GetName().Name, Subclass.Name, mi.Name, response.Result, response.Note);
+                                        return new TestResult(Assembly.GetName().Name, Subclass.Name, mi.Name, response.Result, response.Note, sw.ElapsedMilliseconds);
                                     }
                                     return null;
                                 }
                                 catch (Exception e)
                                 {
-                                    return new TestResult(Assembly.GetName().Name, Subclass.Name, mi.Name, false, "Exception" + Environment.NewLine + e.ToString());
+                                    return new TestResult(Assembly.GetName().Name, Subclass.Name, mi.Name, false, "Exception" + Environment.NewLine + e.ToString(), sw.ElapsedMilliseconds);
                                 }
                             }, ClassPriority, Priority, TestType);
                         }

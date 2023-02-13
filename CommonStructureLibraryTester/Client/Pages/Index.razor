@@ -7,54 +7,68 @@
 
 <button @onclick="RunTests">Run Client Tests!</button>
 <button @onclick="RunServerTests">Run Server Tests!</button>
-
+@if (running)
+{
+    <h2>Running...</h2>
+}
 @if (testResults.Count > 0)
 {
 <div>
+    <h2>Test Results</h2>
+    <h3>Success @testResults.Where((x) => x.Result == true).Count()</h3>
+    <h3>Failure @testResults.Where((x) => x.Result == false).Count()</h3>
+    <h3>Total @testResults.Where((x) => x.Result != null).Count()</h3>
+    <br/>
+    <h2>Test Details</h2>
     @for (int i = 0; i < testResults.Count; i++)
     {
         @if (testResults[i].Assembly != testResults.ElementAtOrDefault(i - 1)?.Assembly)
         {
-            <h2>@testResults[i].Assembly</h2>
-            <h3>@testResults[i].Class</h3>
+            <h3>@testResults[i].Assembly</h3>
+            <h4>@testResults[i].Class</h4>
 
         }
         else if (testResults[i].Class != testResults.ElementAtOrDefault(i - 1)?.Class)
         {
-            <h3>@testResults[i].Class</h3>
+            <h4>@testResults[i].Class</h4>
         }
-        <h4>@(testResults[i].Method + ":" + GetString(testResults[i].Result))</h4>
+        <h5>@($"{testResults[i].Method}:{GetString(testResults[i].Result)}:{testResults[i].milliseconds/1000.0} seconds")</h5>
         if (testResults[i].Note != null)
         {
             <p>@testResults[i].Note</p>
         }
+        
     }
 
-    <h2>Totals</h2>
-    <h3>Success @testResults.Where((x) => x.Result == true).Count()</h3>
-    <h3>Failure @testResults.Where((x) => x.Result == false).Count()</h3>
-    <h3>Total @testResults.Where((x) => x.Result != null).Count()</h3>
 </div>
 }
-<a href="/api/example/getexample1"> SQL Example 1</a>
-<a href="/api/example/getexample2"> SQL Example 2</a>
 
 @code{
+    bool running = false;
     List<Tests.TestResult> testResults = new List<Tests.TestResult>();
     public async Task RunTests()
     {
         testResults.Clear();
+        running = true;
+        this.StateHasChanged();
         BlazorTests.SetJSRuntime(js);
         await foreach (Tests.TestResult tresult in Tests.RunTests(true))
         {
             testResults.Add(tresult);
         }
+        running = false;
+        this.StateHasChanged();
     }
     public async Task RunServerTests()
     {
+        testResults.Clear();
+        running = true;
+        this.StateHasChanged();
         HttpResponseMessage response = await client.GetAsync("/api/Test");
         List<Tests.TestResult>? serverResults = await response.Content.ReadFromJsonAsync<List<Tests.TestResult>>();
         testResults = serverResults ?? testResults;
+        running = false;
+        this.StateHasChanged();
     }
     public string GetString(bool? result)
     {

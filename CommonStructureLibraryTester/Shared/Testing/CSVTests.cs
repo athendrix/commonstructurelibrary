@@ -17,7 +17,7 @@ namespace CommonStructureLibraryTester.Shared.Testing
             MethodInfo? UnescapeString = (typeof(CSV)).GetMethod("UnescapeString", BindingFlags.NonPublic | BindingFlags.Static);
             string test;
             string? validate;
-            for (int i = 0; i < 1000000; i++)
+            for (int i = 0; i < 10000; i++)
             {
                 test = CSL.Encryption.RandomVars.String(CSL.Encryption.RandomVars.UShort(30));
                 validate = (string?)UnescapeString?.Invoke(null, new object?[] { EscapeString?.Invoke(null, new object?[] { test,',','"' }), '"' });

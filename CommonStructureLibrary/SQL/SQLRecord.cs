@@ -1,5 +1,4 @@
-﻿using CSL.SQL;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,15 +8,15 @@ using System.Linq;
 
 using static CSL.Helpers.Generics;
 
-namespace CSL
+namespace CSL.SQL
 {
     #region Attributes
     [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
-    public sealed class AdvancedRecordAttribute : Attribute
+    public sealed class SQLRecordAttribute : Attribute
     {
         public readonly int PrimaryKeys;
         /// <summary>
-        /// SQLLines are for adding things that aren't directly supported by AdvancedRecords.
+        /// SQLLines are for adding things that aren't directly supported by SQLRecords.
         /// </summary>
         public string[] SQLLines { get; set; }
         /// <summary>
@@ -26,9 +25,9 @@ namespace CSL
         /// </summary>
         /// <param name="PrimaryKeys">How many columns starting from the left are Primary Keys (minimum 1)</param>
         /// <exception cref="ArgumentException">All Advanced Records must have at least 1 primary key!</exception>
-        public AdvancedRecordAttribute(int PrimaryKeys)
+        public SQLRecordAttribute(int PrimaryKeys)
         {
-            if (PrimaryKeys < 1) throw new ArgumentException("All Advanced Records must have at least 1 primary key!");
+            if (PrimaryKeys < 1) throw new ArgumentException("All SQL Records must have at least 1 primary key!");
             this.PrimaryKeys = PrimaryKeys;
             SQLLines = new string[0];
         }
@@ -71,8 +70,8 @@ namespace CSL
     }
     #endregion
 
-    [AdvancedRecord(1)]
-    public abstract record AdvancedRecord<T>() where T : AdvancedRecord<T>
+    [SQLRecord(1)]
+    public abstract record SQLRecord<T>() where T : SQLRecord<T>
     {
         private static readonly Dictionary<Type, string> SQLTypes = new Dictionary<Type, string>()
         {
@@ -113,12 +112,15 @@ namespace CSL
         {
             if (SQLTypes.ContainsKey(type)) { return SQLTypes[type]; }
             if (type.IsEnum) { return GetSQLType(type.GetEnumUnderlyingType()); }
-            //TODO: AdvancedRecords?
-            return "<FIXME>";
+            Type? UnderlyingNullableType = Nullable.GetUnderlyingType(type);
+            if (UnderlyingNullableType != null) { return GetSQLType(UnderlyingNullableType); }
+            //TODO: SQLRecords? Maybe something with Foreign Keys?
+            throw new ArgumentException($"Type \"{type.Name}\" is not a valid SQL Type!");
+            //return "<FIXME>";
         }
         #region Helper Properties
         protected static string TableName = Escape(typeof(T).Name);
-        protected static AdvancedRecordAttribute ARA = typeof(T).GetCustomAttributes(true).SelectMany(x => x is AdvancedRecordAttribute r ? new AdvancedRecordAttribute[] { r } : new AdvancedRecordAttribute[0]).First();
+        protected static SQLRecordAttribute ARA = typeof(T).GetCustomAttributes(true).SelectMany(x => x is SQLRecordAttribute r ? new SQLRecordAttribute[] { r } : new SQLRecordAttribute[0]).First();
         protected static ParameterInfo[] RecordParameters = typeof(T).GetConstructors()[0].GetParameters();
         protected static ParameterInfo[] PKs = RecordParameters.Take(ARA.PrimaryKeys).ToArray();
         protected static ParameterInfo[] Datas = RecordParameters.Skip(ARA.PrimaryKeys).ToArray();
@@ -205,39 +207,41 @@ namespace CSL
                     recordItems[i] = null;
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(byte) || RecordParameters[i].ParameterType == typeof(byte?))
+                Type ParameterType = RecordParameters[i].ParameterType;
+                ParameterType = Nullable.GetUnderlyingType(ParameterType) ?? ParameterType;
+                if (ParameterType == typeof(byte))
                 {
                     recordItems[i] = ((byte[])acdr[i])[0];
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(sbyte) || RecordParameters[i].ParameterType == typeof(sbyte?))
+                if (ParameterType == typeof(sbyte))
                 {
                     recordItems[i] = (sbyte)((byte[])acdr[i])[0];
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(char) || RecordParameters[i].ParameterType == typeof(char?))
+                if (ParameterType == typeof(char))
                 {
                     recordItems[i] = ((string)acdr[i])[0];
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(ushort) || RecordParameters[i].ParameterType == typeof(ushort?))
+                if (ParameterType == typeof(ushort))
                 {
                     recordItems[i] = (ushort)(short)acdr[i];
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(uint) || RecordParameters[i].ParameterType == typeof(uint?))
+                if (ParameterType == typeof(uint))
                 {
                     recordItems[i] = (uint)(int)acdr[i];
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(ulong) || RecordParameters[i].ParameterType == typeof(ulong?))
+                if (ParameterType == typeof(ulong))
                 {
                     recordItems[i] = (ulong)(long)acdr[i];
                     continue;
                 }
-                if (RecordParameters[i].ParameterType.IsEnum)
+                if (ParameterType.IsEnum)
                 {
-                    recordItems[i] = Enum.ToObject(RecordParameters[i].ParameterType, Convert.ChangeType(acdr[i], Enum.GetUnderlyingType(RecordParameters[i].ParameterType)));
+                    recordItems[i] = Enum.ToObject(ParameterType, Convert.ChangeType(acdr[i], Enum.GetUnderlyingType(ParameterType)));
                     continue;
                 }
                 recordItems[i] = acdr[i];
@@ -246,7 +250,7 @@ namespace CSL
         }
         public object?[] ToArray()
         {
-            if (typeof(T) != this.GetType()) { throw new Exception("AdvancedRecord T Type must be the same as the class!"); }
+            if (typeof(T) != GetType()) { throw new Exception("SQLRecord T Type must be the same as the class!"); }
 
             object?[] toReturn = new object[RecordParameters.Length];
             for (int i = 0; i < RecordParameters.Length; i++)
@@ -254,61 +258,41 @@ namespace CSL
                 toReturn[i] = typeof(T).GetProperty(RecordParameters[i]?.Name ?? "")?.GetValue(this);
                 if (toReturn[i] == null) { continue; }
                 Type ParameterType = RecordParameters[i].ParameterType;
+                ParameterType = Nullable.GetUnderlyingType(ParameterType) ?? ParameterType;
                 if (ParameterType.IsEnum)
                 {
                     ParameterType = Enum.GetUnderlyingType(ParameterType);
                     toReturn[i] = Convert.ChangeType(toReturn[i], ParameterType);
                 }
-                if (RecordParameters[i].ParameterType == typeof(byte) || RecordParameters[i].ParameterType == typeof(byte?))
+                if (ParameterType == typeof(byte))
                 {
                     byte? val = (byte?)toReturn[i];
-                    if (val != null)
-                    {
-                        toReturn[i] = new byte[] { val.Value };
-                    }
-                    else
-                    {
-                        toReturn[i] = null;
-                    }
+                    toReturn[i] = val != null ? new byte[] { val.Value } : null;
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(sbyte) || RecordParameters[i].ParameterType == typeof(sbyte?))
+                if (ParameterType == typeof(sbyte))
                 {
                     sbyte? val = (sbyte?)toReturn[i];
-                    if (val != null)
-                    {
-                        toReturn[i] = new byte[] { (byte)val.Value };
-                    }
-                    else
-                    {
-                        toReturn[i] = null;
-                    }
+                    toReturn[i] = val != null ? new byte[] { (byte)val.Value } : null;
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(char) || RecordParameters[i].ParameterType == typeof(char?))
+                if (ParameterType == typeof(char))
                 {
                     char? val = (char?)toReturn[i];
-                    if (val != null)
-                    {
-                        toReturn[i] = new string(val.Value, 1);
-                    }
-                    else
-                    {
-                        toReturn[i] = null;
-                    }
+                    toReturn[i] = val != null ? new string(val.Value, 1) : null;
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(ushort) || RecordParameters[i].ParameterType == typeof(ushort?))
+                if (ParameterType == typeof(ushort))
                 {
                     toReturn[i] = (short?)(ushort?)toReturn[i];
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(uint) || RecordParameters[i].ParameterType == typeof(uint?))
+                if (ParameterType == typeof(uint))
                 {
                     toReturn[i] = (int?)(uint?)toReturn[i];
                     continue;
                 }
-                if (RecordParameters[i].ParameterType == typeof(ulong) || RecordParameters[i].ParameterType == typeof(ulong?))
+                if (ParameterType == typeof(ulong))
                 {
                     toReturn[i] = (long?)(ulong?)toReturn[i];
                     continue;
@@ -347,17 +331,17 @@ namespace CSL
         #endregion
         #region UPDATE INSERT and UPSERT
         public Task<int> Insert(SQLDB sql) => sql.ExecuteNonQuery(
-                $"INSERT INTO {Escape(typeof(T).Name)} ({FormatParameterInfos(RecordParameters)}) " +
+                $"INSERT INTO {Escape(typeof(T).Name)} ({GetEscapedParameterNames(RecordParameters)}) " +
                 $"VALUES({JoinCommas(ParameterNumbers)}) " +
-                $"ON CONFLICT({FormatParameterInfos(PKs)}) DO NOTHING;", ToArray());
+                $"ON CONFLICT({GetEscapedParameterNames(PKs)}) DO NOTHING;", ToArray());
         public Task<int> Update(SQLDB sql) => sql.ExecuteNonQuery(
                 $"UPDATE {TableName} " +
                 $"SET {JoinCommas(DataStrings)} " +
                 $"WHERE {JoinANDs(PKStrings)};", ToArray());
         public Task<int> Upsert(SQLDB sql) => sql.ExecuteNonQuery(
-                $"INSERT INTO {TableName} ({FormatParameterInfos(RecordParameters)}) " +
+                $"INSERT INTO {TableName} ({GetEscapedParameterNames(RecordParameters)}) " +
                 $"VALUES({JoinCommas(ParameterNumbers)}) " +
-                $"ON CONFLICT({FormatParameterInfos(PKs)}) DO UPDATE " +
+                $"ON CONFLICT({GetEscapedParameterNames(PKs)}) DO UPDATE " +
                 $"SET {JoinCommas(DataStrings)};", ToArray());
         #endregion
     }

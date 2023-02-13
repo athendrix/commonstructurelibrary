@@ -12,7 +12,7 @@ using static CommonStructureLibraryTester.Shared.Testing.TestingHelpers;
 
 namespace CommonStructureLibraryTester.Testing
 {
-    public class SQLGeneratorTests : Tests
+    public class SQLRecordTests : Tests
     {
         [TestType(TestType.ServerSide)]
         protected static async Task<TestResponse> Example1BasicFunctionalityTest()
@@ -88,7 +88,7 @@ namespace CommonStructureLibraryTester.Testing
                         }
                         for (int j = 0; j < exampleRecords.Length; j++)
                         {
-                            Example? testRecord = await Example.SelectBy_ID(sql, exampleRecords[j].ID);
+                            Example? testRecord = await Example.SelectOne(sql, "\"ID\" = @0", exampleRecords[j].ID);
                             Example template = exampleRecords[j];
                             if (testRecord != template)
                             {
