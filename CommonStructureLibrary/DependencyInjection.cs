@@ -40,9 +40,9 @@ namespace CSL
             "--------------------------------------------------------------------------------\n" +
             "CSL.DependencyInjection.NpgsqlConnectionConstructor = (x) => new Npgsql.NpgsqlConnection(x);\n" +
             "CSL.DependencyInjection.NpgsqlConnectionStringConstructor = () => new Npgsql.NpgsqlConnectionStringBuilder();\n" +
-            "CSL.DependencyInjection.SslModeConverter = (x) => (Npgsql.SslMode)x;\n" +
+            "CSL.DependencyInjection.SslModeConverter = (x) => Enum.Parse(typeof(Npgsql.SslMode), x.ToString());\n" +
             "--------------------------------------------------------------------------------\n\n" +
-            "Put this line at the start of your program to use any methods that depend on Npgsql.");
+            "Put these lines at the start of your program to use any methods that depend on Npgsql.");
         #region NpgsqlConnection
         internal static DbConnection CreateNpgsqlConnection(string ConnectionString) => NpgsqlConnectionConstructor == null ? throw NpgsqlDependencyException : NpgsqlConnectionConstructor(ConnectionString);
         public static Func<string, DbConnection>? NpgsqlConnectionConstructor { private get; set; } = null;
@@ -146,10 +146,16 @@ namespace CSL
     {
         //     SSL is disabled. If the server requires SSL, the connection will fail.
         Disable = 0,
+        //     Prefer non-SSL connections if the server allows them, but allow SSL connections.
+        Allow = 1,
         //     Prefer SSL connections if the server allows them, but allow connections without SSL.
-        Prefer = 1,
+        Prefer = 2,
         //     Fail the connection if the server doesn't support SSL.
-        Require = 2
+        Require = 3,
+        //     Fail the connection if the server doesn't support SSL. Also verifies server certificate.
+        VerifyCA = 4,
+        //     Fail the connection if the server doesn't support SSL. Also verifies server certificate with host's name.
+        VerifyFull = 5
     }
     public enum SqliteOpenMode
     {

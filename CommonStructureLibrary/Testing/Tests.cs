@@ -106,6 +106,7 @@ namespace CSL.Testing
                 .Where((x) => Blazor ? x.TestType != TestType.ServerSide : x.TestType != TestType.ClientSide)
                 .OrderByDescending((x) => x.ClassPriority).ThenByDescending((x) => x.Priority))
             {
+                Console.WriteLine(Test.Name);
                 TestResult? result = await Test.Test();
                 if(result != null)
                 {

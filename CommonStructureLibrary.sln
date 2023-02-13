@@ -10,7 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibrary.DotNet5", "CommonStructureLibrary.DotNet5\CommonStructureLibrary.DotNet5.csproj", "{5292FE65-9A46-4050-8A1F-5D95F05276E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibrary.DotNet6", "CommonStructureLibrary.DotNet5\CommonStructureLibrary.DotNet6.csproj", "{5292FE65-9A46-4050-8A1F-5D95F05276E6}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibraryTester.Server", "CommonStructureLibraryTester\Server\CommonStructureLibraryTester.Server.csproj", "{02EF5337-E898-4C73-990F-E8113C349D49}"
 EndProject
@@ -18,7 +18,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibraryTeste
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibraryTester.Shared", "CommonStructureLibraryTester\Shared\CommonStructureLibraryTester.Shared.csproj", "{A9A9E2F9-7FCB-4207-B8A7-B09A6CA79DF6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLClassCreator", "SQLClassCreator\SQLClassCreator.csproj", "{78E9E677-47CC-4F3F-B383-7B15874EDC3A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLClassCreator", "SQLClassCreator\SQLClassCreator.csproj", "{78E9E677-47CC-4F3F-B383-7B15874EDC3A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

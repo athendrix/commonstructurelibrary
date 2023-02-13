@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\CommonStructureLibrary.DotNet5\CommonStructureLibrary.DotNet5.csproj" />
+    <ProjectReference Include="..\..\CommonStructureLibrary.DotNet5\CommonStructureLibrary.DotNet6.csproj" />
   </ItemGroup>
 
 </Project>

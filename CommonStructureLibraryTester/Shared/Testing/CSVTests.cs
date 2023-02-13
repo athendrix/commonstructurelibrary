@@ -15,11 +15,12 @@ namespace CommonStructureLibraryTester.Shared.Testing
         {
             MethodInfo? EscapeString = (typeof (CSV)).GetMethod("EscapeString",BindingFlags.NonPublic | BindingFlags.Static);
             MethodInfo? UnescapeString = (typeof(CSV)).GetMethod("UnescapeString", BindingFlags.NonPublic | BindingFlags.Static);
-
+            string test;
+            string? validate;
             for (int i = 0; i < 1000000; i++)
             {
-                string test = CSL.Encryption.RandomVars.String(CSL.Encryption.RandomVars.UShort(30));
-                string? validate = (string?)UnescapeString?.Invoke(null, new object?[] { EscapeString?.Invoke(null, new object?[] { test,',','"' }), '"' });
+                test = CSL.Encryption.RandomVars.String(CSL.Encryption.RandomVars.UShort(30));
+                validate = (string?)UnescapeString?.Invoke(null, new object?[] { EscapeString?.Invoke(null, new object?[] { test,',','"' }), '"' });
                 if (test != validate)
                 {
                     return FAIL("Escape and Unescape did not roundtrip!");
@@ -52,27 +53,31 @@ namespace CommonStructureLibraryTester.Shared.Testing
             }
             return PASS();
         }
+        [TestType(TestType.ServerSide)]
         protected static TestResponse RandomCSVWriteReadTest()
         {
-            for(int i = 0; i < 1000; i++)
+            string[] headers = new string[10];
+            DataStore<string>[] CSVBase;
+            DataStore<string> DS;
+            DataStore<string>[] CSVComp;
+            for (int i = 0; i < 1000; i++)
             {
-                string[] headers = new string[10];
                 for(int k = 0; k < headers.Length; k++)
                 {
                     headers[k] = CSL.Encryption.RandomVars.String(CSL.Encryption.RandomVars.UShort(30));
                 }
-                DataStore<string>[] CSVBase = new DataStore<string>[100];
+                CSVBase = new DataStore<string>[100];
                 
                 for(int j = 0; j < CSVBase.Length;j++)
                 {
-                    DataStore<string> DS = new DataStore<string>();
+                    DS = new DataStore<string>();
                     for(int k = 0; k < headers.Length; k++)
                     {
                         DS[headers[k]] = CSL.Encryption.RandomVars.String(CSL.Encryption.RandomVars.UShort(30));
                     }
                     CSVBase[j] = DS;
                 }
-                DataStore<string>[] CSVComp = CSV.ReadCSVFromString(string.Join("\r\n", CSVBase.WriteCSV(headers))).ToArray();
+                CSVComp = CSV.ReadCSVFromString(string.Join("\r\n", CSVBase.WriteCSV(headers))).ToArray();
                 if(CSVComp.Length != 100)
                 {
                     return FAIL("CSV did not convert properly!");

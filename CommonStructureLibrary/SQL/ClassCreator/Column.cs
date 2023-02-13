@@ -1,255 +1,255 @@
-﻿using CSL.ClassCreation;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿//using CSL.ClassCreation;
+//using System.Collections.Generic;
+//using System.Linq;
+//using System.Text.RegularExpressions;
 
-namespace CSL.SQL.ClassCreator
-{
-    public class Column
-    {
-        public static readonly Dictionary<string, ColumnType> TypeMap = new Dictionary<string, ColumnType>()
-        {
-            {"BOOL",ColumnType.Boolean},
-            {"BOOLEAN",ColumnType.Boolean},
+//namespace CSL.SQL.ClassCreator
+//{
+//    public class Column
+//    {
+//        public static readonly Dictionary<string, ColumnType> TypeMap = new Dictionary<string, ColumnType>()
+//        {
+//            {"BOOL",ColumnType.Boolean},
+//            {"BOOLEAN",ColumnType.Boolean},
 
-            {"BYTE", ColumnType.Byte},
+//            {"BYTE", ColumnType.Byte},
 
-            {"CHAR",ColumnType.Char},
+//            {"CHAR",ColumnType.Char},
 
-            {"SHORT", ColumnType.Short},
-            {"INT16", ColumnType.Short},
-            {"USHORT", ColumnType.Integer},
-            {"UINT16", ColumnType.Integer},
+//            {"SHORT", ColumnType.Short},
+//            {"INT16", ColumnType.Short},
+//            {"USHORT", ColumnType.Integer},
+//            {"UINT16", ColumnType.Integer},
 
-            {"INT",ColumnType.Integer},
-            {"INTEGER",ColumnType.Integer},
-            {"INT32",ColumnType.Integer},
-            {"UINT",ColumnType.Long},
-            {"UINT32",ColumnType.Long},
+//            {"INT",ColumnType.Integer},
+//            {"INTEGER",ColumnType.Integer},
+//            {"INT32",ColumnType.Integer},
+//            {"UINT",ColumnType.Long},
+//            {"UINT32",ColumnType.Long},
 
-            {"LONG",ColumnType.Long},
-            {"INT64",ColumnType.Long},
-            {"ULONG", ColumnType.UnsignedLong},
-            {"UINT64", ColumnType.UnsignedLong},
+//            {"LONG",ColumnType.Long},
+//            {"INT64",ColumnType.Long},
+//            {"ULONG", ColumnType.UnsignedLong},
+//            {"UINT64", ColumnType.UnsignedLong},
 
-            {"FLOAT", ColumnType.Float},
-            {"DOUBLE", ColumnType.Double},
-            {"DECIMAL", ColumnType.Decimal},
-            {"NUMERIC", ColumnType.Decimal},
+//            {"FLOAT", ColumnType.Float},
+//            {"DOUBLE", ColumnType.Double},
+//            {"DECIMAL", ColumnType.Decimal},
+//            {"NUMERIC", ColumnType.Decimal},
 
-            {"CHAR[]",ColumnType.String},
-            {"STRING",ColumnType.String},
-            {"VARCHAR",ColumnType.String},
-            {"TEXT",ColumnType.String},
+//            {"CHAR[]",ColumnType.String},
+//            {"STRING",ColumnType.String},
+//            {"VARCHAR",ColumnType.String},
+//            {"TEXT",ColumnType.String},
 
-            {"BYTE[]",ColumnType.ByteArray},
-            {"BYTEA",ColumnType.ByteArray},
+//            {"BYTE[]",ColumnType.ByteArray},
+//            {"BYTEA",ColumnType.ByteArray},
 
-            {"GUID",ColumnType.Guid},
-            {"UUID",ColumnType.Guid},
+//            {"GUID",ColumnType.Guid},
+//            {"UUID",ColumnType.Guid},
 
-            {"DATETIME",ColumnType.DateTime},
-            {"DT",ColumnType.DateTime},
-            {"TIMESTAMP",ColumnType.DateTime},
+//            {"DATETIME",ColumnType.DateTime},
+//            {"DT",ColumnType.DateTime},
+//            {"TIMESTAMP",ColumnType.DateTime},
 
-            {"ENUM", ColumnType.Enum},
-        };
-        public static Regex LengthFinder = new Regex(@"\((\d+)\)", RegexOptions.Compiled);
-        public readonly string ColumnName;
-        public readonly ColumnType type;
-        public readonly bool nullable;
-        //public readonly bool unique;
-        public readonly int length;
+//            {"ENUM", ColumnType.Enum},
+//        };
+//        public static Regex LengthFinder = new Regex(@"\((\d+)\)", RegexOptions.Compiled);
+//        public readonly string ColumnName;
+//        public readonly ColumnType type;
+//        public readonly bool nullable;
+//        //public readonly bool unique;
+//        public readonly int length;
 
-        public string CSharpTypeName => type switch
-        {
-            ColumnType.Boolean => "bool" + (nullable ? "?" : ""),
-            ColumnType.Byte => "byte" + (nullable ? "?" : ""),
-            ColumnType.Char => "char" + (nullable ? "?" : ""),
-            ColumnType.Short => "short" + (nullable ? "?" : ""),
-            ColumnType.Integer => "int" + (nullable ? "?" : ""),
-            ColumnType.Long => "long" + (nullable ? "?" : ""),
-            ColumnType.UnsignedLong => "ulong" + (nullable ? "?" : ""),
-            ColumnType.Float => "float" + (nullable ? "?" : ""),
-            ColumnType.Double => "double" + (nullable ? "?" : ""),
-            ColumnType.Decimal => "decimal" + (nullable ? "?" : ""),
-            ColumnType.String => "string" + (nullable ? "?" : ""),
-            ColumnType.ByteArray => "byte[]" + (nullable ? "?" : ""),
-            ColumnType.Guid => "Guid" + (nullable ? "?" : ""),
-            ColumnType.DateTime => "DateTime" + (nullable ? "?" : ""),
-            ColumnType.Enum => ColumnName + (nullable ? "?" : ""),
-            _ => "<FIXME>" + (nullable ? "?" : ""),
-        };
-        public string CSharpPrivateTypeName => type switch
-        {
-            ColumnType.Byte => "byte[]" + (nullable ? "?" : ""),
-            ColumnType.UnsignedLong => "long" + (nullable ? "?" : ""),
-            ColumnType.Enum => "long" + (nullable ? "?" : ""),
-            ColumnType.Char => "string" + (nullable ? "?" : ""),
-            _ => CSharpTypeName,
-        };
-        #region SpecialConversions
-        public string CSharpConvertPrivatePrepend => type switch
-        {
-            ColumnType.Byte => "new byte[] {",
-            ColumnType.UnsignedLong => "(long" + (nullable ? "?" : "") + ")",
-            ColumnType.Enum => "(long" + (nullable ? "?" : "") + ")",
-            _ => "",
-        };
-        public string CSharpConvertPrivateAppend => type switch
-        {
-            ColumnType.Byte => (nullable ? ".Value" : "") + "}",
-            ColumnType.Char => (nullable ? "?":"") + ".ToString()",
-            _ => "",
-        };
-        public string CSharpConvertPublicPrepend => type switch
-        {
-            ColumnType.Enum => "(" + CSharpTypeName + ")",
-            ColumnType.UnsignedLong => "(ulong" + (nullable ? "?" : "") + ")",
-            _ => "",
-        };
-        public string CSharpConvertPublicAppend => type switch
-        {
-            ColumnType.Byte => "[0]",
-            ColumnType.Char => "[0]",
-            _ => "",
-        };
+//        public string CSharpTypeName => type switch
+//        {
+//            ColumnType.Boolean => "bool" + (nullable ? "?" : ""),
+//            ColumnType.Byte => "byte" + (nullable ? "?" : ""),
+//            ColumnType.Char => "char" + (nullable ? "?" : ""),
+//            ColumnType.Short => "short" + (nullable ? "?" : ""),
+//            ColumnType.Integer => "int" + (nullable ? "?" : ""),
+//            ColumnType.Long => "long" + (nullable ? "?" : ""),
+//            ColumnType.UnsignedLong => "ulong" + (nullable ? "?" : ""),
+//            ColumnType.Float => "float" + (nullable ? "?" : ""),
+//            ColumnType.Double => "double" + (nullable ? "?" : ""),
+//            ColumnType.Decimal => "decimal" + (nullable ? "?" : ""),
+//            ColumnType.String => "string" + (nullable ? "?" : ""),
+//            ColumnType.ByteArray => "byte[]" + (nullable ? "?" : ""),
+//            ColumnType.Guid => "Guid" + (nullable ? "?" : ""),
+//            ColumnType.DateTime => "DateTime" + (nullable ? "?" : ""),
+//            ColumnType.Enum => ColumnName + (nullable ? "?" : ""),
+//            _ => "<FIXME>" + (nullable ? "?" : ""),
+//        };
+//        public string CSharpPrivateTypeName => type switch
+//        {
+//            ColumnType.Byte => "byte[]" + (nullable ? "?" : ""),
+//            ColumnType.UnsignedLong => "long" + (nullable ? "?" : ""),
+//            ColumnType.Enum => "long" + (nullable ? "?" : ""),
+//            ColumnType.Char => "string" + (nullable ? "?" : ""),
+//            _ => CSharpTypeName,
+//        };
+//        #region SpecialConversions
+//        public string CSharpConvertPrivatePrepend => type switch
+//        {
+//            ColumnType.Byte => "new byte[] {",
+//            ColumnType.UnsignedLong => "(long" + (nullable ? "?" : "") + ")",
+//            ColumnType.Enum => "(long" + (nullable ? "?" : "") + ")",
+//            _ => "",
+//        };
+//        public string CSharpConvertPrivateAppend => type switch
+//        {
+//            ColumnType.Byte => (nullable ? ".Value" : "") + "}",
+//            ColumnType.Char => (nullable ? "?":"") + ".ToString()",
+//            _ => "",
+//        };
+//        public string CSharpConvertPublicPrepend => type switch
+//        {
+//            ColumnType.Enum => "(" + CSharpTypeName + ")",
+//            ColumnType.UnsignedLong => "(ulong" + (nullable ? "?" : "") + ")",
+//            _ => "",
+//        };
+//        public string CSharpConvertPublicAppend => type switch
+//        {
+//            ColumnType.Byte => "[0]",
+//            ColumnType.Char => "[0]",
+//            _ => "",
+//        };
 
-        public string ConvertPrivate => $"{(nullable ? ColumnName + " == null ? default : " : "")}{CSharpConvertPrivatePrepend}{ColumnName}{CSharpConvertPrivateAppend}";
-        #endregion
-        public string SQLTypeName => SQLTypePlain + (nullable ? "" : " NOT NULL");
-        public string SQLTypePlain => type switch
-        {
-            ColumnType.Boolean => "BOOLEAN" ,
-            ColumnType.Byte => "BYTEA",
-            ColumnType.Char => "CHAR(1)",
-            ColumnType.Short => "SMALLINT",
-            ColumnType.Integer => "INTEGER",
-            ColumnType.Long => "BIGINT",
-            ColumnType.UnsignedLong => "BIGINT",
-            ColumnType.Float => "FLOAT4",
-            ColumnType.Double => "FLOAT8",
-            ColumnType.Decimal => "NUMERIC",
-            ColumnType.String => (length >= 0 ? "VARCHAR(" + length.ToString() + ")" : "TEXT"),
-            ColumnType.ByteArray => "BYTEA",//TODO: Add Length?
-            ColumnType.Guid => "UUID",
-            ColumnType.DateTime => "TIMESTAMP",
-            ColumnType.Enum => "BIGINT",
-            _ => "<FIXME>",
-        };
+//        public string ConvertPrivate => $"{(nullable ? ColumnName + " == null ? default : " : "")}{CSharpConvertPrivatePrepend}{ColumnName}{CSharpConvertPrivateAppend}";
+//        #endregion
+//        public string SQLTypeName => SQLTypePlain + (nullable ? "" : " NOT NULL");
+//        public string SQLTypePlain => type switch
+//        {
+//            ColumnType.Boolean => "BOOLEAN" ,
+//            ColumnType.Byte => "BYTEA",
+//            ColumnType.Char => "CHAR(1)",
+//            ColumnType.Short => "SMALLINT",
+//            ColumnType.Integer => "INTEGER",
+//            ColumnType.Long => "BIGINT",
+//            ColumnType.UnsignedLong => "BIGINT",
+//            ColumnType.Float => "FLOAT4",
+//            ColumnType.Double => "FLOAT8",
+//            ColumnType.Decimal => "NUMERIC",
+//            ColumnType.String => (length >= 0 ? "VARCHAR(" + length.ToString() + ")" : "TEXT"),
+//            ColumnType.ByteArray => "BYTEA",//TODO: Add Length?
+//            ColumnType.Guid => "UUID",
+//            ColumnType.DateTime => "TIMESTAMP",
+//            ColumnType.Enum => "BIGINT",
+//            _ => "<FIXME>",
+//        };
 
-        public Column(string Name, string StringType)
-        {
-            ColumnName = Common.NameParser(Name).Replace(" ", "");
-            nullable = false;
-            length = -1;
-            StringType = StringType.ToUpper().Replace(" ", "").Trim();
-            if (StringType.Contains('?'))
-            {
-                nullable = true;
-                StringType = StringType.Replace("?", "");
-            }
-            Match m;
-            if ((m = LengthFinder.Match(StringType)).Success)
-            {
-                string? StrMaxLength = null;
-                foreach(Group g in m.Groups)
-                {
-                    StrMaxLength = g.Value;
-                }
-                StringType = LengthFinder.Replace(StringType, "");
-                if (StrMaxLength != null)
-                {
-                    length = int.Parse(StrMaxLength);
-                }
-            }
-            if (TypeMap.ContainsKey(StringType))
-            {
-                type = TypeMap[StringType];
-            }
-            else
-            {
-                type = ColumnType.Unknown;
-            }
-        }
-    }
-    public enum ColumnType
-    {
-        Boolean,               //BOOLEAN
-        Byte,                  //BYTEA(1)
-        Char,                  //CHAR(1) //Not a varchar, because there's only 1
-        Short,                 //SMALLINT
-        Integer,               //INTEGER
-        Long,                  //BIGINT
-        UnsignedLong,          //BIGINT with C# conversion
-        Float,                 //FLOAT4
-        Double,                //FLOAT8
-        Decimal,               //NUMERIC
+//        public Column(string Name, string StringType)
+//        {
+//            ColumnName = Common.NameParser(Name).Replace(" ", "");
+//            nullable = false;
+//            length = -1;
+//            StringType = StringType.ToUpper().Replace(" ", "").Trim();
+//            if (StringType.Contains('?'))
+//            {
+//                nullable = true;
+//                StringType = StringType.Replace("?", "");
+//            }
+//            Match m;
+//            if ((m = LengthFinder.Match(StringType)).Success)
+//            {
+//                string? StrMaxLength = null;
+//                foreach(Group g in m.Groups)
+//                {
+//                    StrMaxLength = g.Value;
+//                }
+//                StringType = LengthFinder.Replace(StringType, "");
+//                if (StrMaxLength != null)
+//                {
+//                    length = int.Parse(StrMaxLength);
+//                }
+//            }
+//            if (TypeMap.ContainsKey(StringType))
+//            {
+//                type = TypeMap[StringType];
+//            }
+//            else
+//            {
+//                type = ColumnType.Unknown;
+//            }
+//        }
+//    }
+//    public enum ColumnType
+//    {
+//        Boolean,               //BOOLEAN
+//        Byte,                  //BYTEA(1)
+//        Char,                  //CHAR(1) //Not a varchar, because there's only 1
+//        Short,                 //SMALLINT
+//        Integer,               //INTEGER
+//        Long,                  //BIGINT
+//        UnsignedLong,          //BIGINT with C# conversion
+//        Float,                 //FLOAT4
+//        Double,                //FLOAT8
+//        Decimal,               //NUMERIC
 
-        String,                //VARCHAR with limit or TEXT without
-        ByteArray,             //BYTEA
-        Guid,                  //UUID
-        DateTime,              //TIMESTAMP
-        Enum, //Unsigned Long for maximum values. //BIGINT with C# conversion
-        Unknown
-    }
-    public static class ColumnExtensions
-    {
-        public static void GetRecords(this CodeGenerator gen, string RecordName, Column[] Columns)
-        {
-            if (Columns.Length == 0) { return; }
-            if (Columns.Length == 1)
-            {
-                gen.Add($"public static IEnumerable<{Columns[0].CSharpTypeName}> GetRecords(IDataReader dr)");
-                gen.EnterBlock();
-                gen.Add("while(dr.Read())");
-                gen.EnterBlock();
-                string PrivCSType = Columns[0].CSharpPrivateTypeName;
-                string CSType = Columns[0].CSharpTypeName;
-                string Name = Columns[0].ColumnName;
-                string pubpre = Columns[0].CSharpConvertPublicPrepend;
-                string pubapp = Columns[0].CSharpConvertPublicAppend;
-                bool nullable = Columns[0].nullable;
-                if (CSType != PrivCSType)
-                {
-                    gen.Add($"{PrivCSType} _{Name} = {(nullable ? "dr.IsDBNull(0) ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[0];");
-                    gen.Add($"yield return {pubpre}_{Name}{(nullable && !string.IsNullOrEmpty(pubapp) ? "?" : "")}{pubapp};");
-                }
-                else
-                {
-                    gen.Add($"yield return {(nullable ? "dr.IsDBNull(0) ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[0];");
-                }
-                gen.ExitBlock();
-                gen.Add("yield break;");
-                gen.ExitBlock();
-                return;
-            }
-            gen.Add($"public static IEnumerable<{RecordName.Replace(' ', '_')}> GetRecords(IDataReader dr)");
-            gen.EnterBlock();
-            gen.Add("while(dr.Read())");
-            gen.EnterBlock();
-            for (int i = 0; i < Columns.Length; i++)
-            {
-                string PrivCSType = Columns[i].CSharpPrivateTypeName;
-                string CSType = Columns[i].CSharpTypeName;
-                string Name = Columns[i].ColumnName;
-                string pubpre = Columns[i].CSharpConvertPublicPrepend;
-                string pubapp = Columns[i].CSharpConvertPublicAppend;
-                bool nullable = Columns[i].nullable;
-                if (CSType != PrivCSType)
-                {
-                    gen.Add($"{PrivCSType} _{Name} = {(nullable ? "dr.IsDBNull(" + i + ") ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[{i}];");
-                    gen.Add($"{CSType} {Name} = {pubpre}_{Name}{(nullable && !string.IsNullOrEmpty(pubapp) ? "?" : "")}{pubapp};");
-                }
-                else
-                {
-                    gen.Add($"{CSType} {Name} = {(nullable ? "dr.IsDBNull(" + i + ") ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[{i}];");
-                }
-            }
-            gen.Add($"yield return new {RecordName.Replace(' ', '_')}({string.Join(", ", Columns.Select((x) => x.ColumnName))});");
-            gen.ExitBlock();
-            gen.Add("yield break;");
-            gen.ExitBlock();
-        }
-    }
-}
+//        String,                //VARCHAR with limit or TEXT without
+//        ByteArray,             //BYTEA
+//        Guid,                  //UUID
+//        DateTime,              //TIMESTAMP
+//        Enum, //Unsigned Long for maximum values. //BIGINT with C# conversion
+//        Unknown
+//    }
+//    public static class ColumnExtensions
+//    {
+//        public static void GetRecords(this CodeGenerator gen, string RecordName, Column[] Columns)
+//        {
+//            if (Columns.Length == 0) { return; }
+//            if (Columns.Length == 1)
+//            {
+//                gen.Add($"public static IEnumerable<{Columns[0].CSharpTypeName}> GetRecords(IDataReader dr)");
+//                gen.EnterBlock();
+//                gen.Add("while(dr.Read())");
+//                gen.EnterBlock();
+//                string PrivCSType = Columns[0].CSharpPrivateTypeName;
+//                string CSType = Columns[0].CSharpTypeName;
+//                string Name = Columns[0].ColumnName;
+//                string pubpre = Columns[0].CSharpConvertPublicPrepend;
+//                string pubapp = Columns[0].CSharpConvertPublicAppend;
+//                bool nullable = Columns[0].nullable;
+//                if (CSType != PrivCSType)
+//                {
+//                    gen.Add($"{PrivCSType} _{Name} = {(nullable ? "dr.IsDBNull(0) ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[0];");
+//                    gen.Add($"yield return {pubpre}_{Name}{(nullable && !string.IsNullOrEmpty(pubapp) ? "?" : "")}{pubapp};");
+//                }
+//                else
+//                {
+//                    gen.Add($"yield return {(nullable ? "dr.IsDBNull(0) ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[0];");
+//                }
+//                gen.ExitBlock();
+//                gen.Add("yield break;");
+//                gen.ExitBlock();
+//                return;
+//            }
+//            gen.Add($"public static IEnumerable<{RecordName.Replace(' ', '_')}> GetRecords(IDataReader dr)");
+//            gen.EnterBlock();
+//            gen.Add("while(dr.Read())");
+//            gen.EnterBlock();
+//            for (int i = 0; i < Columns.Length; i++)
+//            {
+//                string PrivCSType = Columns[i].CSharpPrivateTypeName;
+//                string CSType = Columns[i].CSharpTypeName;
+//                string Name = Columns[i].ColumnName;
+//                string pubpre = Columns[i].CSharpConvertPublicPrepend;
+//                string pubapp = Columns[i].CSharpConvertPublicAppend;
+//                bool nullable = Columns[i].nullable;
+//                if (CSType != PrivCSType)
+//                {
+//                    gen.Add($"{PrivCSType} _{Name} = {(nullable ? "dr.IsDBNull(" + i + ") ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[{i}];");
+//                    gen.Add($"{CSType} {Name} = {pubpre}_{Name}{(nullable && !string.IsNullOrEmpty(pubapp) ? "?" : "")}{pubapp};");
+//                }
+//                else
+//                {
+//                    gen.Add($"{CSType} {Name} = {(nullable ? "dr.IsDBNull(" + i + ") ? null :" : "")} ({PrivCSType.TrimEnd('?')})dr[{i}];");
+//                }
+//            }
+//            gen.Add($"yield return new {RecordName.Replace(' ', '_')}({string.Join(", ", Columns.Select((x) => x.ColumnName))});");
+//            gen.ExitBlock();
+//            gen.Add("yield break;");
+//            gen.ExitBlock();
+//        }
+//    }
+//}
