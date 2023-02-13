@@ -256,8 +256,17 @@ namespace CSL.SQL
             for (int i = 0; i < RecordParameters.Length; i++)
             {
                 toReturn[i] = typeof(T).GetProperty(RecordParameters[i]?.Name ?? "")?.GetValue(this);
-                if (toReturn[i] == null) { continue; }
-                Type ParameterType = RecordParameters[i].ParameterType;
+            }
+            return ConvertToPostgresFriendlyParameters(toReturn);
+        }
+        private static object?[] ConvertToPostgresFriendlyParameters(object?[] parameters)
+        {
+            object?[] toReturn = new object?[parameters.Length];
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                toReturn[i] = parameters[i];
+                Type? ParameterType = toReturn[i]?.GetType();
+                if (ParameterType == null) { continue; }
                 ParameterType = Nullable.GetUnderlyingType(ParameterType) ?? ParameterType;
                 if (ParameterType.IsEnum)
                 {
@@ -317,16 +326,17 @@ namespace CSL.SQL
         }
         public static async Task<AutoClosingEnumerable<T>> Select(SQLDB sql, string condition, params object?[] parameters)
         {
-            AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName} WHERE {condition};", parameters);
+            AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName} WHERE {condition};", ConvertToPostgresFriendlyParameters(parameters));
             return new AutoClosingEnumerable<T>(SelectHelper(acdr), acdr);
         }
         private static IEnumerable<T> SelectHelper(AutoClosingDataReader acdr)
         {
             while (acdr.Read()) { yield return GetRecord(acdr); }
         }
+
         #endregion
         #region DELETE
-        public static Task<int> Delete(SQLDB sql, string condition, params object?[] parameters) => sql.ExecuteNonQuery($"DELETE FROM {TableName} WHERE {condition};", parameters);
+        public static Task<int> Delete(SQLDB sql, string condition, params object?[] parameters) => sql.ExecuteNonQuery($"DELETE FROM {TableName} WHERE {condition};", ConvertToPostgresFriendlyParameters(parameters));
         public Task<int> Delete(SQLDB sql) => sql.ExecuteNonQuery($"DELETE FROM {TableName} WHERE {JoinANDs(PKStrings)};", ToArray());
         #endregion
         #region UPDATE INSERT and UPSERT

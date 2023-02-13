@@ -133,5 +133,43 @@ namespace CommonStructureLibraryTester.Testing
             }
             return PASS();
         }
+
+        [TestType(TestType.ServerSide)]
+        protected static async Task<TestResponse> Example3SimpleSQLTest()
+        {
+            Example3 ex3a = new Example3(Guid.Empty, "foo", "bar", 69);
+            Example3 ex3b = new Example3(Guid.Empty, "food", "bar", 609);
+            Example3 ex3c = new Example3(Guid.Empty, "french", "fries", 103);
+            List<Func<Task<PostgreSQL>>> SQLDBs = SQLTests.GetTestDB;
+            for (int i = 0; i < SQLDBs.Count; i++)
+            {
+                try
+                {
+                    using (PostgreSQL sql = await SQLTests.GetTestDB[i]())
+                    {
+                        await SQLTests.ClearData(sql);
+                        await Example3.CreateDB(sql);
+                        await ex3a.Insert(sql);
+                        await ex3b.Update(sql);
+                        Example3? ex3bcomp = await Example3.SelectOne(sql, "\"ID\" = @0", Guid.Empty);
+                        if(ex3bcomp != ex3b) { return FAIL("Did not Update correctly!"); }
+                        await ex3c.Upsert(sql);
+                        Example3? ex3ccomp = await Example3.SelectOne(sql, "\"ID\" = @0", Guid.Empty);
+                        if (ex3ccomp != ex3c) { return FAIL("Did not Upsert correctly!"); }
+                        await Example3.Truncate(sql);
+                        Example3? emptycomp = await Example3.SelectOne(sql, "\"ID\" = @0", Guid.Empty);
+                        if (emptycomp != null) { return FAIL("Did not Truncate correctly!"); }
+                        await ex3c.Upsert(sql);
+                        Example3? ex3ccomp2 = await Example3.SelectOne(sql, "\"ID\" = @0", Guid.Empty);
+                        if (ex3ccomp2 != ex3c) { return FAIL("Did not Upsert correctly!"); }
+                    }
+                }
+                catch (Exception e)
+                {
+                    return FAIL(e.ToString());
+                }
+            }
+            return PASS();
+        }
     }
 }
