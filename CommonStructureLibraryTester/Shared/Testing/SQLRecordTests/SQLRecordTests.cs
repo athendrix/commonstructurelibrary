@@ -9,6 +9,7 @@ using CSL.SQL;
 using CSL.Testing;
 using ExampleNamespace.SomeSubNamespace;
 using static CommonStructureLibraryTester.Shared.Testing.TestingHelpers;
+using System.Reflection;
 
 namespace CommonStructureLibraryTester.Testing
 {
@@ -171,5 +172,137 @@ namespace CommonStructureLibraryTester.Testing
             }
             return PASS();
         }
+
+        [TestType(TestType.ServerSide)]
+        protected static async Task<TestResponse> ConditionGenerationTest()
+        {
+            var ExampleSet = new { Column1 = "SPAM", Column2 = "SPAMMER", Column3 = 22, Column4 = 2, Column5 = 6, Column6 = 6.5, Column7 = 3.0, Column8 = 5.0, Column9 = 4.5, Column10 = 22 };
+            Conditional c = Conditional.WHERE("Column1", IS.EQUAL_TO, "SPAM")
+                .AND("Column2", IS.NOT_EQUAL_TO, "SPAM")
+                .AND("Column3", IS.GREATER_THAN, 4)
+                .AND("Column4", IS.LESS_THAN, 5)
+                .AND("Column5", IS.GREATER_THAN_OR_EQUAL_TO, 6)
+                .AND("Column6", IS.LESS_THAN_OR_EQUAL_TO, 7)
+                .AND("Column7", IS.IN, 1, 2, 3, 4, 5, 6, null)
+                .AND("Column8", IS.IN, 1, 2, 3, 4, 5, 6)
+                .AND("Column9", IS.NOT_IN, 1, 2, 3, 4, 5, 6, null)
+                .AND("Column10", IS.NOT_IN, 1, 2, 3, 4, 5, 6);
+            ParameterInfo[] pis = ExampleSet.GetType().GetConstructors()[0].GetParameters();
+            List<Func<Task<PostgreSQL>>> SQLDBs = SQLTests.GetTestDB;
+            using (PostgreSQL sql = await SQLTests.GetTestDB[0]())
+            {
+                List<object> parameters = new List<object>();
+                string condition = c.Build(sql,pis,ref parameters) + ";";
+                if(condition != "\"Column1\" = @0 AND" +
+                    " \"Column2\" != @0 AND" +
+                    " \"Column3\" > @1 AND" +
+                    " \"Column4\" < @2 AND" +
+                    " \"Column5\" >= @3 AND" +
+                    " \"Column6\" <= @4 AND" +
+                    " (\"Column7\" IS NULL OR \"Column7\" IN (@5, @6, @7, @8, @9, @10)) AND" +
+                    " \"Column8\" IN (@5, @6, @7, @8, @9, @10) AND" +
+                    " (\"Column9\" IS NOT NULL AND \"Column9\" NOT IN (@5, @6, @7, @8, @9, @10)) AND" +
+                    " \"Column10\" NOT IN (@11, @12, @13, @1, @2, @3);") { return FAIL("Invalid SQL\n" + condition); }
+                if ((string)parameters[0] != "SPAM" ||
+                    (int)parameters[1] != 4 ||
+                    (int)parameters[2] != 5 ||
+                    (int)parameters[3] != 6 ||
+                    (double)parameters[4] != 7.0 ||
+                    (double)parameters[5] != 1.0 ||
+                    (double)parameters[6] != 2.0 ||
+                    (double)parameters[7] != 3.0 ||
+                    (double)parameters[8] != 4.0 ||
+                    (double)parameters[9] != 5.0 ||
+                    (double)parameters[10] != 6.0 ||
+                    (int)parameters[11] != 1 ||
+                    (int)parameters[12] != 2 ||
+                    (int)parameters[13] != 3) { return FAIL("Invalid parameters!"); }
+            }
+            return PASS();
+        }
+        [TestType(TestType.ServerSide)]
+        protected static async Task<TestResponse> WhereClauseSelectionTest()
+        {
+            Example4[] Ex4s = new Example4[100];
+            for (int i = 0; i < Ex4s.Length; i++)
+            {
+                Ex4s[i] = new Example4(RandomVars.Guid(), RandomVars.Byte(1, 255), RandomVars.ULong(1, ulong.MaxValue));
+            }
+            Ex4s[0] = Ex4s[0] with { UnsignedLongTest = long.MaxValue };
+            Ex4s[1] = Ex4s[1] with { UnsignedLongTest = (ulong)long.MaxValue + 1 };
+            List<Func<Task<PostgreSQL>>> SQLDBs = SQLTests.GetTestDB;
+            for (int i = 0; i < SQLDBs.Count; i++)
+            {
+                try
+                {
+                    using (PostgreSQL sql = await SQLTests.GetTestDB[i]())
+                    {
+                        sql.BeginTransaction(System.Data.IsolationLevel.Serializable);
+                        await SQLTests.ClearData(sql);
+                        await Example4.CreateDB(sql);
+                        for (int j = 0; j < Ex4s.Length; j++)
+                        {
+                            await Ex4s[j].Insert(sql);
+                        }
+                        sql.CommitTransaction();
+                        for (int j = 0; j < Ex4s.Length; j++)
+                        {
+                            Example4? tester;
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("ByteTest", IS.EQUAL_TO, Ex4s[j].ByteTest));
+                            if(tester == null) { return FAIL("ByteTest Equal Failure " + Ex4s[j].ToString()); }
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("ByteTest", IS.EQUAL_TO, Ex4s[j].ByteTest - 1));
+                            if (tester != null) { return FAIL("ByteTest Inverse Equal Failure " + Ex4s[j].ToString()); }
+
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("ByteTest", IS.LESS_THAN, Ex4s[j].ByteTest + 1));
+                            if (tester == null) { return FAIL("ByteTest Less Than Failure " + Ex4s[j].ToString()); }
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("ByteTest", IS.LESS_THAN, Ex4s[j].ByteTest - 1));
+                            if (tester != null) { return FAIL("ByteTest Inverse Less Than Failure " + Ex4s[j].ToString()); }
+
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("ByteTest", IS.GREATER_THAN, Ex4s[j].ByteTest - 1));
+                            if (tester == null) { return FAIL("ByteTest Greater Than Failure " + Ex4s[j].ToString()); }
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("ByteTest", IS.GREATER_THAN, Ex4s[j].ByteTest + 1));
+                            if (tester != null) { return FAIL("ByteTest Inverse Greater Than Failure " + Ex4s[j].ToString()); }
+
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("ByteTest", IS.BETWEEN, Ex4s[j].ByteTest - 1, Ex4s[j].ByteTest + 1));
+                            if (tester == null) { return FAIL("ByteTest Between Failure " + Ex4s[j].ToString()); }
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("ByteTest", IS.BETWEEN, Ex4s[j].ByteTest + 1, Ex4s[j].ByteTest - 1));
+                            if (tester != null) { return FAIL("ByteTest Inverse Between Failure " + Ex4s[j].ToString()); }
+
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.EQUAL_TO, Ex4s[j].UnsignedLongTest));
+                            if (tester == null) { return FAIL("UnsignedLongTest Equal Failure " + Ex4s[j].ToString()); }
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.EQUAL_TO, Ex4s[j].UnsignedLongTest - 1));
+                            if (tester != null) { return FAIL("UnsignedLongTest Inverse Equal Failure " + Ex4s[j].ToString()); }
+
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.LESS_THAN, Ex4s[j].UnsignedLongTest + 1));
+                            if (tester == null) { return FAIL("UnsignedLongTest Less Than Failure " + Ex4s[j].ToString()); }
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.LESS_THAN, Ex4s[j].UnsignedLongTest - 1));
+                            if (tester != null) { return FAIL("UnsignedLongTest Inverse Less Than Failure " + Ex4s[j].ToString()); }
+
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.GREATER_THAN, Ex4s[j].UnsignedLongTest - 1));
+                            if (tester == null) { return FAIL("UnsignedLongTest Greater Than Failure " + Ex4s[j].ToString()); }
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.GREATER_THAN, Ex4s[j].UnsignedLongTest + 1));
+                            if (tester != null) { return FAIL("UnsignedLongTest Inverse Greater Than Failure " + Ex4s[j].ToString()); }
+
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.BETWEEN, Ex4s[j].UnsignedLongTest - 1, Ex4s[j].UnsignedLongTest + 1));
+                            if (tester == null) { return FAIL("UnsignedLongTest Between Failure " + Ex4s[j].ToString()); }
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.BETWEEN, Ex4s[j].UnsignedLongTest + 1, Ex4s[j].UnsignedLongTest - 1));
+                            if (tester != null) { return FAIL("UnsignedLongTest Inverse Between Failure " + Ex4s[j].ToString()); }
+
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.NOT_BETWEEN, Ex4s[j].UnsignedLongTest + 1, Ex4s[j].UnsignedLongTest - 1));
+                            if (tester == null) { return FAIL("UnsignedLongTest Not Between Failure " + Ex4s[j].ToString()); }
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.NOT_BETWEEN, Ex4s[j].UnsignedLongTest - 1, Ex4s[j].UnsignedLongTest + 1));
+                            if (tester != null) { return FAIL("UnsignedLongTest Inverse Not Between Failure " + Ex4s[j].ToString()); }
+#warning Add more tests for different types of queries and subqueries.
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    return FAIL(e.ToString());
+                }
+            }
+            return PASS();
+        }
+                
     }
 }
