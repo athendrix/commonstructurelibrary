@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Data.Common;
+using System.Reflection;
 using System.Threading.Tasks;
 using static CSL.DependencyInjection;
+using static CSL.Helpers.Generics;
 
 namespace CSL.SQL
 {
@@ -77,6 +79,25 @@ namespace CSL.SQL
             if (ParameterType == typeof(uint)) { return (int?)(uint?)toReturn; }
             if (ParameterType == typeof(ulong)) { return (long?)(ulong?)toReturn; }
             return toReturn;
+        }
+
+        public override object? ConvertFromFriendlyParameter(object? parameter, ParameterInfo pi)
+        {
+            if (parameter is null or DBNull)
+            {
+                if (!IsNullable(pi)) { throw new Exception("ParameterInfo does not match parameter!"); }
+                return null;
+            }
+            Type ParameterType = pi.ParameterType;
+            ParameterType = Nullable.GetUnderlyingType(ParameterType) ?? ParameterType;
+            if (ParameterType == typeof(byte)) { return (byte)(short)parameter; }
+            if (ParameterType == typeof(sbyte)) { return (sbyte)(short)parameter; }
+            if (ParameterType == typeof(char)) { return ((string)parameter)[0]; }
+            if (ParameterType == typeof(ushort)) { return (ushort)(short)parameter; }
+            if (ParameterType == typeof(uint)) { return (uint)(int)parameter; }
+            if (ParameterType == typeof(ulong)) { return (ulong)(long)parameter; }
+            if (ParameterType.IsEnum) { return Enum.ToObject(ParameterType, Convert.ChangeType(parameter, Enum.GetUnderlyingType(ParameterType))); }
+            return parameter;
         }
         #endregion
     }

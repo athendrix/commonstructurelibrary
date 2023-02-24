@@ -193,62 +193,6 @@ namespace CSL.SQL
         public static Task Truncate(SQLDB sql, bool cascade = false) => sql.ExecuteNonQuery($"TRUNCATE {TableName}{(cascade ? " CASCADE" : "")};");
         public static Task Drop(SQLDB sql, bool cascade = false) => sql.ExecuteNonQuery($"DROP TABLE IF EXISTS {TableName}{(cascade ? " CASCADE" : "")};");
         #endregion
-        #region Postgres Format Conversions
-        public static T GetRecord(AutoClosingDataReader acdr)
-        {
-            object?[] recordItems = new object?[acdr.FieldCount];
-            if (RecordParameters.Length != recordItems.Length) { throw new Exception("Record does not match data!"); }
-            for (int i = 0; i < recordItems.Length; i++)
-            {
-                if (acdr.IsDBNull(i))
-                {
-                    if (!IsNullable(RecordParameters[i])) { throw new Exception("Record does not match data!"); }
-                    recordItems[i] = null;
-                    continue;
-                }
-                Type ParameterType = RecordParameters[i].ParameterType;
-                ParameterType = Nullable.GetUnderlyingType(ParameterType) ?? ParameterType;
-                if (ParameterType == typeof(byte))
-                {
-                    recordItems[i] = (byte)(short)acdr[i];
-                    continue;
-                }
-                if (ParameterType == typeof(sbyte))
-                {
-                    recordItems[i] = (sbyte)(short)acdr[i];
-                    continue;
-                }
-                if (ParameterType == typeof(char))
-                {
-                    recordItems[i] = ((string)acdr[i])[0];
-                    continue;
-                }
-                if (ParameterType == typeof(ushort))
-                {
-                    recordItems[i] = (ushort)(short)acdr[i];
-                    continue;
-                }
-                if (ParameterType == typeof(uint))
-                {
-                    recordItems[i] = (uint)(int)acdr[i];
-                    continue;
-                }
-                if (ParameterType == typeof(ulong))
-                {
-                    recordItems[i] = (ulong)(long)acdr[i];
-                    continue;
-                }
-                if (ParameterType.IsEnum)
-                {
-                    recordItems[i] = Enum.ToObject(ParameterType, Convert.ChangeType(acdr[i], Enum.GetUnderlyingType(ParameterType)));
-                    continue;
-                }
-                recordItems[i] = acdr[i];
-            }
-            return (T)typeof(T).GetConstructors()[0].Invoke(recordItems);
-        }
-
-        #endregion
 
         #region SELECT
         public static Task<T?> SelectOne(SQLDB sql, Conditional conditional)
@@ -267,7 +211,7 @@ namespace CSL.SQL
         public static async Task<AutoClosingEnumerable<T>> Select(SQLDB sql)
         {
             AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName};");
-            return new AutoClosingEnumerable<T>(SelectHelper(acdr), acdr);
+            return acdr.ReadRecords<T>(sql);
         }
         public static Task<AutoClosingEnumerable<T>> Select(SQLDB sql, Conditional conditional)
         {
@@ -278,13 +222,8 @@ namespace CSL.SQL
         public static async Task<AutoClosingEnumerable<T>> Select(SQLDB sql, string condition, params object?[] parameters)
         {
             AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName} WHERE {condition};", sql.ConvertToFriendlyParameters(parameters));
-            return new AutoClosingEnumerable<T>(SelectHelper(acdr), acdr);
+            return acdr.ReadRecords<T>(sql);
         }
-        private static IEnumerable<T> SelectHelper(AutoClosingDataReader acdr)
-        {
-            while (acdr.Read()) { yield return GetRecord(acdr); }
-        }
-
         #endregion
         #region DELETE
         public static Task<int> Delete(SQLDB sql, Conditional conditional)

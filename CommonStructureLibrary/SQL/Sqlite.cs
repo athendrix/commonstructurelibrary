@@ -1,6 +1,7 @@
 ﻿using System;
 using static CSL.DependencyInjection;
 using System.Data.Common;
+using System.Reflection;
 
 namespace CSL.SQL
 {
@@ -27,6 +28,7 @@ namespace CSL.SQL
         }
         #region Abstract Implementations
         public override object? ConvertToFriendlyParameter(object? parameter) => throw new NotImplementedException();
+        public override object? ConvertFromFriendlyParameter(object? parameter, ParameterInfo pi) => throw new NotImplementedException();
         #endregion
     }
 }

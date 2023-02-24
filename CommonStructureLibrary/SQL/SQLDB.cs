@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace CSL.SQL
 {
@@ -258,6 +259,17 @@ namespace CSL.SQL
             for (int i = 0; i < parameters.Length; i++)
             {
                 toReturn[i] = ConvertToFriendlyParameter(parameters[i]);
+            }
+            return toReturn;
+        }
+        public abstract object? ConvertFromFriendlyParameter(object? parameter, ParameterInfo pi);
+        public object?[] ConvertFromFriendlyParameters(object?[] parameters, ParameterInfo[] pis)
+        {
+            if(parameters.Length != pis.Length) { throw new ArgumentException("Parameters length is not the same as ParameterInfo length!"); }
+            object?[] toReturn = new object[parameters.Length];
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                toReturn[i] = ConvertFromFriendlyParameter(parameters[i], pis[i]);
             }
             return toReturn;
         }

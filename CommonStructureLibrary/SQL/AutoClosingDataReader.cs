@@ -96,6 +96,22 @@ namespace CSL.SQL
             return toReturn;
         }
 
+        public AutoClosingEnumerable<T> ReadRecords<T>(SQLDB sql) where T : CSLRecord<T> => new AutoClosingEnumerable<T>(ReadRecordsHelper<T>(sql, this), this);
+        private static IEnumerable<T> ReadRecordsHelper<T>(SQLDB sql, AutoClosingDataReader acdr) where T : CSLRecord<T>
+        {
+            while (acdr.Read()) { yield return CSLRecord<T>.GetRecord(sql.ConvertFromFriendlyParameters(acdr.DumpRow(), CSLRecord<T>.RecordParameters)); }
+        }
+
+        public object?[] DumpRow()
+        {
+            object?[] toReturn = new object?[innerReader.FieldCount];
+            for(int i = 0; i < toReturn.Length; i++)
+            {
+                toReturn[i] = innerReader.IsDBNull(i) ? null : innerReader[i]; 
+            }
+            return toReturn;
+        }
+
         public void Dispose()
         {
             innerReader.Dispose();
