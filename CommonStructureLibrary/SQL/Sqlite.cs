@@ -1,4 +1,5 @@
-﻿using static CSL.DependencyInjection;
+﻿using System;
+using static CSL.DependencyInjection;
 using System.Data.Common;
 
 namespace CSL.SQL
@@ -13,6 +14,7 @@ namespace CSL.SQL
             csb.Cache = Cache;
             return CreateSqliteConnection(csb.ConnectionString);
         }
+
         public Sqlite(string Filename, SqliteOpenMode Mode = SqliteOpenMode.ReadWriteCreate, SqliteCacheMode Cache = SqliteCacheMode.Default) : base(CreateConnection(Filename,Mode,Cache))
         {
             currentTransaction = null; ;
@@ -23,5 +25,8 @@ namespace CSL.SQL
             currentTransaction = null;
             InternalConnection.Open();
         }
+        #region Abstract Implementations
+        public override object? ConvertToFriendlyParameter(object? parameter) => throw new NotImplementedException();
+        #endregion
     }
 }

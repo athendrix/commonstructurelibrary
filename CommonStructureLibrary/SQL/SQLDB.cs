@@ -250,6 +250,18 @@ namespace CSL.SQL
         }
         #endregion
         #endregion
+        #region AbstractSignatures
+        public abstract object? ConvertToFriendlyParameter(object? parameter);
+        public object?[] ConvertToFriendlyParameters(object?[] parameters)
+        {
+            object?[] toReturn = new object[parameters.Length];
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                toReturn[i] = ConvertToFriendlyParameter(parameters[i]);
+            }
+            return toReturn;
+        }
+        #endregion
         #region Transaction Management
         public virtual void BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.Serializable)
         {

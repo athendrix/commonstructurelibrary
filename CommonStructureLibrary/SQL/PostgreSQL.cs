@@ -56,5 +56,28 @@ namespace CSL.SQL
                 return ExecuteNonQuery("SET search_path to \"$user\", public;");
             }
         }
+        #region Abstract Implementations
+        public override object? ConvertToFriendlyParameter(object? parameter)
+        {
+            object? toReturn = parameter;
+            Type? ParameterType = toReturn?.GetType();
+            if (ParameterType == null) { return toReturn; }
+            ParameterType = Nullable.GetUnderlyingType(ParameterType) ?? ParameterType;
+            if (ParameterType.IsEnum)
+            {
+                ParameterType = Enum.GetUnderlyingType(ParameterType);
+                toReturn = Convert.ChangeType(toReturn, ParameterType);
+            }
+            if (ParameterType == typeof(char))
+            {
+                char? val = (char?)toReturn;
+                return val != null ? new string(val.Value, 1) : null;
+            }
+            if (ParameterType == typeof(ushort)) { return (short?)(ushort?)toReturn; }
+            if (ParameterType == typeof(uint)) { return (int?)(uint?)toReturn; }
+            if (ParameterType == typeof(ulong)) { return (long?)(ulong?)toReturn; }
+            return toReturn;
+        }
+        #endregion
     }
 }

@@ -12,6 +12,12 @@ namespace CSL.SQL
 {
     public static class Common
     {
+        /// <summary>
+        /// Runs through NameParser and then puts double quotes on the ends so it is escaped.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static string Escape(string? input) => $"\"{NameParser(input)}\"";
         public static string NameParser(string? input)
         {
             if (input == null)
@@ -85,11 +91,6 @@ namespace CSL.SQL
             }
             return (T)toReturn;
         }
-
-        [Obsolete("This method is obsolete. You can just cast from a long to a ulong and back safely.")]
-        public static ulong ToUlong(this long item) => (ulong)item;
-        [Obsolete("This method is obsolete. You can just cast from a ulong to a long and back safely.")]
-        public static long ToLong(this ulong item) => (long)item;
 
         public static void WriteStruct<T>(this BinaryWriter bw, T value) where T : struct => bw.Write(value.ToByteArray());
         public static byte[] ToByteArray<T>(this T value) where T : struct => MemoryMarshal.AsBytes<T>(new T[] { value }).ToArray();

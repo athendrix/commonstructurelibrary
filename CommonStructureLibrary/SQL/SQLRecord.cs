@@ -71,7 +71,7 @@ namespace CSL.SQL
     #endregion
 
     [SQLRecord(1)]
-    public abstract record SQLRecord<T>() where T : SQLRecord<T>
+    public abstract record SQLRecord<T>() : CSLRecord<T> where T : SQLRecord<T>
     {
         private static readonly Dictionary<Type, string> SQLTypes = new Dictionary<Type, string>()
     {
@@ -119,13 +119,13 @@ namespace CSL.SQL
             //return "<FIXME>";
         }
         #region Helper Properties
-        protected static string TableName = Escape(typeof(T).Name);
+        protected static string TableName = Common.Escape(typeof(T).Name);
         protected static SQLRecordAttribute ARA = typeof(T).GetCustomAttributes(true).SelectMany(x => x is SQLRecordAttribute r ? new SQLRecordAttribute[] { r } : new SQLRecordAttribute[0]).First();
-        protected static ParameterInfo[] RecordParameters = typeof(T).GetConstructors()[0].GetParameters();
+        
         protected static ParameterInfo[] PKs = RecordParameters.Take(ARA.PrimaryKeys).ToArray();
         protected static ParameterInfo[] Datas = RecordParameters.Skip(ARA.PrimaryKeys).ToArray();
-        protected static string[] PKStrings = PKs.Select(x => $"{Escape(x.Name)} = @{x.Position}").ToArray();
-        protected static string[] DataStrings = Datas.Select(x => $"{Escape(x.Name)} = @{x.Position}").ToArray();
+        protected static string[] PKStrings = PKs.Select(x => $"{Common.Escape(x.Name)} = @{x.Position}").ToArray();
+        protected static string[] DataStrings = Datas.Select(x => $"{Common.Escape(x.Name)} = @{x.Position}").ToArray();
         protected static string[] ExtraLines = GetExtraLines(RecordParameters.SelectMany(x => x.GetCustomAttributes().Select(y => new Tuple<ParameterInfo, Attribute>(x, y))).GroupBy(z => z.Item2.GetType()).ToArray());
         protected static string[] ParameterNumbers = Enumerable.Range(0, RecordParameters.Length).Select(i => $"@{i}").ToArray();
         #endregion
@@ -144,23 +144,22 @@ namespace CSL.SQL
                 }
                 if (group.Key == typeof(CheckAttribute))
                 {
-                    toReturn.AddRange(group.Select(x => $"CHECK({Escape(x.Item1.Name)} {((CheckAttribute)x.Item2).CheckString})"));
+                    toReturn.AddRange(group.Select(x => $"CHECK({Common.Escape(x.Item1.Name)} {((CheckAttribute)x.Item2).CheckString})"));
                 }
                 if (group.Key == typeof(FKAttribute))
                 {
                     toReturn.AddRange(group.Select(x =>
                     {
                         FKAttribute fk = (FKAttribute)x.Item2;
-                        return $"FOREIGN KEY({Escape(x.Item1.Name)}) REFERENCES {Escape(fk.ForeignTable)}({Escape(fk.ForeignKey)})";
+                        return $"FOREIGN KEY({Common.Escape(x.Item1.Name)}) REFERENCES {Common.Escape(fk.ForeignTable)}({Common.Escape(fk.ForeignKey)})";
                     }));
                 }
             }
             return toReturn.ToArray();
         }
         protected static string FormatParameterInfos(IEnumerable<ParameterInfo> pis) => string.Join(", ", pis.Select(x => FormatParameterInfo(x)));
-        protected static string GetEscapedParameterNames(IEnumerable<ParameterInfo> pis) => string.Join(", ", pis.Select(x => Escape(x.Name)));
-        protected static string FormatParameterInfo(ParameterInfo pi) => $"{Escape(pi.Name)} {GetSQLType(pi.ParameterType)}{(IsNullable(pi) ? "" : " NOT NULL")}";
-        protected static string Escape(string? name) => $"\"{name?.Replace("\"", "")}\"";
+        protected static string GetEscapedParameterNames(IEnumerable<ParameterInfo> pis) => string.Join(", ", pis.Select(x => Common.Escape(x.Name)));
+        protected static string FormatParameterInfo(ParameterInfo pi) => $"{Common.Escape(pi.Name)} {GetSQLType(pi.ParameterType)}{(IsNullable(pi) ? "" : " NOT NULL")}";
         protected static string JoinCommas(IEnumerable<string?> toJoin) => string.Join(", ", toJoin);
         protected static string JoinANDs(IEnumerable<string?> toJoin) => string.Join(" AND ", toJoin);
         #endregion
@@ -248,40 +247,7 @@ namespace CSL.SQL
             }
             return (T)typeof(T).GetConstructors()[0].Invoke(recordItems);
         }
-        public object?[] ToArray(SQLDB sql)
-        {
-            if (typeof(T) != GetType()) { throw new Exception("SQLRecord T Type must be the same as the class!"); }
 
-            object?[] toReturn = new object[RecordParameters.Length];
-            for (int i = 0; i < RecordParameters.Length; i++)
-            {
-                toReturn[i] = typeof(T).GetProperty(RecordParameters[i]?.Name ?? "")?.GetValue(this);
-            }
-            if (sql is PostgreSQL) { return ConvertToPostgresFriendlyParameters(toReturn); }
-            throw new NotImplementedException();
-        }
-        private static object? ConvertToPostgresFriendlyParameter(object? parameter)
-        {
-            object? toReturn = parameter;
-            Type? ParameterType = toReturn?.GetType();
-            if (ParameterType == null) { return toReturn; }
-            ParameterType = Nullable.GetUnderlyingType(ParameterType) ?? ParameterType;
-            if (ParameterType.IsEnum)
-            {
-                ParameterType = Enum.GetUnderlyingType(ParameterType);
-                toReturn = Convert.ChangeType(toReturn, ParameterType);
-            }
-            if (ParameterType == typeof(char))
-            {
-                char? val = (char?)toReturn;
-                return val != null ? new string(val.Value, 1) : null;
-            }
-            if (ParameterType == typeof(ushort)) { return (short?)(ushort?)toReturn; }
-            if (ParameterType == typeof(uint)) { return (int?)(uint?)toReturn; }
-            if (ParameterType == typeof(ulong)) { return (long?)(ulong?)toReturn; }
-            return toReturn;
-        }
-        private static object?[] ConvertToPostgresFriendlyParameters(object?[] parameters) => parameters.Select(x => ConvertToPostgresFriendlyParameter(x)).ToArray();
         #endregion
 
         #region SELECT
@@ -293,7 +259,6 @@ namespace CSL.SQL
         }
         public static async Task<T?> SelectOne(SQLDB sql, string condition, params object?[] parameters)
         {
-            if (sql is PostgreSQL) { parameters = ConvertToPostgresFriendlyParameters(parameters); }
             using (AutoClosingEnumerable<T> ace = await Select(sql, condition, parameters))
             {
                 return ace.FirstOrDefault();
@@ -312,8 +277,7 @@ namespace CSL.SQL
         }
         public static async Task<AutoClosingEnumerable<T>> Select(SQLDB sql, string condition, params object?[] parameters)
         {
-            if (sql is PostgreSQL) { parameters = ConvertToPostgresFriendlyParameters(parameters); }
-            AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName} WHERE {condition};", parameters);
+            AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName} WHERE {condition};", sql.ConvertToFriendlyParameters(parameters));
             return new AutoClosingEnumerable<T>(SelectHelper(acdr), acdr);
         }
         private static IEnumerable<T> SelectHelper(AutoClosingDataReader acdr)
@@ -328,249 +292,26 @@ namespace CSL.SQL
             List<object> parameters = new List<object>();
             string condition = conditional.Build(sql, RecordParameters, ref parameters) + ";";
             object?[] parameterarr = parameters.ToArray();
-            if (sql is PostgreSQL) { parameterarr = ConvertToPostgresFriendlyParameters(parameterarr); }
             return Delete(sql, condition, parameterarr);
         }
-        public static Task<int> Delete(SQLDB sql, string condition, params object?[] parameters)
-        {
-            if (sql is PostgreSQL) { parameters = ConvertToPostgresFriendlyParameters(parameters); }
-            return sql.ExecuteNonQuery($"DELETE FROM {TableName} WHERE {condition};", parameters);
-        }
+        public static Task<int> Delete(SQLDB sql, string condition, params object?[] parameters) => sql.ExecuteNonQuery($"DELETE FROM {TableName} WHERE {condition};", sql.ConvertToFriendlyParameters(parameters));
 
-        public Task<int> Delete(SQLDB sql) => sql.ExecuteNonQuery($"DELETE FROM {TableName} WHERE {JoinANDs(PKStrings)};", ToArray(sql));
+        public Task<int> Delete(SQLDB sql) => sql.ExecuteNonQuery($"DELETE FROM {TableName} WHERE {JoinANDs(PKStrings)};", sql.ConvertToFriendlyParameters(ToArray()));
         #endregion
         #region UPDATE INSERT and UPSERT
         public Task<int> Insert(SQLDB sql) => sql.ExecuteNonQuery(
-                $"INSERT INTO {Escape(typeof(T).Name)} ({GetEscapedParameterNames(RecordParameters)}) " +
+                $"INSERT INTO {TableName} ({GetEscapedParameterNames(RecordParameters)}) " +
                 $"VALUES({JoinCommas(ParameterNumbers)}) " +
-                $"ON CONFLICT({GetEscapedParameterNames(PKs)}) DO NOTHING;", ToArray(sql));
+                $"ON CONFLICT({GetEscapedParameterNames(PKs)}) DO NOTHING;", sql.ConvertToFriendlyParameters(ToArray()));
         public Task<int> Update(SQLDB sql) => sql.ExecuteNonQuery(
                 $"UPDATE {TableName} " +
                 $"SET {JoinCommas(DataStrings)} " +
-                $"WHERE {JoinANDs(PKStrings)};", ToArray(sql));
+                $"WHERE {JoinANDs(PKStrings)};", sql.ConvertToFriendlyParameters(ToArray()));
         public Task<int> Upsert(SQLDB sql) => sql.ExecuteNonQuery(
                 $"INSERT INTO {TableName} ({GetEscapedParameterNames(RecordParameters)}) " +
                 $"VALUES({JoinCommas(ParameterNumbers)}) " +
                 $"ON CONFLICT({GetEscapedParameterNames(PKs)}) DO UPDATE " +
-                $"SET {JoinCommas(DataStrings)};", ToArray(sql));
+                $"SET {JoinCommas(DataStrings)};", sql.ConvertToFriendlyParameters(ToArray()));
         #endregion
-    }
-    public class Conditional
-    {
-        private readonly string joinstring;
-        private readonly string ColumnName;
-        private readonly IS Condition;
-        private readonly object?[] parameters;
-        private readonly Conditional? previous;
-        private Conditional? subConditional;
-        private Conditional(string joinstring, string ColumnName, IS Condition, object?[] parameters, Conditional? previous)
-        {
-            this.joinstring = joinstring;
-            this.ColumnName = ColumnName;
-            this.Condition = Condition;
-            this.parameters = parameters;
-            this.previous = previous;
-        }
-        private Conditional(string joinstring, Conditional subConditional, Conditional previous)
-        {
-            this.joinstring = joinstring;
-            this.subConditional = subConditional;
-            this.previous = previous;
-            this.ColumnName = "";
-            this.Condition = IS.EQUAL_TO;
-            this.parameters = new object[0];
-        }
-        public static Conditional WHERE(string ColumnName, IS Condition, params object?[] parameters) => new Conditional("", ColumnName, Condition, parameters, null);
-
-        public Conditional AND(string ColumnName, IS Condition, params object?[] parameters) => new Conditional(" AND ", ColumnName, Condition, parameters, this);
-        public Conditional OR(string ColumnName, IS Condition, params object?[] parameters) => new Conditional(" OR ", ColumnName, Condition, parameters, this);
-        public Conditional AND(Conditional subConditional) => new Conditional(" AND ", subConditional, this);
-        public Conditional OR(Conditional subConditional) => new Conditional(" OR ", subConditional, this);
-        private static string EscapePostgres(string? name) => $"\"{name?.Replace("\"", "")}\"";
-        private static int AddOrIndex(ref List<object> list, object toAddorIndex)
-        {
-            int index;
-            if ((index = list.IndexOf(toAddorIndex)) == -1)
-            {
-                index = list.Count;
-                list.Add(toAddorIndex);
-            }
-            return index;
-        }
-        public string Build(SQLDB sql, ParameterInfo[] ValidColumns, ref List<object> ParametersList)
-        {
-            Stack<Conditional> conditionalStack = new Stack<Conditional>();
-            if (sql is PostgreSQL)
-            {
-                conditionalStack.Push(this);
-                Conditional? current;
-                while ((current = conditionalStack.Peek().previous) != null) { conditionalStack.Push(current); }
-                StringBuilder sb = new StringBuilder();
-                while (conditionalStack.Count > 0)
-                {
-                    current = conditionalStack.Pop();
-                    ParameterInfo? currentColumn = ValidColumns.Where(x => x.Name == current.ColumnName).FirstOrDefault();
-                    //For injection protection we're making sure the column name is a valid part of the record.
-                    if (currentColumn == null) { throw new ArgumentException($"{current.ColumnName} is not a valid column name!"); }
-
-                    bool inequality = current.Condition is IS.LESS_THAN or IS.LESS_THAN_OR_EQUAL_TO or IS.GREATER_THAN or IS.GREATER_THAN_OR_EQUAL_TO;
-                    bool unsignedType = currentColumn.ParameterType == typeof(ulong) || currentColumn.ParameterType == typeof(uint) || currentColumn.ParameterType == typeof(ushort);
-                    bool notValue = current.Condition is IS.NOT_EQUAL_TO or IS.NOT_IN or IS.NOT_BETWEEN or IS.NOT_LIKE or IS.NOT_STARTING_WITH or IS.NOT_ENDING_WITH or IS.NOT_CONTAINING;
-
-
-                    sb.Append(current.joinstring);
-
-                    string notString = notValue ? " NOT" : "";
-                    string a = EscapePostgres(current.ColumnName);
-
-                    switch (current.parameters.Length)
-                    {
-                        case 0:
-                            if (current.subConditional == null) { throw new ArgumentOutOfRangeException("Conditionals require parameters to compare against."); }
-                            sb.Append("(" + current.subConditional.Build(sql, ValidColumns, ref ParametersList) + ")");
-                            break;
-                        case 1:
-                            #region 1 parameter
-                            object? value = current.parameters[0];
-
-                            if (value is null)
-                            {
-                                if (current.Condition is IS.EQUAL_TO or IS.IN or IS.NOT_EQUAL_TO or IS.NOT_IN)
-                                {
-                                    sb.Append($"{a} IS{notString} NULL");
-                                    break;
-                                }
-                                throw new ArgumentNullException("A null value is only allowed for `=` or `IN` comparisons.");
-                            }
-                            //Fix Typing
-                            if (value.GetType() != currentColumn.ParameterType) { value = Convert.ChangeType(value, currentColumn.ParameterType); }
-                            string b = "@" + AddOrIndex(ref ParametersList, value);
-                            if (unsignedType && inequality)
-                            {
-                                bool gt = current.Condition is IS.GREATER_THAN or IS.GREATER_THAN_OR_EQUAL_TO;
-                                bool eq = current.Condition is IS.GREATER_THAN_OR_EQUAL_TO or IS.LESS_THAN_OR_EQUAL_TO;
-                                //Black magic to convert inequality tests on a signed integer to inequality tests on an unsigned integer
-                                //This is necessary because Postgres doesn't do unsigned integers, so we need to mimic inequality comparisons so values won't be wrong.
-                                sb.Append($"({a} {(gt ? "<" : ">=")} 0 AND {b} {(gt ? ">=" : "<")} 0 OR {a} {(gt ? ">" : "<")}{(eq ? "=" : "")} {b} AND ({a} {(gt ? "<" : ">=")} 0 OR {b} {(gt ? ">=" : "<")} 0))");
-                                break;
-                            }
-                            string comp = current.Condition switch
-                            {
-                                IS.EQUAL_TO => "=",
-                                IS.NOT_EQUAL_TO => "!=",
-                                IS.GREATER_THAN => ">",
-                                IS.LESS_THAN => "<",
-                                IS.GREATER_THAN_OR_EQUAL_TO => ">=",
-                                IS.LESS_THAN_OR_EQUAL_TO => "<=",
-                                IS.IN => "=",
-                                IS.NOT_IN => "!=",
-                                IS.BETWEEN => throw new ArgumentOutOfRangeException("Between comparisons require exactly 2 parameters."),
-                                IS.NOT_BETWEEN => throw new ArgumentOutOfRangeException("Between comparisons require exactly 2 parameters."),
-                                IS.LIKE => "LIKE",
-                                IS.NOT_LIKE => "NOT LIKE",
-                                IS.STARTING_WITH => "LIKE",
-                                IS.NOT_STARTING_WITH => "NOT LIKE",
-                                IS.ENDING_WITH => "LIKE",
-                                IS.NOT_ENDING_WITH => "NOT LIKE",
-                                IS.CONTAINING => "LIKE",
-                                IS.NOT_CONTAINING => "NOT LIKE",
-                                _ => throw new InvalidCastException("Not a valid condition."),
-                            };
-                            if (current.Condition is IS.STARTING_WITH or IS.NOT_STARTING_WITH or IS.CONTAINING or IS.NOT_CONTAINING)
-                            {
-                                value = value.ToString() + "%";
-                            }
-                            if (current.Condition is IS.ENDING_WITH or IS.NOT_ENDING_WITH or IS.CONTAINING or IS.NOT_CONTAINING)
-                            {
-                                value = "%" + value.ToString();
-                            }
-                            
-                            sb.Append($"{a} {comp} @{AddOrIndex(ref ParametersList, value)}");
-                            break;
-                        #endregion
-                        case 2:
-                            #region 2 parameters
-                            if (current.Condition is IS.IN or IS.NOT_IN) { goto default; }//Handle all the IN cases in the default case. Only handle BETWEEN cases here
-                            object? first = current.parameters[0];
-                            object? last = current.parameters[1];
-                            if (current.Condition is not IS.BETWEEN and not IS.NOT_BETWEEN) { throw new ArgumentOutOfRangeException("Too many parameters for comparison."); }
-                            if (first is null || last is null) { throw new ArgumentNullException("Between comparisons cannot use null values."); }
-
-                            #region Special unsigned BETWEEN cases
-                            //We just rewrite the between as the equivilant GreaterThan/LessThan statements.
-                            if (current.Condition is IS.BETWEEN && unsignedType)
-                            {
-                                current.subConditional = WHERE(current.ColumnName, IS.GREATER_THAN_OR_EQUAL_TO, first).AND(current.ColumnName, IS.LESS_THAN_OR_EQUAL_TO, last);
-                                goto case 0;//handle subConditional
-                            }
-                            if (current.Condition is IS.NOT_BETWEEN && unsignedType)
-                            {
-                                current.subConditional = WHERE(current.ColumnName, IS.LESS_THAN, first).OR(current.ColumnName, IS.GREATER_THAN, last);
-                                goto case 0;//handle subConditional
-                            }
-                            #endregion
-
-                            if (first.GetType() != currentColumn.ParameterType) { first = Convert.ChangeType(first, currentColumn.ParameterType); }
-                            if (last.GetType() != currentColumn.ParameterType) { last = Convert.ChangeType(last, currentColumn.ParameterType); }
-                            sb.Append($"{a}{notString} BETWEEN @{AddOrIndex(ref ParametersList,first)} AND @{AddOrIndex(ref ParametersList, last)}");
-                            break;
-                        #endregion
-                        default:
-                            #region many parameters
-                            if (current.Condition is not IS.IN and not IS.NOT_IN) { throw new ArgumentOutOfRangeException("Too many parameters for comparison."); }
-                            bool nullinlist = false;
-                            List<object> NonNullParameters = new List<object>();
-                            for(int i = 0; i < current.parameters.Length; i++)
-                            {
-                                object? toAdd = current.parameters[i];
-                                if(toAdd is null)
-                                {
-                                    nullinlist = true;
-                                    continue;
-                                }
-                                if (toAdd.GetType() != currentColumn.ParameterType) { toAdd = Convert.ChangeType(toAdd, currentColumn.ParameterType); }
-                                NonNullParameters.Add(toAdd);
-                            }
-                            string[] nnpstrings = new string[NonNullParameters.Count];
-                            for (int i = 0; i < nnpstrings.Length; i++)
-                            {
-                                nnpstrings[i] = $"@{AddOrIndex(ref ParametersList, NonNullParameters[i])}";
-                            }
-                            bool nullandothers = nullinlist && nnpstrings.Length > 0;
-                            if (nullandothers) { sb.Append("("); }
-                            if (nullinlist) { sb.Append($"{a} IS{notString} NULL"); }
-                            if (nullandothers) { sb.Append($" {(notValue ? "AND" : "OR")} "); }
-                            if (nnpstrings.Length > 0) { sb.Append($"{a}{notString} IN ({string.Join(", ", nnpstrings)})"); }
-                            if (nullandothers) { sb.Append(")"); }
-                            break;
-                            #endregion
-                    }
-                }
-                return sb.ToString();
-            }
-            throw new NotImplementedException();
-        }
-    }
-
-    public enum IS : byte
-    {
-        EQUAL_TO,
-        NOT_EQUAL_TO,
-        GREATER_THAN,
-        LESS_THAN,
-        GREATER_THAN_OR_EQUAL_TO,
-        LESS_THAN_OR_EQUAL_TO,
-        IN,
-        NOT_IN,
-        BETWEEN,
-        NOT_BETWEEN,
-        LIKE,
-        NOT_LIKE,
-        STARTING_WITH,
-        NOT_STARTING_WITH,
-        ENDING_WITH,
-        NOT_ENDING_WITH,
-        CONTAINING,
-        NOT_CONTAINING
     }
 }
