@@ -2,7 +2,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
 
 namespace CSL.Data
@@ -13,7 +12,7 @@ namespace CSL.Data
         protected readonly bool immutable;
         protected readonly bool caseInsensitiveLookup;
         private readonly List<string> ordinalOrder;
-        #region Constructors
+#region Constructors
         public DataStore(bool caseInsensitiveLookup = false)
         {
             if (default(T?) != null) { throw new Exception("DataStore only works if T is a nullable type! Try adding a ? after the type name!"); }
@@ -30,9 +29,9 @@ namespace CSL.Data
             this.caseInsensitiveLookup = other.caseInsensitiveLookup;
             innerData = new Dictionary<string, T>();
             ordinalOrder = new List<string>();
-            foreach (KeyValuePair<string, T> entry in other.innerData)
+            foreach (string key in other.ordinalOrder)
             {
-                Add(entry.Key, entry.Value);
+                Add(key, other.innerData[key]);
             }
             this.immutable = immutable;
         }
@@ -66,15 +65,15 @@ namespace CSL.Data
             }
             this.immutable = immutable;
         }
-        #endregion
-        #region Interface Compatibility
-        #region IDictionary
+#endregion
+#region Interface Compatibility
+#region IDictionary
         public int Count => ordinalOrder.Count;
         public bool IsReadOnly => immutable;
 
         public ICollection<string> Keys => ordinalOrder.AsReadOnly();
 
-        public ICollection<T?> Values => System.Linq.Enumerable.ToList<T?>(System.Linq.Enumerable.Select(ordinalOrder, x => innerData[x]));
+        public ICollection<T?> Values => System.Linq.Enumerable.ToList<T?>(System.Linq.Enumerable.Select(ordinalOrder, x => innerData[x])).AsReadOnly();
 
         public void Add(KeyValuePair<string, T?> keyValuePair) => Add(keyValuePair.Key, keyValuePair.Value);
         //Clear is met by Clear in Mutable Functions
@@ -97,7 +96,6 @@ namespace CSL.Data
         }
         public bool Remove(string key)
         {
-            Debug.Assert(default(T?) == null);
             Set(key, default(T?));
             return true;
         }
@@ -127,8 +125,8 @@ namespace CSL.Data
             }
             yield break;
         }
-        #endregion
-        #region IList
+#endregion
+#region IList
         KeyValuePair<string, T?> IList<KeyValuePair<string, T?>>.this[int index]
         {
             get => new KeyValuePair<string, T?>(ordinalOrder[index], innerData[ordinalOrder[index]]);
@@ -140,11 +138,7 @@ namespace CSL.Data
             Set(item.Key, item.Value);
             Reorder(item.Key, index);
         }
-        public void RemoveAt(int index)
-        {
-            Debug.Assert(default(T?) == null);
-            this[index] = default;
-        }
+        public void RemoveAt(int index) => this[index] = default(T?);
         #endregion
         #region Array Indexers
         public T? this[string key]
@@ -157,13 +151,13 @@ namespace CSL.Data
             get => Get(ordinalOrder[index]);
             set => Set(ordinalOrder[index], value);
         }
-        #endregion
-        #endregion
-        #region Universal Functions
+#endregion
+#endregion
+#region Universal Functions
         public int GetOrdinal(string key) => ordinalOrder.IndexOf(caseInsensitiveLookup ? key.ToUpper() : key);
         public T? Get(string key)
         {
-            if (innerData.ContainsKey(caseInsensitiveLookup ? key.ToUpper() : key))
+            if (ContainsKey(key))
             {
                 return innerData[caseInsensitiveLookup ? key.ToUpper() : key];
             }
@@ -172,16 +166,16 @@ namespace CSL.Data
                 return default(T?);
             }
         }
-        public bool ContainsKey(string key) => innerData.ContainsKey(key);
-        #endregion
+        public bool ContainsKey(string key) => innerData.ContainsKey(caseInsensitiveLookup ? key.ToUpper() : key);
+#endregion
         //These are the only functions that actually change the state of innerData and ordinalOrder, and they won't if immutable is set.
-        #region Mutable Functions
+#region Mutable Functions
         public void Add(string key, T? value)
         {
             if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
-            string CompKey = caseInsensitiveLookup ? key.ToUpper() : key;
             if (value != null)
             {
+                string CompKey = caseInsensitiveLookup ? key.ToUpper() : key;
                 innerData.Add(CompKey, value);
                 ordinalOrder.Add(CompKey);
             }
@@ -204,7 +198,7 @@ namespace CSL.Data
             }
             else
             {
-                Add(key, value);
+                Add(CompKey, value);
             }
         }
         public void Clear()
@@ -222,16 +216,17 @@ namespace CSL.Data
         public void Reorder(string key, int position)
         {
             if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
-            if(position < 0 || position >= ordinalOrder.Count) { throw new ArgumentOutOfRangeException("position"); }
-            if(!ordinalOrder.Contains(key)) { throw new ArgumentException("key does not exist in DataStore!"); }
-            ordinalOrder.Remove(key);
-            ordinalOrder.Insert(position, key);
+            if (position < 0 || position >= ordinalOrder.Count) { throw new ArgumentOutOfRangeException("position"); }
+            string CompKey = caseInsensitiveLookup ? key.ToUpper() : key;
+            if (!ordinalOrder.Contains(CompKey)) { throw new ArgumentException("key does not exist in DataStore!"); }
+            ordinalOrder.Remove(CompKey);
+            ordinalOrder.Insert(position, CompKey);
         }
-        #endregion
+#endregion
     }
     public static class DataStoreExtensions
     {
-        #region String Translated Types
+#region String Translated Types
         public static T? Get<T>(this DataStore<string> ds, string key)
         {
             string? value = ds.Get(key);
@@ -247,8 +242,8 @@ namespace CSL.Data
         public static bool? GetBool(this DataStore<string> ds, string key) => ds.Get<bool?>(key);
         public static DateTime? GetDateTime(this DataStore<string> ds, string key) => ds.Get<DateTime?>(key);
         public static byte[]? GetByteArray(this DataStore<string> ds, string key) => ds.Get<byte[]?>(key);
-        #endregion
-        #region AdvancedTypes
+#endregion
+#region AdvancedTypes
         public static T?[]? GetArray<T>(this DataStore<string> ds, string key)
         {
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(byte?))
@@ -295,6 +290,6 @@ namespace CSL.Data
             }
             return toReturn;
         }
-        #endregion
+#endregion
     }
 }
