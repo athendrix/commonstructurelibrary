@@ -10,6 +10,17 @@ namespace CSL.SQL
     public class PostgreSQL : SQLDB
     {
         public static bool TrustAllServerCertificates = false;
+        /// <summary>
+        /// Connects to a Postgres Database using the parameters given.
+        /// </summary>
+        /// <param name="Server">The Server to connect to.</param>
+        /// <param name="Database">The Database to use on the Server.</param>
+        /// <param name="username">The username to use to connect to the server.</param>
+        /// <param name="password">The password to use to connect to the server.</param>
+        /// <param name="Schema">The default Schema to use in the Database. `null` reverts to checking for a schema matching the username first, and then falls back to the public schema.</param>
+        /// <param name="SslMode">The SSLMode for connecting to the server. This defaults to `Prefer` for compatibility, but if your Postgres server is on another host and you have SSL configured, you might consider using `Require` instead.</param>
+        /// <returns>A connection to a PostgreSQL server.</returns>
+        /// <exception cref="ArgumentException"></exception>
         public static async Task<PostgreSQL> Connect(string Server, string Database, string username, string password, string? Schema = null, SslMode SslMode = SslMode.Prefer)
         {
             INpgsqlConnectionStringBuilder csb = CreateINpgsqlConnectionStringBuilder();
@@ -42,12 +53,33 @@ namespace CSL.SQL
             await toReturn.SetSchema(Schema);
             return toReturn;
         }
+        /// <summary>
+        /// Connects to a Postgres Database using Environment Variables
+        /// POSTGRES_HOST sets the Server to connect to with a default of `localhost`
+        /// POSTGRES_DB sets the Database to use on the Server with a default of matching the POSTGRES_USER
+        /// POSTGRES_USER sets the username to use to connect to the server with a default of `postgres`
+        /// POSTGRES_PASSWORD sets the password to use to connect to the server with no default. This must be set at a minimum.
+        /// POSTGRES_SCHEMA sets the default Schema to use in the Database. The default checks for a schema matching the username first, and then falls back to the public schema.
+        /// POSTGRES_SSLMODE sets the SSLMode for connecting to the server. This defaults to `Prefer` for compatibility, but if your Postgres server is on another host and you have SSL configured, you might consider using `Require` instead.
+        /// </summary>
+        /// <returns>A connection to a PostgreSQL server.</returns>
+        /// <exception cref="ArgumentException"></exception>
+        public static Task<PostgreSQL> Connect() =>
+            Connect(
+                Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost",
+                Environment.GetEnvironmentVariable("POSTGRES_DB") ?? Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres",
+                Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres",
+                Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? throw new ArgumentException("POSTGRES_PASSWORD must be specified as an Environment Variable!)"),
+                Environment.GetEnvironmentVariable("POSTGRES_SCHEMA"),
+                ParseSSLMode(Environment.GetEnvironmentVariable("POSTGRES_SSLMODE"))
+                );
+        private static SslMode ParseSSLMode(string? SSLMODE) => SSLMODE == null ? SslMode.Prefer : (SslMode)Enum.Parse(typeof(SslMode), char.ToUpperInvariant(SSLMODE[0]) + SSLMODE.ToLowerInvariant().Substring(1));
         public PostgreSQL(DbConnection connection) : base(connection)
         {
             currentTransaction = null;
             InternalConnection.Open();
         }
-        public Task SetSchema(string? Schema)
+        public Task SetSchema(string? Schema = null)
         {
             if (Schema != null)
             {

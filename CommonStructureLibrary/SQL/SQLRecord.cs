@@ -68,6 +68,16 @@ namespace CSL.SQL
             ForeignKey = Key;
         }
     }
+    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+    public sealed class TableNameAttribute : Attribute
+    {
+        public readonly string TableName;
+        /// <summary>
+        /// Allows overriding the default TableName. The default TableName is the name of the record itself.
+        /// </summary>
+        /// <param name="TableName">The actual name of the table in the SQL Database</param>
+        public TableNameAttribute(string TableName) => this.TableName = Common.Escape(TableName);
+    }
     #endregion
 
     [SQLRecord(1)]
@@ -119,15 +129,16 @@ namespace CSL.SQL
             //return "<FIXME>";
         }
         #region Helper Properties
-        protected static string TableName = Common.Escape(typeof(T).Name);
-        protected static SQLRecordAttribute ARA = typeof(T).GetCustomAttributes(true).SelectMany(x => x is SQLRecordAttribute r ? new SQLRecordAttribute[] { r } : new SQLRecordAttribute[0]).First();
+        protected static readonly string TableName = TNA?.TableName ?? Common.Escape(typeof(T).Name);
+        private static readonly TableNameAttribute? TNA = typeof(T).GetCustomAttributes(false).SelectMany(x => x is TableNameAttribute r ? new TableNameAttribute[] { r } : new TableNameAttribute[0]).FirstOrDefault();
+        protected static readonly SQLRecordAttribute ARA = typeof(T).GetCustomAttributes(true).SelectMany(x => x is SQLRecordAttribute r ? new SQLRecordAttribute[] { r } : new SQLRecordAttribute[0]).First();
         
-        protected static ParameterInfo[] PKs = RecordParameters.Take(ARA.PrimaryKeys).ToArray();
-        protected static ParameterInfo[] Datas = RecordParameters.Skip(ARA.PrimaryKeys).ToArray();
-        protected static string[] PKStrings = PKs.Select(x => $"{Common.Escape(x.Name)} = @{x.Position}").ToArray();
-        protected static string[] DataStrings = Datas.Select(x => $"{Common.Escape(x.Name)} = @{x.Position}").ToArray();
-        protected static string[] ExtraLines = GetExtraLines(RecordParameters.SelectMany(x => x.GetCustomAttributes().Select(y => new Tuple<ParameterInfo, Attribute>(x, y))).GroupBy(z => z.Item2.GetType()).ToArray());
-        protected static string[] ParameterNumbers = Enumerable.Range(0, RecordParameters.Length).Select(i => $"@{i}").ToArray();
+        protected static readonly ParameterInfo[] PKs = RecordParameters.Take(ARA.PrimaryKeys).ToArray();
+        protected static readonly ParameterInfo[] Datas = RecordParameters.Skip(ARA.PrimaryKeys).ToArray();
+        protected static readonly string[] PKStrings = PKs.Select(x => $"{Common.Escape(x.Name)} = @{x.Position}").ToArray();
+        protected static readonly string[] DataStrings = Datas.Select(x => $"{Common.Escape(x.Name)} = @{x.Position}").ToArray();
+        protected static readonly string[] ExtraLines = GetExtraLines(RecordParameters.SelectMany(x => x.GetCustomAttributes().Select(y => new Tuple<ParameterInfo, Attribute>(x, y))).GroupBy(z => z.Item2.GetType()).ToArray());
+        protected static readonly string[] ParameterNumbers = Enumerable.Range(0, RecordParameters.Length).Select(i => $"@{i}").ToArray();
         #endregion
         #region Function Helpers
         private static string[] GetExtraLines(IGrouping<Type, Tuple<ParameterInfo, Attribute>>[] attributes)
