@@ -13,7 +13,9 @@ namespace CommonStructureLibraryTester.Testing
     public class SQLTests : Tests
     {
         public static readonly List<Func<Task<PostgreSQL>>> GetTestDB = new List<Func<Task<PostgreSQL>>>();
+        public static readonly List<Func<Sqlite>> GetSqliteDB = new List<Func<Sqlite>>();
         public static Task ClearData(PostgreSQL sql) => sql.ExecuteNonQuery("DROP SCHEMA IF EXISTS testschema CASCADE; CREATE SCHEMA testschema; SET search_path to testschema;");
+        public static Task ClearData(Sqlite sql) => sql.ExecuteNonQuery("PRAGMA writable_schema = 1; DELETE FROM sqlite_master; PRAGMA writable_schema = 0; PRAGMA integrity_check;");
         #region SQL
         [TestType(TestType.ServerSide)]
         protected static async Task<TestResponse> LocalDBTest()

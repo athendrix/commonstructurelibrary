@@ -35,12 +35,12 @@ namespace CSL.SQL
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = true)]
     public sealed class UniqueAttribute : Attribute
     {
-        public readonly int Group;
+        public readonly int? Group;
         /// <summary>
         /// Lets you specify groups of Unique keys. Unique keys with the same Group are considered unique in aggregate.
         /// </summary>
         /// <param name="Group">The aggregate group this Unique key is part of.</param>
-        public UniqueAttribute(int Group = 0) => this.Group = Group;
+        public UniqueAttribute(int? Group = null) => this.Group = Group;
     }
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = true)]
     public sealed class CheckAttribute : Attribute
@@ -83,47 +83,14 @@ namespace CSL.SQL
     [SQLRecord(1)]
     public abstract record SQLRecord<T>() : CSLRecord<T> where T : SQLRecord<T>
     {
-        private static readonly Dictionary<Type, string> SQLTypes = new Dictionary<Type, string>()
-    {
-        {typeof(bool),      "BOOLEAN"},
-        {typeof(bool?),     "BOOLEAN"},
-        {typeof(sbyte),     "SMALLINT"},
-        {typeof(sbyte?),    "SMALLINT"},
-        {typeof(byte),      "SMALLINT"},
-        {typeof(byte?),     "SMALLINT"},
-        {typeof(char),      "CHAR(1)"}, //Small bit of C# conversion required
-        {typeof(char?),     "CHAR(1)"}, //Small bit of C# conversion required
-        {typeof(short),     "SMALLINT"},
-        {typeof(short?),    "SMALLINT"},
-        {typeof(ushort),    "SMALLINT"},
-        {typeof(ushort?),   "SMALLINT"},
-        {typeof(int),       "INTEGER"},
-        {typeof(int?),      "INTEGER"},
-        {typeof(uint),      "INTEGER"},
-        {typeof(uint?),     "INTEGER"},
-        {typeof(long),      "BIGINT"},
-        {typeof(long?),     "BIGINT"},
-        {typeof(ulong),     "BIGINT"},
-        {typeof(ulong?),    "BIGINT"},
-        {typeof(float),     "FLOAT4"},
-        {typeof(float?),    "FLOAT4"},
-        {typeof(double),    "FLOAT8"},
-        {typeof(double?),   "FLOAT8"},
-        {typeof(decimal),   "NUMERIC"},
-        {typeof(decimal?),  "NUMERIC"},
-        {typeof(Guid),      "UUID"},
-        {typeof(Guid?),     "UUID"},
-        {typeof(DateTime),  "TIMESTAMP"},
-        {typeof(DateTime?), "TIMESTAMP"},
-        {typeof(string),    "TEXT"},
-        {typeof(byte[]),    "BYTEA" }
-    };
-        private static string GetSQLType(Type type)
+
+        private static string GetSQLType(SQLDB sql, Type type)
         {
-            if (SQLTypes.ContainsKey(type)) { return SQLTypes[type]; }
-            if (type.IsEnum) { return GetSQLType(type.GetEnumUnderlyingType()); }
+            string? toReturn = sql.GetSQLType(type);
+            if(toReturn != null) { return toReturn; }
+            if (type.IsEnum) { return GetSQLType(sql,type.GetEnumUnderlyingType()); }
             Type? UnderlyingNullableType = Nullable.GetUnderlyingType(type);
-            if (UnderlyingNullableType != null) { return GetSQLType(UnderlyingNullableType); }
+            if (UnderlyingNullableType != null) { return GetSQLType(sql, UnderlyingNullableType); }
             //TODO: SQLRecords? Maybe something with Foreign Keys?
             throw new ArgumentException($"Type \"{type.Name}\" is not a valid SQL Type!");
             //return "<FIXME>";
@@ -148,9 +115,20 @@ namespace CSL.SQL
             {
                 if (group.Key == typeof(UniqueAttribute))
                 {
-                    foreach (IGrouping<int, Tuple<ParameterInfo, Attribute>> innergroup in group.GroupBy(x => ((UniqueAttribute)x.Item2).Group))
+                    foreach (IGrouping<int?, Tuple<ParameterInfo, Attribute>> innergroup in group.GroupBy(x => ((UniqueAttribute)x.Item2).Group))
                     {
-                        toReturn.Add($"UNIQUE({GetEscapedParameterNames(innergroup.Select(x => x.Item1))})");
+                        if(innergroup.Key == null)
+                        {
+                            foreach(ParameterInfo pi in innergroup.Select(x => x.Item1))
+                            {
+                                toReturn.Add($"UNIQUE({GetEscapedParameterNames(new ParameterInfo[] {pi})})");
+                            }
+                        }
+                        else
+                        {
+                            toReturn.Add($"UNIQUE({GetEscapedParameterNames(innergroup.Select(x => x.Item1))})");
+                        }
+                        
                     }
                 }
                 if (group.Key == typeof(CheckAttribute))
@@ -168,9 +146,9 @@ namespace CSL.SQL
             }
             return toReturn.ToArray();
         }
-        protected static string FormatParameterInfos(IEnumerable<ParameterInfo> pis) => string.Join(", ", pis.Select(x => FormatParameterInfo(x)));
+        protected static string FormatParameterInfos(SQLDB sql, IEnumerable<ParameterInfo> pis) => string.Join(", ", pis.Select(x => FormatParameterInfo(sql, x)));
         protected static string GetEscapedParameterNames(IEnumerable<ParameterInfo> pis) => string.Join(", ", pis.Select(x => Common.Escape(x.Name)));
-        protected static string FormatParameterInfo(ParameterInfo pi) => $"{Common.Escape(pi.Name)} {GetSQLType(pi.ParameterType)}{(IsNullable(pi) ? "" : " NOT NULL")}";
+        protected static string FormatParameterInfo(SQLDB sql, ParameterInfo pi) => $"{Common.Escape(pi.Name)} {GetSQLType(sql,pi.ParameterType)}{(IsNullable(pi) ? "" : " NOT NULL")}";
         protected static string JoinCommas(IEnumerable<string?> toJoin) => string.Join(", ", toJoin);
         protected static string JoinANDs(IEnumerable<string?> toJoin) => string.Join(" AND ", toJoin);
         #endregion
@@ -184,7 +162,7 @@ namespace CSL.SQL
             for (int i = 0; i < RecordParameters.Length; i++)
             {
                 ParameterInfo pi = RecordParameters[i];
-                command.Append($"{FormatParameterInfo(pi)}, ");
+                command.Append($"{FormatParameterInfo(sql, pi)}, ");
             }
             //Primary Key Definitions - This works because I require at least 1 Primary Key
             command.Append($"PRIMARY KEY({GetEscapedParameterNames(PKs)})");
@@ -201,7 +179,7 @@ namespace CSL.SQL
             command.Append(");");
             return sql.ExecuteNonQuery(command.ToString());
         }
-        public static Task Truncate(SQLDB sql, bool cascade = false) => sql.ExecuteNonQuery($"TRUNCATE {TableName}{(cascade ? " CASCADE" : "")};");
+        public static Task Truncate(SQLDB sql, bool cascade = false) => sql.Truncate(TableName, cascade);
         public static Task Drop(SQLDB sql, bool cascade = false) => sql.ExecuteNonQuery($"DROP TABLE IF EXISTS {TableName}{(cascade ? " CASCADE" : "")};");
         #endregion
 

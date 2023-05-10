@@ -153,7 +153,7 @@ namespace CSL.Helpers
             if (TType == typeof(DateTime) || TType == typeof(DateTime?))
             {
                 toReturn = DateTime.TryParse(s, out DateTime Tresult);
-                Tresult = Tresult.ToUniversalTime();
+                //Tresult = Tresult;
                 result = Tresult;
                 return toReturn;
             }
@@ -325,7 +325,7 @@ namespace CSL.Helpers
             }
             if (TType == typeof(DateTime) || TType == typeof(DateTime?))
             {
-                return ((DateTime)input).ToUniversalTime().ToString("O");
+                return ((DateTime)input).ToString("O");
             }
             if (TType == typeof(char) || TType == typeof(char?))
             {

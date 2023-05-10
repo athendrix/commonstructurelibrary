@@ -14,11 +14,11 @@ namespace CSL.Data
             Dictionary<string,string?> toReturn = new Dictionary<string,string?>();
             foreach(string key in Defaults.Keys)
             {
-                toReturn.Add(key, toReturn[key]);
+                toReturn.Add(key, Defaults[key]);
             }
             foreach(string key in RawEnv.Keys)
             {
-                toReturn[key] = toReturn[key];//Overwrite any defaults
+                toReturn[key] = RawEnv[key];//Overwrite any defaults
             }
             return toReturn;
         }

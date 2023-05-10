@@ -33,6 +33,7 @@ namespace CommonStructureLibraryTester.Server
                 await sql.SetSchema("testschema");
                 return sql;
             });
+            CommonStructureLibraryTester.Testing.SQLTests.GetSqliteDB.Add(() => new CSL.SQL.Sqlite(":memory:"));
 
             CreateHostBuilder(args).Build().Run();
         }

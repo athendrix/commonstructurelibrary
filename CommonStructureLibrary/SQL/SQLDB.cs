@@ -273,6 +273,8 @@ namespace CSL.SQL
             }
             return toReturn;
         }
+        public abstract string? GetSQLType(Type t);
+        public abstract Task Truncate(string TableName, bool cascade = false);
         #endregion
         #region Transaction Management
         public virtual void BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.Serializable)
