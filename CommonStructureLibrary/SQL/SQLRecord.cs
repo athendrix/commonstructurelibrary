@@ -87,8 +87,8 @@ namespace CSL.SQL
         private static string GetSQLType(SQLDB sql, Type type)
         {
             string? toReturn = sql.GetSQLType(type);
-            if(toReturn != null) { return toReturn; }
-            if (type.IsEnum) { return GetSQLType(sql,type.GetEnumUnderlyingType()); }
+            if (toReturn != null) { return toReturn; }
+            if (type.IsEnum) { return GetSQLType(sql, type.GetEnumUnderlyingType()); }
             Type? UnderlyingNullableType = Nullable.GetUnderlyingType(type);
             if (UnderlyingNullableType != null) { return GetSQLType(sql, UnderlyingNullableType); }
             //TODO: SQLRecords? Maybe something with Foreign Keys?
@@ -99,7 +99,7 @@ namespace CSL.SQL
         protected static readonly string TableName = TNA?.TableName ?? Common.Escape(typeof(T).Name);
         private static readonly TableNameAttribute? TNA = typeof(T).GetCustomAttributes(false).SelectMany(x => x is TableNameAttribute r ? new TableNameAttribute[] { r } : new TableNameAttribute[0]).FirstOrDefault();
         protected static readonly SQLRecordAttribute ARA = typeof(T).GetCustomAttributes(true).SelectMany(x => x is SQLRecordAttribute r ? new SQLRecordAttribute[] { r } : new SQLRecordAttribute[0]).First();
-        
+
         protected static readonly ParameterInfo[] PKs = RecordParameters.Take(ARA.PrimaryKeys).ToArray();
         protected static readonly ParameterInfo[] Datas = RecordParameters.Skip(ARA.PrimaryKeys).ToArray();
         protected static readonly string[] PKStrings = PKs.Select(x => $"{Common.Escape(x.Name)} = @{x.Position}").ToArray();
@@ -117,18 +117,18 @@ namespace CSL.SQL
                 {
                     foreach (IGrouping<int?, Tuple<ParameterInfo, Attribute>> innergroup in group.GroupBy(x => ((UniqueAttribute)x.Item2).Group))
                     {
-                        if(innergroup.Key == null)
+                        if (innergroup.Key == null)
                         {
-                            foreach(ParameterInfo pi in innergroup.Select(x => x.Item1))
+                            foreach (ParameterInfo pi in innergroup.Select(x => x.Item1))
                             {
-                                toReturn.Add($"UNIQUE({GetEscapedParameterNames(new ParameterInfo[] {pi})})");
+                                toReturn.Add($"UNIQUE({GetEscapedParameterNames(new ParameterInfo[] { pi })})");
                             }
                         }
                         else
                         {
                             toReturn.Add($"UNIQUE({GetEscapedParameterNames(innergroup.Select(x => x.Item1))})");
                         }
-                        
+
                     }
                 }
                 if (group.Key == typeof(CheckAttribute))
@@ -148,7 +148,7 @@ namespace CSL.SQL
         }
         protected static string FormatParameterInfos(SQLDB sql, IEnumerable<ParameterInfo> pis) => string.Join(", ", pis.Select(x => FormatParameterInfo(sql, x)));
         protected static string GetEscapedParameterNames(IEnumerable<ParameterInfo> pis) => string.Join(", ", pis.Select(x => Common.Escape(x.Name)));
-        protected static string FormatParameterInfo(SQLDB sql, ParameterInfo pi) => $"{Common.Escape(pi.Name)} {GetSQLType(sql,pi.ParameterType)}{(IsNullable(pi) ? "" : " NOT NULL")}";
+        protected static string FormatParameterInfo(SQLDB sql, ParameterInfo pi) => $"{Common.Escape(pi.Name)} {GetSQLType(sql, pi.ParameterType)}{(IsNullable(pi) ? "" : " NOT NULL")}";
         protected static string JoinCommas(IEnumerable<string?> toJoin) => string.Join(", ", toJoin);
         protected static string JoinANDs(IEnumerable<string?> toJoin) => string.Join(" AND ", toJoin);
         #endregion
@@ -184,11 +184,13 @@ namespace CSL.SQL
         #endregion
 
         #region SELECT
-        public static Task<T?> SelectOne(SQLDB sql, Conditional conditional)
+        public static async Task<T?> SelectOne(SQLDB sql, Conditional conditional)
         {
-            List<object> parameters = new List<object>();
-            string condition = conditional.Build(sql, RecordParameters, ref parameters) + ";";
-            return SelectOne(sql, condition, parameters.ToArray());
+            using (AutoClosingEnumerable<T> ace = await Select(sql, conditional))
+            {
+                return ace.FirstOrDefault();
+            }
+
         }
         public static async Task<T?> SelectOne(SQLDB sql, string condition, params object?[] parameters)
         {
@@ -212,6 +214,27 @@ namespace CSL.SQL
         {
             AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName} WHERE {condition};", sql.ConvertToFriendlyParameters(parameters));
             return acdr.ReadRecords<T>(sql);
+        }
+        public static async Task<T[]> SelectArray(SQLDB sql)
+        {
+            using (AutoClosingEnumerable<T> ace = await Select(sql))
+            {
+                return ace.ToArray();
+            }
+        }
+        public static async Task<T[]> SelectArray(SQLDB sql, Conditional conditional)
+        {
+            using (AutoClosingEnumerable<T> ace = await Select(sql, conditional))
+            {
+                return ace.ToArray();
+            }
+        }
+        public static async Task<T[]> SelectArray(SQLDB sql, string condition, params object?[] parameters)
+        {
+            using (AutoClosingEnumerable<T> ace = await Select(sql, condition, parameters))
+            {
+                return ace.ToArray();
+            }
         }
         #endregion
         #region DELETE

@@ -67,12 +67,12 @@ namespace CSL.SQL
         /// <exception cref="ArgumentException"></exception>
         public static Task<PostgreSQL> Connect() =>
             Connect(
-                Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost",
-                Environment.GetEnvironmentVariable("POSTGRES_DB") ?? Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres",
-                Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres",
-                Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? throw new ArgumentException("POSTGRES_PASSWORD must be specified as an Environment Variable!)"),
-                Environment.GetEnvironmentVariable("POSTGRES_SCHEMA"),
-                ParseSSLMode(Environment.GetEnvironmentVariable("POSTGRES_SSLMODE"))
+                Data.Env.Vars["POSTGRES_HOST"] ?? "localhost",
+                Data.Env.Vars["POSTGRES_DB"] ?? Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres",
+                Data.Env.Vars["POSTGRES_USER"] ?? "postgres",
+                Data.Env.Vars["POSTGRES_PASSWORD"] ?? throw new ArgumentException("POSTGRES_PASSWORD must be specified as an Environment Variable!)"),
+                Data.Env.Vars["POSTGRES_SCHEMA"],
+                ParseSSLMode(Data.Env.Vars["POSTGRES_SSLMODE"])
                 );
         private static SslMode ParseSSLMode(string? SSLMODE) => SSLMODE == null ? SslMode.Prefer : (SslMode)Enum.Parse(typeof(SslMode), char.ToUpperInvariant(SSLMODE[0]) + SSLMODE.ToLowerInvariant().Substring(1));
         public PostgreSQL(DbConnection connection) : base(connection)
