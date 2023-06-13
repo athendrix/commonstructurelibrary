@@ -193,7 +193,8 @@ namespace CommonStructureLibraryTester.Testing
             {
                 List<object> parameters = new List<object>();
                 string condition = c.Build(sql,pis,ref parameters) + ";";
-                if(condition != "\"Column1\" = @0 AND" +
+                if(condition != " WHERE" +
+                    " \"Column1\" = @0 AND" +
                     " \"Column2\" != @0 AND" +
                     " \"Column3\" > @1 AND" +
                     " \"Column4\" < @2 AND" +

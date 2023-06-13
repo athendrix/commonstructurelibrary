@@ -40,7 +40,9 @@ namespace CSL.SQL
         /// Lets you specify groups of Unique keys. Unique keys with the same Group are considered unique in aggregate.
         /// </summary>
         /// <param name="Group">The aggregate group this Unique key is part of.</param>
-        public UniqueAttribute(int? Group = null) => this.Group = Group;
+        public UniqueAttribute() => this.Group = null;
+        public UniqueAttribute(int Group) => this.Group = Group;
+        
     }
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = true)]
     public sealed class CheckAttribute : Attribute
@@ -207,7 +209,7 @@ namespace CSL.SQL
         public static Task<AutoClosingEnumerable<T>> Select(SQLDB sql, Conditional conditional)
         {
             List<object> parameters = new List<object>();
-            string condition = conditional.Build(sql, RecordParameters, ref parameters) + ";";
+            string condition = conditional.Build(sql, RecordParameters, ref parameters,true);
             return Select(sql, condition, parameters.ToArray());
         }
         public static async Task<AutoClosingEnumerable<T>> Select(SQLDB sql, string condition, params object?[] parameters)

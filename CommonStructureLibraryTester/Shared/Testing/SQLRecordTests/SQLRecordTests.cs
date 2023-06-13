@@ -11,6 +11,8 @@ using ExampleNamespace.SomeSubNamespace;
 using static CommonStructureLibraryTester.Shared.Testing.TestingHelpers;
 using System.Reflection;
 
+using static CSL.SQL.Conditional;
+
 namespace CommonStructureLibraryTester.Testing
 {
     public class SQLRecordTests : Tests
@@ -174,7 +176,7 @@ namespace CommonStructureLibraryTester.Testing
         }
 
         [TestType(TestType.ServerSide)]
-        protected static async Task<TestResponse> ConditionGenerationTest()
+        protected static TestResponse ConditionGenerationTest()
         {
             var ExampleSet = new { Column1 = "SPAM", Column2 = "SPAMMER", Column3 = 22, Column4 = 2, Column5 = 6, Column6 = 6.5, Column7 = 3.0, Column8 = 5.0, Column9 = 4.5, Column10 = 22 };
             Conditional c = Conditional.WHERE("Column1", IS.EQUAL_TO, "SPAM")
@@ -189,11 +191,12 @@ namespace CommonStructureLibraryTester.Testing
                 .AND("Column10", IS.NOT_IN, 1, 2, 3, 4, 5, 6);
             ParameterInfo[] pis = ExampleSet.GetType().GetConstructors()[0].GetParameters();
             List<Func<Task<PostgreSQL>>> SQLDBs = SQLTests.GetTestDB;
-            using (PostgreSQL sql = await SQLTests.GetTestDB[0]())
-            {
+            //using (PostgreSQL sql = await SQLTests.GetTestDB[0]())
+            //{
                 List<object> parameters = new List<object>();
-                string condition = c.Build(sql,pis,ref parameters) + ";";
-                if(condition != "\"Column1\" = @0 AND" +
+                string condition = c.Build(BuildType.PostgreSQL,pis,ref parameters) + ";";
+                if(condition != " WHERE" +
+                    " \"Column1\" = @0 AND" +
                     " \"Column2\" != @0 AND" +
                     " \"Column3\" > @1 AND" +
                     " \"Column4\" < @2 AND" +
@@ -217,6 +220,67 @@ namespace CommonStructureLibraryTester.Testing
                     (int)parameters[11] != 1 ||
                     (int)parameters[12] != 2 ||
                     (int)parameters[13] != 3) { return FAIL("Invalid parameters!"); }
+            //}
+            return PASS();
+        }
+
+        record ConditionTestRecord(int key, string data, DateTime recordtime, ulong hardcase) : SQLRecord<ConditionTestRecord>;
+        [TestType(TestType.ServerSide)]
+        protected async static Task<TestResponse> AdvancedConditionGenerationTest()
+        {
+            List<object> DummyList = new List<object>();
+
+            string[] responses = new string[8]; 
+            using (PostgreSQL sql = await SQLTests.GetTestDB[0]())
+            {
+                responses[0] = WHERE(false).Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
+                DummyList.Clear();
+                responses[1] = WHERE(true).Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
+                DummyList.Clear();
+                responses[2] = WHERE("key", IS.GREATER_THAN, 0)
+                    .AND(WHERE("data", IS.CONTAINING, "foo").OR("data", IS.CONTAINING, "bar"))
+                    .Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
+                DummyList.Clear();
+                responses[3] = WHERE(true).ORDERBY("hardcase").LIMIT(5)
+                    .Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
+                DummyList.Clear();
+                responses[4] = WHERE(true).ORDERBYDESC("recordtime").LIMIT(3, 5)
+                    .Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
+                DummyList.Clear();
+                WhereClauseSegment wcs = WHERE(false);
+                for(int i = 0; i < 10; i++)
+                {
+                    wcs = wcs.OR("data", IS.CONTAINING, $"{i}");
+                }
+                responses[5] = wcs.Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
+                wcs = WHERE(true);
+                for (int i = 0; i < 10; i++)
+                {
+                    wcs = wcs.AND("data", IS.NOT_CONTAINING, $"{i}");
+                }
+                responses[6] = wcs.ORDERBY("key").Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
+
+                DummyList.Clear();
+                responses[7] = WHERE("hardcase", IS.GREATER_THAN, long.MaxValue).AND("hardcase", IS.BETWEEN, 22, long.MaxValue + 22ul).ORDERBYDESC("recordtime").LIMIT(3, 5)
+                    .Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
+            }
+            string[] tests = new string[]
+            {
+                " WHERE 1 = 0",
+                " WHERE 1 = 1",
+                " WHERE \"key\" > @0 AND (\"data\" LIKE @1 OR \"data\" LIKE @2)",
+                " WHERE 1 = 1 ORDER BY \"hardcase\" ASC LIMIT 5",
+                " WHERE 1 = 1 ORDER BY \"recordtime\" DESC LIMIT 3 OFFSET 5",
+                " WHERE 1 = 0 OR \"data\" LIKE @0 OR \"data\" LIKE @1 OR \"data\" LIKE @2 OR \"data\" LIKE @3 OR \"data\" LIKE @4 OR \"data\" LIKE @5 OR \"data\" LIKE @6 OR \"data\" LIKE @7 OR \"data\" LIKE @8 OR \"data\" LIKE @9",
+                " WHERE 1 = 1 AND \"data\" NOT LIKE @0 AND \"data\" NOT LIKE @1 AND \"data\" NOT LIKE @2 AND \"data\" NOT LIKE @3 AND \"data\" NOT LIKE @4 AND \"data\" NOT LIKE @5 AND \"data\" NOT LIKE @6 AND \"data\" NOT LIKE @7 AND \"data\" NOT LIKE @8 AND \"data\" NOT LIKE @9 ORDER BY \"key\" ASC",
+                " WHERE (\"hardcase\" < 0 AND @0 >= 0 OR \"hardcase\" > @0 AND (\"hardcase\" < 0 OR @0 >= 0)) AND ((\"hardcase\" < 0 AND @1 >= 0 OR \"hardcase\" >= @1 AND (\"hardcase\" < 0 OR @1 >= 0)) AND (\"hardcase\" >= 0 AND @2 < 0 OR \"hardcase\" <= @2 AND (\"hardcase\" >= 0 OR @2 < 0))) ORDER BY \"recordtime\" DESC LIMIT 3 OFFSET 5"
+            };
+            for(int i = 0; i < tests.Length; i++)
+            {
+                if (responses[i] != tests[i])
+                {
+                    return FAIL($"TEST FAILED\nEXCECTED:{tests[i]}\nGOT:{responses[i]}");
+                }
             }
             return PASS();
         }
