@@ -61,13 +61,9 @@ namespace CSL.SQL
             LIMIT
         }
         #region SubClass Instance Creators
-        public static WhereClauseSegment WHERE(string ColumnName, IS Condition, params object?[] parameters) => WhereClauseSegment.WhereClauseWhere(ColumnName, Condition, parameters);
+        public static WhereClauseSegment WHERE(string ColumnName, IS Condition, params object?[]? parameters) => WhereClauseSegment.WhereClauseWhere(ColumnName, Condition, parameters ?? new object?[] { null });
         public static SubconditionalSegment WHERE(Conditional subConditional) => SubconditionalSegment.SubCondtionalWhere(subConditional);
         public static WhereClauseSegment WHERE(bool boolval) => WhereClauseSegment.WhereClauseWhere("1", IS.EQUAL_TO, new object?[] { boolval ? 1 : 0 });
-        //public Conditional AND(string ColumnName, IS Condition, params object?[] parameters) => WhereClauseSegment.AND(this, ColumnName, Condition, parameters);
-        //public Conditional AND(Conditional subConditional) => SubconditionalSegment.AND(this, subConditional);
-        //public Conditional OR(string ColumnName, IS Condition, params object?[] parameters) => WhereClauseSegment.OR(this, ColumnName, Condition, parameters);
-        //public Conditional OR(Conditional subConditional) => SubconditionalSegment.OR(this, subConditional);
         #endregion
     }
     public sealed class WhereClauseSegment : Conditional
@@ -77,8 +73,8 @@ namespace CSL.SQL
         private readonly object?[] parameters;
         #region Chains
         internal static WhereClauseSegment WhereClauseWhere(string ColumnName, IS Condition, object?[] parameters) => new WhereClauseSegment(null, ConditionalType.WHERE, ColumnName, Condition, parameters);
-        public WhereClauseSegment AND(string ColumnName, IS Condition, params object?[] parameters) => new WhereClauseSegment(this, ConditionalType.AND, ColumnName, Condition, parameters);
-        public WhereClauseSegment OR(string ColumnName, IS Condition, params object?[] parameters) => new WhereClauseSegment(this, ConditionalType.OR, ColumnName, Condition, parameters);
+        public WhereClauseSegment AND(string ColumnName, IS Condition, params object?[]? parameters) => new WhereClauseSegment(this, ConditionalType.AND, ColumnName, Condition, parameters ?? new object?[] { null });
+        public WhereClauseSegment OR(string ColumnName, IS Condition, params object?[]? parameters) => new WhereClauseSegment(this, ConditionalType.OR, ColumnName, Condition, parameters ?? new object?[] { null });
         public SubconditionalSegment AND(Conditional subConditional) => new SubconditionalSegment(this, ConditionalType.AND, subConditional);
         public SubconditionalSegment OR(Conditional subConditional) => new SubconditionalSegment(this, ConditionalType.OR, subConditional);
         public OrderClauseSegment ORDERBY(string ColumnName) => new OrderClauseSegment(this, ConditionalType.ORDERBY, ColumnName, true);
@@ -240,8 +236,8 @@ namespace CSL.SQL
         private readonly Conditional subConditional;
         #region Chains
         internal static SubconditionalSegment SubCondtionalWhere(Conditional subConditional) => new SubconditionalSegment(null, ConditionalType.WHERE, subConditional);
-        public WhereClauseSegment AND(string ColumnName, IS Condition, params object?[] parameters) => new WhereClauseSegment(this, ConditionalType.AND, ColumnName, Condition, parameters);
-        public WhereClauseSegment OR(string ColumnName, IS Condition, params object?[] parameters) => new WhereClauseSegment(this, ConditionalType.OR, ColumnName, Condition, parameters);
+        public WhereClauseSegment AND(string ColumnName, IS Condition, params object?[]? parameters) => new WhereClauseSegment(this, ConditionalType.AND, ColumnName, Condition, parameters ?? new object?[] { null });
+        public WhereClauseSegment OR(string ColumnName, IS Condition, params object?[]? parameters) => new WhereClauseSegment(this, ConditionalType.OR, ColumnName, Condition, parameters ?? new object?[] { null });
         public SubconditionalSegment AND(Conditional subConditional) => new SubconditionalSegment(this, ConditionalType.AND, subConditional);
         public SubconditionalSegment OR(Conditional subConditional) => new SubconditionalSegment(this, ConditionalType.OR, subConditional);
         public OrderClauseSegment ORDERBY(string ColumnName) => new OrderClauseSegment(this, ConditionalType.ORDERBY, ColumnName, true);

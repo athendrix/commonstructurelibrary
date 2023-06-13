@@ -230,7 +230,7 @@ namespace CommonStructureLibraryTester.Testing
         {
             List<object> DummyList = new List<object>();
 
-            string[] responses = new string[8]; 
+            string[] responses = new string[9]; 
             using (PostgreSQL sql = await SQLTests.GetTestDB[0]())
             {
                 responses[0] = WHERE(false).Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
@@ -253,6 +253,7 @@ namespace CommonStructureLibraryTester.Testing
                     wcs = wcs.OR("data", IS.CONTAINING, $"{i}");
                 }
                 responses[5] = wcs.Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
+                DummyList.Clear();
                 wcs = WHERE(true);
                 for (int i = 0; i < 10; i++)
                 {
@@ -263,6 +264,8 @@ namespace CommonStructureLibraryTester.Testing
                 DummyList.Clear();
                 responses[7] = WHERE("hardcase", IS.GREATER_THAN, long.MaxValue).AND("hardcase", IS.BETWEEN, 22, long.MaxValue + 22ul).ORDERBYDESC("recordtime").LIMIT(3, 5)
                     .Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
+                DummyList.Clear();
+                responses[8] = WHERE("hardcase", IS.NOT_EQUAL_TO, null).Build(BuildType.PostgreSQL, ConditionTestRecord.RecordParameters, ref DummyList);
             }
             string[] tests = new string[]
             {
@@ -273,7 +276,8 @@ namespace CommonStructureLibraryTester.Testing
                 " WHERE 1 = 1 ORDER BY \"recordtime\" DESC LIMIT 3 OFFSET 5",
                 " WHERE 1 = 0 OR \"data\" LIKE @0 OR \"data\" LIKE @1 OR \"data\" LIKE @2 OR \"data\" LIKE @3 OR \"data\" LIKE @4 OR \"data\" LIKE @5 OR \"data\" LIKE @6 OR \"data\" LIKE @7 OR \"data\" LIKE @8 OR \"data\" LIKE @9",
                 " WHERE 1 = 1 AND \"data\" NOT LIKE @0 AND \"data\" NOT LIKE @1 AND \"data\" NOT LIKE @2 AND \"data\" NOT LIKE @3 AND \"data\" NOT LIKE @4 AND \"data\" NOT LIKE @5 AND \"data\" NOT LIKE @6 AND \"data\" NOT LIKE @7 AND \"data\" NOT LIKE @8 AND \"data\" NOT LIKE @9 ORDER BY \"key\" ASC",
-                " WHERE (\"hardcase\" < 0 AND @0 >= 0 OR \"hardcase\" > @0 AND (\"hardcase\" < 0 OR @0 >= 0)) AND ((\"hardcase\" < 0 AND @1 >= 0 OR \"hardcase\" >= @1 AND (\"hardcase\" < 0 OR @1 >= 0)) AND (\"hardcase\" >= 0 AND @2 < 0 OR \"hardcase\" <= @2 AND (\"hardcase\" >= 0 OR @2 < 0))) ORDER BY \"recordtime\" DESC LIMIT 3 OFFSET 5"
+                " WHERE (\"hardcase\" < 0 AND @0 >= 0 OR \"hardcase\" > @0 AND (\"hardcase\" < 0 OR @0 >= 0)) AND ((\"hardcase\" < 0 AND @1 >= 0 OR \"hardcase\" >= @1 AND (\"hardcase\" < 0 OR @1 >= 0)) AND (\"hardcase\" >= 0 AND @2 < 0 OR \"hardcase\" <= @2 AND (\"hardcase\" >= 0 OR @2 < 0))) ORDER BY \"recordtime\" DESC LIMIT 3 OFFSET 5",
+                " WHERE \"hardcase\" IS NOT NULL"
             };
             for(int i = 0; i < tests.Length; i++)
             {
