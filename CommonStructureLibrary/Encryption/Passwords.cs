@@ -1,24 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using CSL.Helpers;
 
 namespace CSL.Encryption
 {
     public static class Passwords
     {
-        private static readonly RandomNumberGenerator RNG = RandomNumberGenerator.Create();
         public static string RandomPassGen(int length = 16)
         {
             int templen = length/4 + (length %4 > 0?1:0);
-            byte[] toReturn = new byte[templen * 3];
-            RNG.GetBytes(toReturn);
-            return toReturn.EncodeToWebBase64().Substring(0, length);
+            return Cryptography.GetRandomBytes(templen * 3).EncodeToWebBase64().Substring(0, length);
         }
         public static string FriendlyPassGen()
         {
-            byte[] data = new byte[5];
-            RNG.GetBytes(data);
+            byte[] data = Cryptography.GetRandomBytes(5);
             string word1 = Adjectives[data[0]];
             string word2 = Adjectives[data[1]];
             string word3 = Pokemon[data[2]];
@@ -33,8 +27,7 @@ namespace CSL.Encryption
         }
         public static string FriendlyPassPhrase40Bit()
         {
-            byte[] data = new byte[5];
-            RNG.GetBytes(data);
+            byte[] data = Cryptography.GetRandomBytes(5);
             string[] words = new string[5];
             words[0] = Adjectives[data[0]];
             words[1] = Pokemon[data[1]];
@@ -45,8 +38,7 @@ namespace CSL.Encryption
         }
         public static string FriendlyPassPhrase56Bit()
         {
-            byte[] data = new byte[7];
-            RNG.GetBytes(data);
+            byte[] data = Cryptography.GetRandomBytes(7);
             string[] words = new string[7];
             words[0] = Adjectives[data[0]];
             words[1] = Adjectives[data[1]];
@@ -59,8 +51,7 @@ namespace CSL.Encryption
         }
         public static string ThreeLetterWordPassword(int NumberOfWords)
         {
-            byte[] data = new byte[NumberOfWords];
-            RNG.GetBytes(data);
+            byte[] data = Cryptography.GetRandomBytes(NumberOfWords);
             string[] words = new string[NumberOfWords];
             for(int i = 0; i < NumberOfWords; i++)
             {

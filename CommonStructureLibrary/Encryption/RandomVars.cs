@@ -1,39 +1,30 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace CSL.Encryption
 {
     public class RandomVars
     {
-        static readonly RandomNumberGenerator RNG = RandomNumberGenerator.Create();
-        public static byte[] ByteArray(byte length)
-        {
-            byte[] toReturn = new byte[length];
-            RNG.GetBytes(toReturn);
-            return toReturn;
-        }
         public static T PickOne<T>(params T[] input) => input[Int(input.Length)];
-        public static Guid Guid() => new Guid(ByteArray(16));
+        public static Guid Guid() => new Guid(Cryptography.GetRandomBytes(16));
         public static bool Bool() => PickOne(true, false);
 
-        public static byte Byte() => ByteArray(1)[0];
-        public static sbyte SByte() => (sbyte)ByteArray(1)[0];
+        public static byte Byte() => Cryptography.GetRandomBytes(1)[0];
+        public static sbyte SByte() => (sbyte)Cryptography.GetRandomBytes(1)[0];
 
-        public static char Char() => BitConverter.ToChar(ByteArray(2), 0);
+        public static char Char() => BitConverter.ToChar(Cryptography.GetRandomBytes(2), 0);
 
-        public static ushort UShort() => BitConverter.ToUInt16(ByteArray(2), 0);
-        public static short Short() => BitConverter.ToInt16(ByteArray(2), 0);
+        public static ushort UShort() => BitConverter.ToUInt16(Cryptography.GetRandomBytes(2), 0);
+        public static short Short() => BitConverter.ToInt16(Cryptography.GetRandomBytes(2), 0);
 
-        public static uint UInt() => BitConverter.ToUInt32(ByteArray(4), 0);
-        public static int Int() => BitConverter.ToInt32(ByteArray(4), 0);
+        public static uint UInt() => BitConverter.ToUInt32(Cryptography.GetRandomBytes(4), 0);
+        public static int Int() => BitConverter.ToInt32(Cryptography.GetRandomBytes(4), 0);
 
-        public static long Long() => BitConverter.ToInt64(ByteArray(8), 0);
-        public static ulong ULong() => BitConverter.ToUInt64(ByteArray(8), 0);
+        public static long Long() => BitConverter.ToInt64(Cryptography.GetRandomBytes(8), 0);
+        public static ulong ULong() => BitConverter.ToUInt64(Cryptography.GetRandomBytes(8), 0);
 
-        public static float Float() => BitConverter.ToSingle(ByteArray(4), 0);
-        public static double Double() => BitConverter.ToDouble(ByteArray(8), 0);
+        public static float Float() => BitConverter.ToSingle(Cryptography.GetRandomBytes(4), 0);
+        public static double Double() => BitConverter.ToDouble(Cryptography.GetRandomBytes(8), 0);
         public static decimal Decimal() => new decimal(Int(), Int(), Int(), Bool(), Byte(29));
 
         public static string String(ushort length)
