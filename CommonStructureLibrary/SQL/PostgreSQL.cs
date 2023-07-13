@@ -11,6 +11,7 @@ namespace CSL.SQL
     public class PostgreSQL : SQLDB
     {
         public static bool TrustAllServerCertificates = false;
+        public static bool CreateMissingSchema = true;
         /// <summary>
         /// Connects to a Postgres Database using the parameters given.
         /// </summary>
@@ -84,7 +85,8 @@ namespace CSL.SQL
         {
             if (Schema != null)
             {
-                return ExecuteNonQuery("CREATE SCHEMA IF NOT EXISTS \"" + Common.NameParser(Schema) + "\"; SET search_path to \"" + Common.NameParser(Schema) + "\";");
+                string SchemaCreate = CreateMissingSchema ? "CREATE SCHEMA IF NOT EXISTS \"" + Common.NameParser(Schema) + "\"; " : "";
+                return ExecuteNonQuery(SchemaCreate + "SET search_path to \"" + Common.NameParser(Schema) + "\";");
             }
             else
             {

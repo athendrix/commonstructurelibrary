@@ -129,6 +129,14 @@ namespace CSL.SQL
                     }
                     //Fix Typing
                     if (value.GetType() != currentColumn.ParameterType) { value = Convert.ChangeType(value, currentColumn.ParameterType); }
+                    if (Condition is IS.STARTING_WITH or IS.NOT_STARTING_WITH or IS.CONTAINING or IS.NOT_CONTAINING)
+                    {
+                        value = value.ToString() + "%";
+                    }
+                    if (Condition is IS.ENDING_WITH or IS.NOT_ENDING_WITH or IS.CONTAINING or IS.NOT_CONTAINING)
+                    {
+                        value = "%" + value.ToString();
+                    }
                     string b = "@" + AddOrIndex(ref ParametersList, value);
                     if (unsignedType && inequality)
                     {
@@ -160,14 +168,6 @@ namespace CSL.SQL
                         IS.NOT_CONTAINING => "NOT LIKE",
                         _ => throw new InvalidCastException("Not a valid condition."),
                     };
-                    if (Condition is IS.STARTING_WITH or IS.NOT_STARTING_WITH or IS.CONTAINING or IS.NOT_CONTAINING)
-                    {
-                        value = value.ToString() + "%";
-                    }
-                    if (Condition is IS.ENDING_WITH or IS.NOT_ENDING_WITH or IS.CONTAINING or IS.NOT_CONTAINING)
-                    {
-                        value = "%" + value.ToString();
-                    }
 
                     return $"{joinstring}{a} {comp} {b}";
                 #endregion
@@ -330,6 +330,8 @@ namespace CSL.SQL
         ENDING_WITH,
         NOT_ENDING_WITH,
         CONTAINING,
-        NOT_CONTAINING
+        NOT_CONTAINING,
+        MATCHING_REGEX,
+        NOT_MATCHING_REGEX
     }
 }
