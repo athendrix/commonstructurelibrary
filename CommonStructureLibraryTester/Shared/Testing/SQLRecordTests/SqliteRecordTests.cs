@@ -15,6 +15,30 @@ namespace CommonStructureLibraryTester.Testing
 {
     public class SqliteRecordTests : Tests
     {
+        record GuidBuildTestRecord(string test, Guid? test2) : SQLRecord<GuidBuildTestRecord>;
+        [TestType(TestType.ServerSide)]
+        protected static async Task<TestResponse> NullableGuidBuildTest()
+        {
+            GuidBuildTestRecord[] gbtr = new GuidBuildTestRecord[]
+            {
+                new GuidBuildTestRecord("foo", Guid.Empty),
+                new GuidBuildTestRecord("bar", null),
+                new GuidBuildTestRecord("qux", Guid.Empty),
+                new GuidBuildTestRecord("baz", null),
+                new GuidBuildTestRecord("foo", Guid.Empty),
+            };
+            using (Sqlite sql = new Sqlite(":memory:"))
+            {
+                await GuidBuildTestRecord.CreateDB(sql);
+                foreach (GuidBuildTestRecord rec in gbtr)
+                {
+                    await rec.Insert(sql);
+                }
+                await GuidBuildTestRecord.Select(sql, Conditional.WHERE("test2", IS.EQUAL_TO, Guid.Empty));
+            }
+            return PASS();
+        }
+
         [TestType(TestType.ServerSide)]
         protected static async Task<TestResponse> Example1BasicFunctionalityTest()
         {

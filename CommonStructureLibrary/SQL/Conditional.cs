@@ -128,7 +128,7 @@ namespace CSL.SQL
                         throw new ArgumentNullException("A null value is only allowed for `=` or `IN` comparisons.");
                     }
                     //Fix Typing
-                    if (value.GetType() != currentColumn.ParameterType) { value = Convert.ChangeType(value, currentColumn.ParameterType); }
+                    if (value.GetType() != currentColumn.ParameterType && value.GetType() != Nullable.GetUnderlyingType(currentColumn.ParameterType)) { value = Convert.ChangeType(value, currentColumn.ParameterType); }
                     if (Condition is IS.STARTING_WITH or IS.NOT_STARTING_WITH or IS.CONTAINING or IS.NOT_CONTAINING)
                     {
                         value = value.ToString() + "%";
