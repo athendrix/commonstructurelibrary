@@ -81,9 +81,17 @@ namespace CSL.SQL
         public TableNameAttribute(string TableName) => this.TableName = Common.Escape(TableName);
     }
     #endregion
+    
+    public interface ISQLRecord
+    {
+        public Task<int> Delete(SQLDB sql);
+        public Task<int> Insert(SQLDB sql);
+        public Task<int> Update(SQLDB sql);
+        public Task<int> Upsert(SQLDB sql);
+    }
 
     [SQLRecord(1)]
-    public abstract record SQLRecord<T>() : CSLRecord<T> where T : SQLRecord<T>
+    public abstract record SQLRecord<T>() : CSLRecord<T> where T : SQLRecord<T> , ISQLRecord
     {
 
         private static string GetSQLType(SQLDB sql, Type type)
