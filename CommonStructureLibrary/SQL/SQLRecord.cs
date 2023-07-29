@@ -88,10 +88,11 @@ namespace CSL.SQL
         public Task<int> Insert(SQLDB sql);
         public Task<int> Update(SQLDB sql);
         public Task<int> Upsert(SQLDB sql);
+        public object?[] ToArray();
     }
 
     [SQLRecord(1)]
-    public abstract record SQLRecord<T>() : CSLRecord<T> where T : SQLRecord<T> , ISQLRecord
+    public abstract record SQLRecord<T>() :CSLRecord<T>, ISQLRecord where T : SQLRecord<T>
     {
 
         private static string GetSQLType(SQLDB sql, Type type)
