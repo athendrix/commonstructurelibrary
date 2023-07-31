@@ -195,37 +195,56 @@ namespace CSL.SQL
         #endregion
 
         #region SELECT
+        public static async Task<ISQLRecord?> GenericSelectOne(SQLDB sql, Conditional conditional) => await SelectOne(sql, conditional);
         public static async Task<T?> SelectOne(SQLDB sql, Conditional conditional)
         {
             using (AutoClosingEnumerable<T> ace = await Select(sql, conditional))
             {
                 return ace.FirstOrDefault();
             }
-
         }
-        public static async Task<T?> SelectOne(SQLDB sql, string condition, params object?[] parameters)
+        public static async Task<ISQLRecord?> GenericSelectOne(SQLDB sql, string condition, params object?[] parameters) => await SelectOneBase(sql, condition, parameters);
+        public static Task<T?> SelectOne(SQLDB sql, string condition, params object?[] parameters) => SelectOneBase(sql, condition, parameters); 
+        private static async Task<T?> SelectOneBase(SQLDB sql, string condition, object?[] parameters)
         {
-            using (AutoClosingEnumerable<T> ace = await Select(sql, condition, parameters))
+            using (AutoClosingEnumerable<T> ace = await SelectBase(sql, condition, parameters))
             {
                 return ace.FirstOrDefault();
             }
+        }
+        public static async Task<AutoClosingEnumerable<ISQLRecord>> GenericSelect(SQLDB sql)
+        {
+            AutoClosingEnumerable<T> toReturn = await Select(sql);
+            return new AutoClosingEnumerable<ISQLRecord>(toReturn, toReturn);
         }
         public static async Task<AutoClosingEnumerable<T>> Select(SQLDB sql)
         {
             AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName};");
             return acdr.ReadRecords<T>(sql);
         }
+        public static async Task<AutoClosingEnumerable<ISQLRecord>> GenericSelect(SQLDB sql, Conditional conditional)
+        {
+            AutoClosingEnumerable<T> toReturn = await Select(sql, conditional);
+            return new AutoClosingEnumerable<ISQLRecord>(toReturn, toReturn);
+        }
         public static Task<AutoClosingEnumerable<T>> Select(SQLDB sql, Conditional conditional)
         {
             List<object> parameters = new List<object>();
             string condition = conditional.Build(sql, RecordParameters, ref parameters,true);
-            return Select(sql, condition, parameters.ToArray());
+            return SelectBase(sql, condition, parameters.ToArray());
         }
-        public static async Task<AutoClosingEnumerable<T>> Select(SQLDB sql, string condition, params object?[] parameters)
+        public static async Task<AutoClosingEnumerable<ISQLRecord>> GenericSelect(SQLDB sql, string condition, params object?[] parameters)
+        {
+            AutoClosingEnumerable<T> toReturn = await SelectBase(sql, condition, parameters);
+            return new AutoClosingEnumerable<ISQLRecord>(toReturn, toReturn);
+        }
+        public static Task<AutoClosingEnumerable<T>> Select(SQLDB sql, string condition, params object?[] parameters) => SelectBase(sql, condition, parameters);
+        private static async Task<AutoClosingEnumerable<T>> SelectBase(SQLDB sql, string condition, object?[] parameters)
         {
             AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName} WHERE {condition};", sql.ConvertToFriendlyParameters(parameters));
             return acdr.ReadRecords<T>(sql);
         }
+        public static async Task<ISQLRecord[]> GenericSelectArray(SQLDB sql) => await GenericSelectArray(sql);
         public static async Task<T[]> SelectArray(SQLDB sql)
         {
             using (AutoClosingEnumerable<T> ace = await Select(sql))
@@ -233,6 +252,7 @@ namespace CSL.SQL
                 return ace.ToArray();
             }
         }
+        public static async Task<ISQLRecord[]> GenericSelectArray(SQLDB sql, Conditional conditional) => await GenericSelectArray(sql, conditional);
         public static async Task<T[]> SelectArray(SQLDB sql, Conditional conditional)
         {
             using (AutoClosingEnumerable<T> ace = await Select(sql, conditional))
@@ -240,9 +260,11 @@ namespace CSL.SQL
                 return ace.ToArray();
             }
         }
-        public static async Task<T[]> SelectArray(SQLDB sql, string condition, params object?[] parameters)
+        public static async Task<ISQLRecord[]> GenericSelectArray(SQLDB sql, string condition, params object?[] parameters) => await SelectArrayBase(sql, condition, parameters);
+        public static Task<T[]> SelectArray(SQLDB sql, string condition, params object?[] parameters) => SelectArrayBase(sql, condition, parameters);
+        private static async Task<T[]> SelectArrayBase(SQLDB sql, string condition, object?[] parameters)
         {
-            using (AutoClosingEnumerable<T> ace = await Select(sql, condition, parameters))
+            using (AutoClosingEnumerable<T> ace = await SelectBase(sql, condition, parameters))
             {
                 return ace.ToArray();
             }
