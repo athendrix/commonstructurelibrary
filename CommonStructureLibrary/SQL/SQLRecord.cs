@@ -195,6 +195,7 @@ namespace CSL.SQL
         #endregion
 
         #region SELECT
+        #region SelectOne
         public static async Task<ISQLRecord?> GenericSelectOne(SQLDB sql, Conditional conditional) => await SelectOne(sql, conditional);
         public static async Task<T?> SelectOne(SQLDB sql, Conditional conditional)
         {
@@ -212,6 +213,8 @@ namespace CSL.SQL
                 return ace.FirstOrDefault();
             }
         }
+        #endregion
+        #region Select
         public static async Task<AutoClosingEnumerable<ISQLRecord>> GenericSelect(SQLDB sql)
         {
             AutoClosingEnumerable<T> toReturn = await Select(sql);
@@ -230,7 +233,7 @@ namespace CSL.SQL
         public static Task<AutoClosingEnumerable<T>> Select(SQLDB sql, Conditional conditional)
         {
             List<object> parameters = new List<object>();
-            string condition = conditional.Build(sql, RecordParameters, ref parameters,true);
+            string condition = conditional.Build(sql, RecordParameters, ref parameters, true);
             return SelectBase(sql, condition, parameters.ToArray());
         }
         public static async Task<AutoClosingEnumerable<ISQLRecord>> GenericSelect(SQLDB sql, string condition, params object?[] parameters)
@@ -244,6 +247,8 @@ namespace CSL.SQL
             AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName} WHERE {condition};", sql.ConvertToFriendlyParameters(parameters));
             return acdr.ReadRecords<T>(sql);
         }
+        #endregion
+        #region SelectArray
         public static async Task<ISQLRecord[]> GenericSelectArray(SQLDB sql) => await GenericSelectArray(sql);
         public static async Task<T[]> SelectArray(SQLDB sql)
         {
@@ -270,11 +275,12 @@ namespace CSL.SQL
             }
         }
         #endregion
+        #endregion
         #region DELETE
         public static Task<int> Delete(SQLDB sql, Conditional conditional)
         {
             List<object> parameters = new List<object>();
-            string condition = conditional.Build(sql, RecordParameters, ref parameters) + ";";
+            string condition = conditional.Build(sql, RecordParameters, ref parameters, true) + ";";
             object?[] parameterarr = parameters.ToArray();
             return Delete(sql, condition, parameterarr);
         }
