@@ -21,12 +21,15 @@ namespace CSL.Encryption
                 rng.GetBytes(data);
             }
         }
+        //MD5 is not supported on Blazor
         #region MD5
-        private static readonly MD5 md5 = MD5.Create();
+        private static readonly object md5locker = new object();
+        private static MD5? _md5 = null;
+        private static MD5 md5 => _md5 ??= MD5.Create();
         [Obsolete("MD5 is a deprecated hashing function", false)]
         public static byte[] MD5Hash(byte[] data)
         {
-            lock (md5)
+            lock (md5locker)
             {
                 return md5.ComputeHash(data);
             }
@@ -39,7 +42,7 @@ namespace CSL.Encryption
         public static Guid MD5Guid(string data) => MD5Guid(Encoding.UTF8.GetBytes(data));
         #endregion
         #region SHA1
-        
+
         private static readonly SHA1 sha1 = SHA1.Create();
         [Obsolete("SHA1 is a deprecated hashing function", false)]
         public static byte[] SHA1Hash(byte[] data)
