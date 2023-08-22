@@ -15,9 +15,9 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
-    <AssemblyVersion>2023.07.29.00</AssemblyVersion>
-    <FileVersion>2023.07.29.00</FileVersion>
-	<Version>2023.07.29.00</Version>
+    <AssemblyVersion>2023.08.22.00</AssemblyVersion>
+    <FileVersion>2023.08.22.00</FileVersion>
+	<Version>2023.02.22.00</Version>
     <AnalysisLevel>5.0</AnalysisLevel>
   </PropertyGroup>
 
@@ -25,16 +25,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="..\LICENSE" Link="LICENSE">
-      <PackagePath></PackagePath>
-      <Pack>True</Pack>
-    </None>
-    <None Include="..\LICENSE">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="..\LICENSE">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+	</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.JSInterop" Version="6.0.13" />

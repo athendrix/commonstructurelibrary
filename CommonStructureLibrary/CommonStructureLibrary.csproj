@@ -8,9 +8,9 @@
     <Authors>Andrew Hendrix</Authors>
     <Company>Andrew Hendrix</Company>
     <Copyright>Andrew Hendrix 2023</Copyright>
-    <AssemblyVersion>2023.07.29.00</AssemblyVersion>
-    <FileVersion>2023.07.29.00</FileVersion>
-    <Version>2023.07.29.00</Version>
+    <AssemblyVersion>2023.08.22.00</AssemblyVersion>
+    <FileVersion>2023.08.22.00</FileVersion>
+    <Version>2023.08.22.00</Version>
     <Description>A set of wrappers, functions, and utilities that I use frequently, and that I want to make available in perpetuity.</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
