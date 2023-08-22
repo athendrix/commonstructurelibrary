@@ -16,7 +16,7 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <RepositoryUrl>https://github.com/athendrix/commonstructurelibrary</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
-    <NeutralLanguage>en</NeutralLanguage>
+    <NeutralLanguage>en-US</NeutralLanguage>
     <PackageProjectUrl>https://github.com/athendrix/commonstructurelibrary</PackageProjectUrl>
     <Nullable>enable</Nullable>
   </PropertyGroup>

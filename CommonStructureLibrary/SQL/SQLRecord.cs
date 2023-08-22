@@ -222,7 +222,7 @@ namespace CSL.SQL
         }
         public static async Task<AutoClosingEnumerable<T>> Select(SQLDB sql)
         {
-            AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName};");
+            AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT {GetEscapedParameterNames(RecordParameters)} FROM {TableName};");
             return acdr.ReadRecords<T>(sql);
         }
         public static async Task<AutoClosingEnumerable<ISQLRecord>> GenericSelect(SQLDB sql, Conditional conditional)
@@ -244,7 +244,7 @@ namespace CSL.SQL
         public static Task<AutoClosingEnumerable<T>> Select(SQLDB sql, string condition, params object?[] parameters) => SelectBase(sql, condition, parameters);
         private static async Task<AutoClosingEnumerable<T>> SelectBase(SQLDB sql, string condition, object?[] parameters)
         {
-            AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT * FROM {TableName} WHERE {condition};", sql.ConvertToFriendlyParameters(parameters));
+            AutoClosingDataReader acdr = await sql.ExecuteReader($"SELECT {GetEscapedParameterNames(RecordParameters)} FROM {TableName} WHERE {condition};", sql.ConvertToFriendlyParameters(parameters));
             return acdr.ReadRecords<T>(sql);
         }
         #endregion
