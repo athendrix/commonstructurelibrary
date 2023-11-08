@@ -371,6 +371,41 @@ namespace CommonStructureLibraryTester.Testing
             }
             return PASS();
         }
-                
+
+        [TestType(TestType.ServerSide)]
+        protected static async Task<TestResponse> CustomTableNameTest()
+        {
+            #region DataInit
+            List<Func<Task<PostgreSQL>>> SQLDBs = SQLTests.GetTestDB;
+            DB.uniqueprotocoltermsWD Test1 = new DB.uniqueprotocoltermsWD("foo", "bar", "baz", "qux", "spam", null, null, null, null, null, null, null);
+            DB.uniqueprotocoltermsWD Test2 = new DB.uniqueprotocoltermsWD("food", "bard", "barz", "quex", "spammed", Guid.Empty, Guid.Empty, Guid.Empty, "true", DateTime.Now, "no", DateTime.UtcNow);
+            #endregion
+            for (int i = 0; i < SQLDBs.Count; i++)
+            {
+                try
+                {
+                    using (PostgreSQL sql = await SQLTests.GetTestDB[i]())
+                    {
+                        await SQLTests.ClearData(sql);
+                        await DB.uniqueprotocoltermsWD.CreateDB(sql);
+                        await Test1.Insert(sql);
+                        await Test2.Insert(sql);
+                        DB.uniqueprotocoltermsWD[] results = await DB.uniqueprotocoltermsWD.SelectArray(sql);
+                    }
+                }
+                catch (Exception e)
+                {
+                    return FAIL(e.ToString());
+                }
+            }
+            return PASS();
+        }
+    }
+    public partial class DB
+    {
+        [TableName("uniqueprotocolterms")]
+        [SQLRecord(5)]
+        public record uniqueprotocoltermsWD(string sponsor, string protocol, string verbatimterm, string route, string indication, Guid? sponsorguid, Guid? protocolguid,
+     Guid? pcid, string? pmoapprove, DateTime? pmoapprovedt, string? cmoapprove, DateTime? cmoapprovedt) : SQLRecord<uniqueprotocoltermsWD>;
     }
 }

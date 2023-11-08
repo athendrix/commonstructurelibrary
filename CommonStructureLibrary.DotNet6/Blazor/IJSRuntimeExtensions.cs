@@ -52,6 +52,12 @@ if (window.CSL === undefined) {
         }
         return false;
     }
+    window.CSL.getProperty = function (obj, propertyName) {
+        return obj[propertyName];
+    }
+    window.CSL.setProperty = function (obj, propertyName, value) {
+        obj[propertyName] = value;
+    }
 }
 null;");
         #region Local Storage

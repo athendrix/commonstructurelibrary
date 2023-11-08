@@ -108,7 +108,7 @@ namespace CSL.SQL
         }
         #region Helper Properties
         protected static readonly string TableName = TNA?.TableName ?? Common.Escape(typeof(T).Name);
-        private static readonly TableNameAttribute? TNA = typeof(T).GetCustomAttributes(false).SelectMany(x => x is TableNameAttribute r ? new TableNameAttribute[] { r } : new TableNameAttribute[0]).FirstOrDefault();
+        private static TableNameAttribute? TNA => typeof(T).GetCustomAttributes(false).SelectMany(x => x is TableNameAttribute r ? new TableNameAttribute[] { r } : new TableNameAttribute[0]).FirstOrDefault();
         protected static readonly SQLRecordAttribute ARA = typeof(T).GetCustomAttributes(true).SelectMany(x => x is SQLRecordAttribute r ? new SQLRecordAttribute[] { r } : new SQLRecordAttribute[0]).First();
 
         protected static readonly ParameterInfo[] PKs = RecordParameters.Take(ARA.PrimaryKeys).ToArray();
@@ -249,7 +249,7 @@ namespace CSL.SQL
         }
         #endregion
         #region SelectArray
-        public static async Task<ISQLRecord[]> GenericSelectArray(SQLDB sql) => await GenericSelectArray(sql);
+        public static async Task<ISQLRecord[]> GenericSelectArray(SQLDB sql) => await SelectArray(sql);
         public static async Task<T[]> SelectArray(SQLDB sql)
         {
             using (AutoClosingEnumerable<T> ace = await Select(sql))
@@ -257,7 +257,7 @@ namespace CSL.SQL
                 return ace.ToArray();
             }
         }
-        public static async Task<ISQLRecord[]> GenericSelectArray(SQLDB sql, Conditional conditional) => await GenericSelectArray(sql, conditional);
+        public static async Task<ISQLRecord[]> GenericSelectArray(SQLDB sql, Conditional conditional) => await SelectArray(sql, conditional);
         public static async Task<T[]> SelectArray(SQLDB sql, Conditional conditional)
         {
             using (AutoClosingEnumerable<T> ace = await Select(sql, conditional))

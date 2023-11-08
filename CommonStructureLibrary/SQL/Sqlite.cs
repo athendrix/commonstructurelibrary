@@ -58,7 +58,7 @@ namespace CSL.SQL
         {
             if (parameter is null or DBNull)
             {
-                if (!IsNullable(pi)) { throw new Exception("ParameterInfo does not match parameter!"); }
+                if (!IsNullable(pi)) { throw new Exception($"{pi.Name} ParameterInfo does not match parameter!"); }
                 return null;
             }
             Type ParameterType = pi.ParameterType;
