@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Linq;
 
 using static CSL.Helpers.Generics;
+using System.Text.RegularExpressions;
 
 namespace CSL.SQL
 {
@@ -54,11 +55,14 @@ namespace CSL.SQL
         /// <param name="CheckString">The SQL to use for a check. For exmaple if I wanted to make sure a date happened after Dec 31, 1999, I'd put "> '1999-12-31'"</param>
         public CheckAttribute(string CheckString) => this.CheckString = CheckString;
     }
+    public record FKGroup(string Table, int Group);
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = true)]
     public sealed class FKAttribute : Attribute
     {
         public readonly string ForeignTable;
         public readonly string ForeignKey;
+        public readonly int? Group;
+        public FKGroup? Grouping => Group is null ? null : new FKGroup(ForeignTable, Group.Value);
         /// <summary>
         /// Lets you specify a foreign key relationship.
         /// </summary>
@@ -66,9 +70,23 @@ namespace CSL.SQL
         /// <param name="Key">The Foreign Key</param>
         public FKAttribute(string Table, string Key)
         {
+            this.Group = null;
             ForeignTable = Table;
             ForeignKey = Key;
         }
+        /// <summary>
+        /// Lets you specify a foreign key relationship.
+        /// </summary>
+        /// <param name="Table">The Table the Foreign Key is in.</param>
+        /// <param name="Key">The Foreign Key</param>
+        /// <param name="Group">A Group for a Composite Foreign Key</param>
+        public FKAttribute(string Table, string Key, int Group)
+        {
+            this.Group = Group;
+            ForeignTable = Table;
+            ForeignKey = Key;
+        }
+
     }
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
     public sealed class TableNameAttribute : Attribute
@@ -132,14 +150,13 @@ namespace CSL.SQL
                         {
                             foreach (ParameterInfo pi in innergroup.Select(x => x.Item1))
                             {
-                                toReturn.Add($"UNIQUE({GetEscapedParameterNames(new ParameterInfo[] { pi })})");
+                                toReturn.Add($"UNIQUE({Common.Escape(pi.Name)})");
                             }
                         }
                         else
                         {
                             toReturn.Add($"UNIQUE({GetEscapedParameterNames(innergroup.Select(x => x.Item1))})");
                         }
-
                     }
                 }
                 if (group.Key == typeof(CheckAttribute))
@@ -148,11 +165,22 @@ namespace CSL.SQL
                 }
                 if (group.Key == typeof(FKAttribute))
                 {
-                    toReturn.AddRange(group.Select(x =>
+                    foreach (IGrouping<FKGroup?, Tuple<ParameterInfo, Attribute>> innergroup in group.GroupBy(x => ((FKAttribute)x.Item2).Grouping))
                     {
-                        FKAttribute fk = (FKAttribute)x.Item2;
-                        return $"FOREIGN KEY({Common.Escape(x.Item1.Name)}) REFERENCES {Common.Escape(fk.ForeignTable)}({Common.Escape(fk.ForeignKey)})";
-                    }));
+                        if (innergroup.Key == null)
+                        {
+                            toReturn.AddRange(innergroup.Select(x =>
+                            {
+                                FKAttribute fk = (FKAttribute)x.Item2;
+                                return $"FOREIGN KEY({Common.Escape(x.Item1.Name)}) REFERENCES {Common.Escape(fk.ForeignTable)}({Common.Escape(fk.ForeignKey)})";
+                            }));
+                        }
+                        else
+                        {
+                            toReturn.Add($"FOREIGN KEY({GetEscapedParameterNames(innergroup.Select(x => x.Item1))}) " +
+                                $"REFERENCES {Common.Escape(innergroup.Key.Table)}({string.Join(", ", innergroup.Select(x => Common.Escape(((FKAttribute)x.Item2).ForeignKey)))})");
+                        }
+                    }
                 }
             }
             return toReturn.ToArray();
@@ -164,32 +192,34 @@ namespace CSL.SQL
         protected static string JoinANDs(IEnumerable<string?> toJoin) => string.Join(" AND ", toJoin);
         #endregion
         #region Creation and Destruction
-        public static Task<int> CreateDB(SQLDB sql)
+        public static string CreateDBSQLCode(SQLDB sql)
         {
-            StringBuilder command = new StringBuilder($"CREATE TABLE IF NOT EXISTS {TableName} (");
 
+                StringBuilder command = new StringBuilder($"CREATE TABLE IF NOT EXISTS {TableName} (");
+                //Regular Parameter Definitions
+                for (int i = 0; i < RecordParameters.Length; i++)
+                {
+                    ParameterInfo pi = RecordParameters[i];
+                    command.Append($"{FormatParameterInfo(sql, pi)}, ");
+                }
+                //Primary Key Definitions - This works because I require at least 1 Primary Key
+                command.Append($"PRIMARY KEY({GetEscapedParameterNames(PKs)})");
 
-            //Regular Parameter Definitions
-            for (int i = 0; i < RecordParameters.Length; i++)
-            {
-                ParameterInfo pi = RecordParameters[i];
-                command.Append($"{FormatParameterInfo(sql, pi)}, ");
-            }
-            //Primary Key Definitions - This works because I require at least 1 Primary Key
-            command.Append($"PRIMARY KEY({GetEscapedParameterNames(PKs)})");
+                foreach (string Line in ExtraLines)
+                {
+                    command.Append($", {Line}");
+                }
+                foreach (string Line in ARA.SQLLines)
+                {
+                    command.Append($", {Line}");
+                }
 
-            foreach (string Line in ExtraLines)
-            {
-                command.Append($", {Line}");
-            }
-            foreach (string Line in ARA.SQLLines)
-            {
-                command.Append($", {Line}");
-            }
-
-            command.Append(");");
-            return sql.ExecuteNonQuery(command.ToString());
+                command.Append(");");
+                return command.ToString();
+            
         }
+
+        public static Task<int> CreateDB(SQLDB sql) => sql.ExecuteNonQuery(CreateDBSQLCode(sql));
         public static Task Truncate(SQLDB sql, bool cascade = false) => sql.Truncate(TableName, cascade);
         public static Task Drop(SQLDB sql, bool cascade = false) => sql.ExecuteNonQuery($"DROP TABLE IF EXISTS {TableName}{(cascade ? " CASCADE" : "")};");
         #endregion

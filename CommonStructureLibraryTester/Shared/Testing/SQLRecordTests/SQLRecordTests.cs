@@ -175,10 +175,9 @@ namespace CommonStructureLibraryTester.Testing
             return PASS();
         }
 
-        [TestType(TestType.ServerSide)]
+        [TestType(TestType.Both)]
         protected static TestResponse ConditionGenerationTest()
         {
-            var ExampleSet = new { Column1 = "SPAM", Column2 = "SPAMMER", Column3 = 22, Column4 = 2, Column5 = 6, Column6 = 6.5, Column7 = 3.0, Column8 = 5.0, Column9 = 4.5, Column10 = 22 };
             Conditional c = Conditional.WHERE("Column1", IS.EQUAL_TO, "SPAM")
                 .AND("Column2", IS.NOT_EQUAL_TO, "SPAM")
                 .AND("Column3", IS.GREATER_THAN, 4)
@@ -189,39 +188,65 @@ namespace CommonStructureLibraryTester.Testing
                 .AND("Column8", IS.IN, 1, 2, 3, 4, 5, 6)
                 .AND("Column9", IS.NOT_IN, 1, 2, 3, 4, 5, 6, null)
                 .AND("Column10", IS.NOT_IN, 1, 2, 3, 4, 5, 6);
-            ParameterInfo[] pis = ExampleSet.GetType().GetConstructors()[0].GetParameters();
-            List<Func<Task<PostgreSQL>>> SQLDBs = SQLTests.GetTestDB;
-            //using (PostgreSQL sql = await SQLTests.GetTestDB[0]())
-            //{
-                List<object> parameters = new List<object>();
-                string condition = c.Build(BuildType.PostgreSQL,pis,ref parameters) + ";";
-                if(condition != " WHERE" +
-                    " \"Column1\" = @0 AND" +
-                    " \"Column2\" != @0 AND" +
-                    " \"Column3\" > @1 AND" +
-                    " \"Column4\" < @2 AND" +
-                    " \"Column5\" >= @3 AND" +
-                    " \"Column6\" <= @4 AND" +
-                    " (\"Column7\" IS NULL OR \"Column7\" IN (@5, @6, @7, @8, @9, @10)) AND" +
-                    " \"Column8\" IN (@5, @6, @7, @8, @9, @10) AND" +
-                    " (\"Column9\" IS NOT NULL AND \"Column9\" NOT IN (@5, @6, @7, @8, @9, @10)) AND" +
-                    " \"Column10\" NOT IN (@11, @12, @13, @1, @2, @3);") { return FAIL("Invalid SQL\n" + condition); }
-                if ((string)parameters[0] != "SPAM" ||
-                    (int)parameters[1] != 4 ||
-                    (int)parameters[2] != 5 ||
-                    (int)parameters[3] != 6 ||
-                    (double)parameters[4] != 7.0 ||
-                    (double)parameters[5] != 1.0 ||
-                    (double)parameters[6] != 2.0 ||
-                    (double)parameters[7] != 3.0 ||
-                    (double)parameters[8] != 4.0 ||
-                    (double)parameters[9] != 5.0 ||
-                    (double)parameters[10] != 6.0 ||
-                    (int)parameters[11] != 1 ||
-                    (int)parameters[12] != 2 ||
-                    (int)parameters[13] != 3) { return FAIL("Invalid parameters!"); }
-            //}
+            ParameterInfo[] pis = (new { Column1 = "SPAM", Column2 = "SPAMMER", Column3 = 22, Column4 = 2, Column5 = 6, Column6 = 6.5, Column7 = 3.0, Column8 = 5.0, Column9 = 4.5, Column10 = 22 })
+                .GetType().GetConstructors()[0].GetParameters();
+
+            List<object> parameters = new List<object>();
+            string condition = c.Build(BuildType.PostgreSQL, pis, ref parameters) + ";";
+            if (condition != " WHERE" +
+                " \"Column1\" = @0 AND" +
+                " \"Column2\" != @0 AND" +
+                " \"Column3\" > @1 AND" +
+                " \"Column4\" < @2 AND" +
+                " \"Column5\" >= @3 AND" +
+                " \"Column6\" <= @4 AND" +
+                " (\"Column7\" IS NULL OR \"Column7\" IN (@5, @6, @7, @8, @9, @10)) AND" +
+                " \"Column8\" IN (@5, @6, @7, @8, @9, @10) AND" +
+                " (\"Column9\" IS NOT NULL AND \"Column9\" NOT IN (@5, @6, @7, @8, @9, @10)) AND" +
+                " \"Column10\" NOT IN (@11, @12, @13, @1, @2, @3);") { return FAIL("Invalid SQL\n" + condition); }
+            if ((string)parameters[0] != "SPAM" ||
+                (int)parameters[1] != 4 ||
+                (int)parameters[2] != 5 ||
+                (int)parameters[3] != 6 ||
+                (double)parameters[4] != 7.0 ||
+                (double)parameters[5] != 1.0 ||
+                (double)parameters[6] != 2.0 ||
+                (double)parameters[7] != 3.0 ||
+                (double)parameters[8] != 4.0 ||
+                (double)parameters[9] != 5.0 ||
+                (double)parameters[10] != 6.0 ||
+                (int)parameters[11] != 1 ||
+                (int)parameters[12] != 2 ||
+                (int)parameters[13] != 3) { return FAIL("Invalid parameters!"); }
             return PASS();
+        }
+
+        [TestType(TestType.ServerSide)]
+        protected static TestResponse ExtraLinesGenerationTest()
+        {
+            using (Sqlite test = new Sqlite(":memory:"))
+            {
+                string testsql = "CREATE TABLE IF NOT EXISTS \"Example2\" " +
+                    "(\"ID\" TEXT NOT NULL, " +
+                    "\"ID2\" TEXT NOT NULL, " +
+                    "\"ID3\" TEXT NOT NULL, " +
+                    "\"ID4\" TEXT NOT NULL, " +
+                    "\"Company\" TEXT NOT NULL, " +
+                    "\"WrongClient\" TEXT NOT NULL, " +
+                    "\"Client\" TEXT NOT NULL, " +
+                    "\"NormalFK\" TEXT NOT NULL, " +
+                    "PRIMARY KEY(\"ID\", \"ID2\", \"ID3\", \"ID4\"), " +
+                    "FOREIGN KEY(\"Company\", \"Client\") REFERENCES \"OtherTable\"(\"CompanyID\", \"ClientID\"), " +
+                    "FOREIGN KEY(\"WrongClient\") REFERENCES \"WrongTable\"(\"ClientID\"), " +
+                    "FOREIGN KEY(\"NormalFK\") REFERENCES \"YetAnotherTable\"(\"SomeID\"));";
+                string generatedsql = Example2.CreateDBSQLCode(test);
+                if (generatedsql == testsql)
+                {
+                    return PASS();
+                }
+                return FAIL($"SQL was:{Environment.NewLine}{generatedsql}");
+            }
+                
         }
 
         record ConditionTestRecord(int key, string data, DateTime recordtime, ulong hardcase) : SQLRecord<ConditionTestRecord>;
