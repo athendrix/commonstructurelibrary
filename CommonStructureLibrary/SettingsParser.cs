@@ -1,41 +1,39 @@
-﻿using System;
+﻿using CSL.Data;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace CSL
 {
-    public record Setting(string key, string value);
-    public record SettingSection(string name, Setting[] settings);
     public static class SettingsParser
     {
-        public static SettingSection[] Parse(IEnumerable<string> lines)
+        public static DataStore<string> ReadSettings(string path, bool caseInsensitiveLookup = true, bool immutable = false) =>
+            Parse(File.ReadLines(path), caseInsensitiveLookup, immutable);
+        public static DataStore<string> Parse(IEnumerable<string> lines, bool caseInsensitiveLookup = true, bool immutable = false)
         {
-            string CurrentSection = "";
-            List<SettingSection> toReturn = new List<SettingSection>();
-            List<Setting> toAdd = new List<Setting>();
-            foreach(string line in lines)
+            DataStore<string> toReturn = new DataStore<string>(caseInsensitiveLookup);
+            Stack<string> CurrentSection = new Stack<string>();
+            foreach (string line in lines)
             {
                 if(string.IsNullOrWhiteSpace(line)) { continue; }
                 string linecomp = line.Trim();
-                if (linecomp.StartsWith("#") || linecomp.StartsWith("//") || linecomp.StartsWith(";")) { continue; }
+                if (linecomp == "" || linecomp.StartsWith("#") || linecomp.StartsWith("//") || linecomp.StartsWith(";")) { continue; }
                 if(linecomp.StartsWith("[") && linecomp.EndsWith("]"))
                 {
-                    string NewSection = linecomp.Substring(1, linecomp.Length - 2).Trim();
-                    if(NewSection == CurrentSection) { continue; }
-                    toReturn.Add(new SettingSection(CurrentSection, toAdd.ToArray()));
-                    SettingSection? DuplicateSection = toReturn.Where((x) => x.name == NewSection).FirstOrDefault();
-                    if (DuplicateSection != null)
+                    
+                    int depth = 0;
+                    for(depth = 0; linecomp.StartsWith("[") && linecomp.EndsWith("]"); depth++)
                     {
-                        toReturn.Remove(DuplicateSection);
-                        toAdd = new List<Setting>(DuplicateSection.settings);
+                        linecomp = linecomp.Substring(1, linecomp.Length - 2).Trim();
                     }
-                    else
-                    {
-                        toAdd = new List<Setting>();
-                    }
-                    CurrentSection = NewSection;
+
+                    while (depth > CurrentSection.Count + 1) { CurrentSection.Push("."); }
+                    while (depth < CurrentSection.Count + 1){ CurrentSection.Pop();}
+                    CurrentSection.Push(linecomp + ".");
+
                     continue;
                 }
                 if (linecomp.Contains('='))
@@ -43,56 +41,92 @@ namespace CSL
                     int EqualsPos = linecomp.IndexOf('=');
                     string key = linecomp.Substring(0, EqualsPos).Trim();
                     string value = ParseEscapeCharacters(linecomp.Substring(EqualsPos + 1).Trim());
-                    toAdd.Add(new Setting(key, value));
+                    toReturn[string.Join("",CurrentSection) + key] = value;
                 }
                 else
                 {
-                    toAdd.Add(new Setting(linecomp.Trim(), ""));
+                    toReturn[string.Join("",CurrentSection) + linecomp] = "";
                 }
             }
-            toReturn.Add(new SettingSection(CurrentSection, toAdd.ToArray()));
-            return toReturn.ToArray();
-        }
-        public static IEnumerable<string> ToSettings(SettingSection[] input)
-        {
-            foreach(SettingSection section in input)
+            if(immutable)
             {
-                yield return $"[{section.name}]";
-                foreach (Setting setting in section.settings)
+                toReturn.SetImmutable();
+            }
+            return toReturn;
+        }
+        private static IEnumerable<string> AllButLast(string[] lines) => lines.Take(lines.Length - 1);
+        public static IEnumerable<string> ToLines(this DataStore<string> input)
+        {
+            int CurrentDepth = 0;
+            foreach (IGrouping<string, KeyValuePair<string, string?>> group in input.GroupBy(x => string.Join(".", AllButLast(x.Key.Split('.')))).OrderBy(x => x.Key))
+            {
+                if (group.Key is "")
                 {
-                    yield return $"{setting.key}={EscapeCharacters(setting.value)}";
+                    if (CurrentDepth != 0) { throw new Exception("This shouldn't happen. If \"\" is in the group, it should be first, and depth should be 0"); }
+
                 }
+                else
+                {
+                    string[] domains = group.Key.Split('.');
+                    if (domains.Length <= CurrentDepth) { CurrentDepth = domains.Length - 1; }
+                    while (domains.Length > CurrentDepth)
+                    {
+                        CurrentDepth++;
+                        yield return new string('[', CurrentDepth) + domains[CurrentDepth - 1] + new string(']', CurrentDepth);
+                    }
+                }
+                foreach(KeyValuePair<string, string?> setting in group)
+                {
+                    yield return $"{setting.Key.Substring(setting.Key.LastIndexOf('.') + 1)}={EscapeCharacters(setting.Value ?? "")}";
+                }
+
             }
         }
+        public static void WriteSettings(this DataStore<string> input, string path) => File.WriteAllLines(path, input.ToLines());
         private static string ParseEscapeCharacters(string input)
         {
+            input = input.Trim();
+            if (input.Length < 2 || !input.StartsWith("\"") || !input.EndsWith("\""))
+            {
+                return input;
+            }
+            input = input.Substring(1, input.Length - 2);
             string[] splits = input.Split(new string[] { "\\\\" }, StringSplitOptions.None);
             for (int i = 0; i < splits.Length; i++)
             {
                 splits[i] = splits[i]
-                    .Replace("\\n", "\n")
-                    .Replace("\\r", "\r")
-                    .Replace("\\t", "\t")
-                    .Replace("\\0", "\0")
-                    .Replace("\\f", "\f")
-                    .Replace("\\b", "\b")
                     .Replace("\\v", "\v")
-                    //.Replace("\\'", "\'")
-                    //.Replace("\\\"", "\"")
-                    .Replace("\\","");//Clear out extras
-#warning TODO: Replace unicode escape sequences
+                    .Replace("\\b", "\b")
+                    .Replace("\\f", "\f")
+                    .Replace("\\0", "\0")
+                    .Replace("\\t", "\t")
+                    .Replace("\\r", "\r")
+                    .Replace("\\n", "\n")
+                    .Replace("\\\"", "\"")
+                    .Replace("\\","");//Clear out unsupported escapes
+#warning TODO: Replace unicode escape sequences?
             }
             return string.Join("\\", splits);
         }
-        private static string EscapeCharacters(string input) => input
-                .Replace("\\", "\\\\")
-                .Replace("\n", "\\n")
-                .Replace("\r", "\\r")
-                .Replace("\t", "\\t")
-                .Replace("\0", "\\0")
-                .Replace("\f", "\\f")
-                .Replace("\b", "\\b")
-                .Replace("\v", "\\v");
-#warning TODO: Replace non-ascii characters with Unicode escape sequences
+        private static string EscapeCharacters(string input)
+        {
+            if(input.IndexOfAny("\"\n\r\t\0\f\b\v".ToCharArray()) is -1 && input == input.Trim())
+            {
+                return input;
+            }
+            string toReturn = input
+                                .Replace("\\", "\\\\")
+                                .Replace("\"", "\\\"")
+                                .Replace("\n", "\\n")
+                                .Replace("\r", "\\r")
+                                .Replace("\t", "\\t")
+                                .Replace("\0", "\\0")
+                                .Replace("\f", "\\f")
+                                .Replace("\b", "\\b")
+                                .Replace("\v", "\\v");
+            return $"\"{toReturn}\"";
+        }
+
+#warning TODO: Replace non-ascii characters with Unicode escape sequences?
     }
 }

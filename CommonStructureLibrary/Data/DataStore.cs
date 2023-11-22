@@ -9,7 +9,7 @@ namespace CSL.Data
     public class DataStore<T> : IDictionary<string,T?>, IList<KeyValuePair<string, T?>>
     {
         private readonly Dictionary<string, T> innerData;
-        protected readonly bool immutable;
+        private bool immutable = false;
         protected readonly bool caseInsensitiveLookup;
         private readonly List<string> ordinalOrder;
 #region Constructors
@@ -17,15 +17,13 @@ namespace CSL.Data
         {
             if (default(T?) != null) { throw new Exception("DataStore only works if T is a nullable type! Try adding a ? after the type name!"); }
             innerData = new Dictionary<string, T>();
-            immutable = false;
             ordinalOrder = new List<string>();
             this.caseInsensitiveLookup = caseInsensitiveLookup;
         }
-        public DataStore(DataStore<T> other) : this(other, other.immutable) { }
+        public DataStore(DataStore<T> other) : this(other, other.IsReadOnly) { }
         public DataStore(DataStore<T> other, bool immutable)
         {
             if (default(T?) != null) { throw new Exception("DataStore only works if T is a nullable type! Try adding a ? after the type name!"); }
-            this.immutable = false;
             this.caseInsensitiveLookup = other.caseInsensitiveLookup;
             innerData = new Dictionary<string, T>();
             ordinalOrder = new List<string>();
@@ -33,12 +31,14 @@ namespace CSL.Data
             {
                 Add(key, other.innerData[key]);
             }
-            this.immutable = immutable;
+            if(immutable)
+            {
+                SetImmutable();
+            }
         }
         public DataStore(IEnumerable<KeyValuePair<string, T?>> input, bool immutable = false, bool caseInsensitiveLookup = false)
         {
             if (default(T?) != null) { throw new Exception("DataStore only works if T is a nullable type! Try adding a ? after the type name!"); }
-            this.immutable = false;
             this.caseInsensitiveLookup = caseInsensitiveLookup;
             innerData = new Dictionary<string, T>();
             ordinalOrder = new List<string>();
@@ -46,7 +46,10 @@ namespace CSL.Data
             {
                 Add(entry.Key, entry.Value);
             }
-            this.immutable = immutable;
+            if(immutable)
+            {
+                SetImmutable();
+            }
         }
         public DataStore(string[] keys, T?[] values, bool immutable = false, bool caseInsensitiveLookup = false)
         {
@@ -55,7 +58,6 @@ namespace CSL.Data
             {
                 throw new ArgumentException("keys length and values length must be the same!");
             }
-            this.immutable = false;
             this.caseInsensitiveLookup = caseInsensitiveLookup;
             innerData = new Dictionary<string, T>();
             ordinalOrder = new List<string>();
@@ -63,7 +65,10 @@ namespace CSL.Data
             {
                 Add(keys[i], values[i]);
             }
-            this.immutable = immutable;
+            if(immutable)
+            {
+                SetImmutable();
+            }
         }
 #endregion
 #region Interface Compatibility
@@ -155,6 +160,7 @@ namespace CSL.Data
 #endregion
 #region Universal Functions
         public int GetOrdinal(string key) => ordinalOrder.IndexOf(caseInsensitiveLookup ? key.ToUpper() : key);
+        public string? GetKey(int index) => index < ordinalOrder.Count && index >= 0 ? ordinalOrder[index] : null;
         public T? Get(string key)
         {
             if (ContainsKey(key))
@@ -167,12 +173,13 @@ namespace CSL.Data
             }
         }
         public bool ContainsKey(string key) => innerData.ContainsKey(caseInsensitiveLookup ? key.ToUpper() : key);
-#endregion
+        #endregion
         //These are the only functions that actually change the state of innerData and ordinalOrder, and they won't if immutable is set.
-#region Mutable Functions
+        #region Mutable Functions
+        public void SetImmutable() => immutable = true;
         public void Add(string key, T? value)
         {
-            if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
+            if (IsReadOnly) { throw new InvalidOperationException("DataStore is immutable!"); }
             if (value != null)
             {
                 string CompKey = caseInsensitiveLookup ? key.ToUpper() : key;
@@ -182,7 +189,7 @@ namespace CSL.Data
         }
         public void Set(string key, T? value)
         {
-            if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
+            if (IsReadOnly) { throw new InvalidOperationException("DataStore is immutable!"); }
             string CompKey = caseInsensitiveLookup ? key.ToUpper() : key;
             if (innerData.ContainsKey(CompKey))
             {
@@ -203,7 +210,7 @@ namespace CSL.Data
         }
         public void Clear()
         {
-            if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
+            if (IsReadOnly) { throw new InvalidOperationException("DataStore is immutable!"); }
             innerData.Clear();
             ordinalOrder.Clear();
         }
@@ -215,7 +222,7 @@ namespace CSL.Data
         /// <param name="position">The new position of key.</param>
         public void Reorder(string key, int position)
         {
-            if (immutable) { throw new InvalidOperationException("DataStore is immutable!"); }
+            if (IsReadOnly) { throw new InvalidOperationException("DataStore is immutable!"); }
             if (position < 0 || position >= ordinalOrder.Count) { throw new ArgumentOutOfRangeException("position"); }
             string CompKey = caseInsensitiveLookup ? key.ToUpper() : key;
             if (!ordinalOrder.Contains(CompKey)) { throw new ArgumentException("key does not exist in DataStore!"); }
