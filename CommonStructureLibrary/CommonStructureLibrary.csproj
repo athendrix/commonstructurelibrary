@@ -8,9 +8,9 @@
     <Authors>Andrew Hendrix</Authors>
     <Company>Andrew Hendrix</Company>
     <Copyright>Andrew Hendrix 2023</Copyright>
-    <AssemblyVersion>2023.11.22.00</AssemblyVersion>
-    <FileVersion>2023.11.22.00</FileVersion>
-    <Version>2023.11.22.00</Version>
+    <AssemblyVersion>2023.12.04.00</AssemblyVersion>
+    <FileVersion>2023.12.04.00</FileVersion>
+    <Version>2023.12.04.00</Version>
     <Description>A set of wrappers, functions, and utilities that I use frequently, and that I want to make available in perpetuity.</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -28,6 +28,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>embedded</DebugType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="SettingsParser.cs~RFcadd2031.TMP" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />

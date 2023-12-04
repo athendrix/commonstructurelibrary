@@ -84,7 +84,16 @@ namespace CSL.SQL
         {
             this.ColumnName = ColumnName;
             this.Condition = Condition;
-            this.parameters = parameters;
+            
+            if(this.Condition is IS.IN or IS.BETWEEN && parameters.Length is 1 && parameters[0] is Array a && parameters[0] is not byte[])
+            {
+                this.parameters = new object[a.Length];
+                Array.Copy(a, this.parameters, a.Length);
+            }
+            else
+            {
+                this.parameters = parameters;
+            }
         }
         protected override string BuildSegment(BuildType buildType, ParameterInfo[] ValidColumns, ref List<object> ParametersList, bool SubConditional)
         {

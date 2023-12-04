@@ -376,7 +376,8 @@ namespace CommonStructureLibraryTester.Testing
                             tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.GREATER_THAN, Ex4s[j].UnsignedLongTest + 1));
                             if (tester != null) { return FAIL("UnsignedLongTest Inverse Greater Than Failure " + Ex4s[j].ToString()); }
 
-                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.BETWEEN, Ex4s[j].UnsignedLongTest - 1, Ex4s[j].UnsignedLongTest + 1));
+                            //tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.BETWEEN, Ex4s[j].UnsignedLongTest - 1, Ex4s[j].UnsignedLongTest + 1));
+                            tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.BETWEEN, new ulong[] { Ex4s[j].UnsignedLongTest - 1, Ex4s[j].UnsignedLongTest + 1 }));
                             if (tester == null) { return FAIL("UnsignedLongTest Between Failure " + Ex4s[j].ToString()); }
                             tester = await Example4.SelectOne(sql, Conditional.WHERE("ID", IS.EQUAL_TO, Ex4s[j].ID).AND("UnsignedLongTest", IS.BETWEEN, Ex4s[j].UnsignedLongTest + 1, Ex4s[j].UnsignedLongTest - 1));
                             if (tester != null) { return FAIL("UnsignedLongTest Inverse Between Failure " + Ex4s[j].ToString()); }
