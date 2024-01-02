@@ -7,10 +7,10 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Andrew Hendrix</Authors>
     <Company>Andrew Hendrix</Company>
-    <Copyright>Andrew Hendrix 2023</Copyright>
-    <AssemblyVersion>2023.12.04.00</AssemblyVersion>
-    <FileVersion>2023.12.04.00</FileVersion>
-    <Version>2023.12.04.00</Version>
+    <Copyright>Andrew Hendrix 2024</Copyright>
+    <AssemblyVersion>2024.01.02.00</AssemblyVersion>
+    <FileVersion>2024.01.02.00</FileVersion>
+    <Version>2024.01.02.00</Version>
     <Description>A set of wrappers, functions, and utilities that I use frequently, and that I want to make available in perpetuity.</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>

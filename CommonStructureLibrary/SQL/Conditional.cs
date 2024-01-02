@@ -114,11 +114,15 @@ namespace CSL.SQL
 
             bool inequality = Condition is IS.LESS_THAN or IS.LESS_THAN_OR_EQUAL_TO or IS.GREATER_THAN or IS.GREATER_THAN_OR_EQUAL_TO;
             bool unsignedType = currentColumn.ParameterType == typeof(ulong) || currentColumn.ParameterType == typeof(uint) || currentColumn.ParameterType == typeof(ushort);
-            bool notValue = Condition is IS.NOT_EQUAL_TO or IS.NOT_IN or IS.NOT_BETWEEN or IS.NOT_LIKE or IS.NOT_STARTING_WITH or IS.NOT_ENDING_WITH or IS.NOT_CONTAINING;
+            bool notValue = Condition is IS.NOT_EQUAL_TO or IS.NOT_IN or IS.NOT_BETWEEN or IS.NOT_LIKE or IS.NOT_STARTING_WITH or IS.NOT_ENDING_WITH or IS.NOT_CONTAINING or IS.NOT_ILIKE;
 
 
             string notString = notValue ? " NOT" : "";
             string a = Common.Escape(ColumnName);
+            if(Condition is IS.ILIKE or IS.NOT_ILIKE)
+            {
+                a = $"UPPER({a})";
+            }
 
             switch (parameters.Length)
             {
@@ -147,6 +151,10 @@ namespace CSL.SQL
                         value = "%" + value.ToString();
                     }
                     string b = "@" + AddOrIndex(ref ParametersList, value);
+                    if (Condition is IS.ILIKE or IS.NOT_ILIKE)
+                    {
+                        b = $"UPPER({b})";
+                    }
                     if (unsignedType && inequality)
                     {
                         bool gt = Condition is IS.GREATER_THAN or IS.GREATER_THAN_OR_EQUAL_TO;
@@ -167,8 +175,10 @@ namespace CSL.SQL
                         IS.NOT_IN => "!=",
                         IS.BETWEEN => throw new ArgumentOutOfRangeException("Between comparisons require exactly 2 parameters."),
                         IS.NOT_BETWEEN => throw new ArgumentOutOfRangeException("Between comparisons require exactly 2 parameters."),
+                        IS.ILIKE => "LIKE",
                         IS.LIKE => "LIKE",
                         IS.NOT_LIKE => "NOT LIKE",
+                        IS.NOT_ILIKE => "NOT LIKE",
                         IS.STARTING_WITH => "LIKE",
                         IS.NOT_STARTING_WITH => "NOT LIKE",
                         IS.ENDING_WITH => "LIKE",
@@ -333,7 +343,9 @@ namespace CSL.SQL
         BETWEEN,
         NOT_BETWEEN,
         LIKE,
+        ILIKE,
         NOT_LIKE,
+        NOT_ILIKE,
         STARTING_WITH,
         NOT_STARTING_WITH,
         ENDING_WITH,
