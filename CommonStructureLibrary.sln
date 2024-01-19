@@ -18,6 +18,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibraryTeste
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonStructureLibraryTester.Shared", "CommonStructureLibraryTester\Shared\CommonStructureLibraryTester.Shared.csproj", "{A9A9E2F9-7FCB-4207-B8A7-B09A6CA79DF6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonStructureLibraryUnitTests", "CommonStructureLibraryUnitTests\CommonStructureLibraryUnitTests.csproj", "{9C7E8378-475C-4827-9FD1-D3A1F90D321C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +46,10 @@ Global
 		{A9A9E2F9-7FCB-4207-B8A7-B09A6CA79DF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A9A9E2F9-7FCB-4207-B8A7-B09A6CA79DF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A9A9E2F9-7FCB-4207-B8A7-B09A6CA79DF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C7E8378-475C-4827-9FD1-D3A1F90D321C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C7E8378-475C-4827-9FD1-D3A1F90D321C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C7E8378-475C-4827-9FD1-D3A1F90D321C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C7E8378-475C-4827-9FD1-D3A1F90D321C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
