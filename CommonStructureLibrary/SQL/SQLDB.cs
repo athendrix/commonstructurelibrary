@@ -304,6 +304,19 @@ namespace CSL.SQL
             try { if (InternalConnection != null) { InternalConnection.Close(); } } catch (Exception) { }
             try { if (InternalConnection != null) { InternalConnection.Dispose(); } } catch (Exception) { }
         }
+        #region RecordWrappers
+        public Task<int> CreateTable<T>() where T : SQLRecord<T> => SQLRecord<T>.CreateDB(this);
+        #region Select
+        public Task<T?> SelectOne<T>(Conditional conditional) where T : SQLRecord<T> => SQLRecord<T>.SelectOne(this, conditional);
+        public Task<T?> SelectOne<T>(string condition, params object?[] parameters) where T : SQLRecord<T> => SQLRecord<T>.SelectOne(this, condition, parameters: parameters);
+        public Task<AutoClosingEnumerable<T>> Select<T>() where T : SQLRecord<T> => SQLRecord<T>.Select(this);
+        public Task<AutoClosingEnumerable<T>> Select<T>(Conditional conditional) where T : SQLRecord<T> => SQLRecord<T>.Select(this, conditional);
+        public Task<AutoClosingEnumerable<T>> Select<T>(string condition, params object?[] parameters) where T : SQLRecord<T> => SQLRecord<T>.Select(this, condition, parameters: parameters);
+        public Task<T[]> SelectArray<T>() where T : SQLRecord<T> => SQLRecord<T>.SelectArray(this);
+        public Task<T[]> SelectArray<T>(Conditional conditional) where T : SQLRecord<T> => SQLRecord<T>.SelectArray(this, conditional);
+        public Task<T[]> SelectArray<T>(string condition, params object?[] parameters) where T : SQLRecord<T> => SQLRecord<T>.SelectArray(this, condition, parameters: parameters);
+        #endregion
+        #endregion
     }
 
 }

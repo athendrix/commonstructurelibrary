@@ -173,36 +173,36 @@ public class SQLRecordTests
                     Example  template   = exampleRecords[j];
                     if (testRecord != template)
                     {
-                        Assert.AreEqual(testRecord?.Data1, template.Data1, "Record not equal! Data1 did not match! "                                                                                                                                                     + testRecord?.Data1 + " != " + template.Data1);
-                        Assert.AreEqual(testRecord.Data2, template.Data2, "Record not equal! Data2 did not match! "                                                                                                                                                      + testRecord.Data2  + " != " + template.Data2);
-                        Assert.AreEqual(testRecord.Data3, template.Data3, "Record not equal! Data3 did not match! "                                                                                                                                                      + testRecord.Data3  + " != " + template.Data3);
-                        Assert.AreEqual(testRecord.Data4, template.Data4, "Record not equal! Data4 did not match! "                                                                                                                                                      + testRecord.Data4  + " != " + template.Data4);
-                        Assert.AreEqual(testRecord.Data5, template.Data5, "Record not equal! Data5 did not match! "                                                                                                                                                      + testRecord.Data5  + " != " + template.Data5);
-                        Assert.AreEqual(testRecord.Data6, template.Data6, "Record not equal! Data6 did not match! "                                                                                                                                                      + testRecord.Data6  + " != " + template.Data6);
-                        Assert.AreEqual(testRecord.Data7, template.Data7, "Record not equal! Data7 did not match! "                                                                                                                                                      + testRecord.Data7  + " != " + template.Data7);
-                        Assert.AreEqual(testRecord.Data8, template.Data8, "Record not equal! Data8 did not match! "                                                                                                                                                      + testRecord.Data8  + " != " + template.Data8);
-                        Assert.AreEqual(testRecord.Data9, template.Data9, "Record not equal! Data9 did not match! "                                                                                                                                                      + testRecord.Data9  + " != " + template.Data9);
-                        Assert.AreEqual(testRecord.Data10, template.Data10, "Record not equal! Data10 did not match! "                                                                                                                                                   + testRecord.Data10 + " != " + template.Data10);
-                        Assert.AreEqual(testRecord.Data11, template.Data11, "Record not equal! Data11 did not match! "                                                                                                                                                   + testRecord.Data11 + " != " + template.Data11);
-                        Assert.AreEqual(testRecord.Data12, template.Data12, "Record not equal! Data12 did not match! "                                                                                                                                                   + testRecord.Data12 + " != " + template.Data12);
-                        Assert.AreEqual(testRecord.Data13, template.Data13, "Record not equal! Data13 did not match! "                                                                                                                                                   + testRecord.Data13 + " != " + template.Data13);
-                        Assert.AreEqual(testRecord.Data14, template.Data14, "Record not equal! Data14 did not match! "                                                                                                                                                   + testRecord.Data14 + " != " + template.Data14);
-                        Assert.False(testRecord.Data15 != template.Data15 && (!float.IsNaN(testRecord.Data15)  || !float.IsNaN(template.Data15)), "Record not equal! Data15 did not match! "                                                                             + testRecord.Data15 + " != " + template.Data15);
-                        Assert.False(testRecord.Data16 != template.Data16 && (testRecord.Data16 == null        || template.Data16 == null || !float.IsNaN(testRecord.Data16.Value) || !float.IsNaN(template.Data16.Value)), "Record not equal! Data16 did not match! "   + testRecord.Data16 + " != " + template.Data16);
-                        Assert.False(testRecord.Data17 != template.Data17 && (!double.IsNaN(testRecord.Data17) || !double.IsNaN(template.Data17)), "Record not equal! Data17 did not match! "                                                                            + testRecord.Data17 + " != " + template.Data17);
-                        Assert.False(testRecord.Data18 != template.Data18 && (testRecord.Data18 == null        || template.Data18 == null || !double.IsNaN(testRecord.Data18.Value) || !double.IsNaN(template.Data18.Value)), "Record not equal! Data18 did not match! " + testRecord.Data18 + " != " + template.Data18);
-                        Assert.AreEqual(testRecord.Data19, template.Data19, "Record not equal! Data19 did not match! "                                                                                                                                                   + testRecord.Data19 + " != " + template.Data19);
-                        Assert.AreEqual(testRecord.Data20, template.Data20, "Record not equal! Data20 did not match! "                                                                                                                                                   + testRecord.Data20 + " != " + template.Data20);
-                        Assert.AreEqual(testRecord.Data21, template.Data21, "Record not equal! Data21 did not match! "                                                                                                                                                   + testRecord.Data21 + " != " + template.Data21);
-                        Assert.AreEqual(testRecord.Data22, template.Data22, "Record not equal! Data22 did not match! "                                                                                                                                                   + testRecord.Data22 + " != " + template.Data22);
-                        Assert.True(testRecord.Data23.AsSpan().SequenceEqual(template.Data23), "Record not equal! Data23 did not match! "                                                                                                                                + testRecord.Data23 + " != " + template.Data23);
-                        Assert.False(testRecord.Data24 != template.Data24 && testRecord.Data24?.AsSpan().SequenceEqual(template.Data24) != true, "Record not equal! Data24 did not match! "                                                                              + testRecord.Data24 + " != " + template.Data24);
-                        Assert.AreEqual(testRecord.Data25, template.Data25, "Record not equal! Data25 did not match! "                                                                                                                                                   + testRecord.Data25 + " != " + template.Data25);
-                        Assert.AreEqual(testRecord.Data26, template.Data26, "Record not equal! Data26 did not match! "                                                                                                                                                   + testRecord.Data26 + " != " + template.Data26);
-                        Assert.AreEqual(testRecord.Data27, template.Data27, "Record not equal! Data27 did not match! "                                                                                                                                                   + testRecord.Data27 + " != " + template.Data27);
-                        Assert.AreEqual(testRecord.Data28, template.Data28, "Record not equal! Data28 did not match! "                                                                                                                                                   + testRecord.Data28 + " != " + template.Data28);
-                        Assert.AreEqual(testRecord.Data29, template.Data29, "Record not equal! Data29 did not match! "                                                                                                                                                   + testRecord.Data29 + " != " + template.Data29);
-                        Assert.AreEqual(testRecord.Data30, template.Data30, "Record not equal! Data30 did not match! "                                                                                                                                                   + testRecord.Data30 + " != " + template.Data30);
+                        Assert.That(testRecord?.Data1, Is.EqualTo(template.Data1), "Record not equal! Data1 did not match! "                                                                                                                                                     + testRecord?.Data1 + " != " + template.Data1);
+                        Assert.That(testRecord?.Data2, Is.EqualTo(template.Data2), "Record not equal! Data2 did not match! "                                                                                                                                                      + testRecord.Data2  + " != " + template.Data2);
+                        Assert.That(testRecord.Data3, Is.EqualTo(template.Data3), "Record not equal! Data3 did not match! "                                                                                                                                                      + testRecord.Data3  + " != " + template.Data3);
+                        Assert.That(testRecord.Data4, Is.EqualTo(template.Data4), "Record not equal! Data4 did not match! "                                                                                                                                                      + testRecord.Data4  + " != " + template.Data4);
+                        Assert.That(testRecord.Data5, Is.EqualTo(template.Data5), "Record not equal! Data5 did not match! "                                                                                                                                                      + testRecord.Data5  + " != " + template.Data5);
+                        Assert.That(testRecord.Data6, Is.EqualTo(template.Data6), "Record not equal! Data6 did not match! "                                                                                                                                                      + testRecord.Data6  + " != " + template.Data6);
+                        Assert.That(testRecord.Data7, Is.EqualTo(template.Data7), "Record not equal! Data7 did not match! "                                                                                                                                                      + testRecord.Data7  + " != " + template.Data7);
+                        Assert.That(testRecord.Data8, Is.EqualTo(template.Data8), "Record not equal! Data8 did not match! "                                                                                                                                                      + testRecord.Data8  + " != " + template.Data8);
+                        Assert.That(testRecord.Data9, Is.EqualTo(template.Data9), "Record not equal! Data9 did not match! "                                                                                                                                                      + testRecord.Data9  + " != " + template.Data9);
+                        Assert.That(testRecord.Data10, Is.EqualTo(template.Data10), "Record not equal! Data10 did not match! "                                                                                                                                                   + testRecord.Data10 + " != " + template.Data10);
+                        Assert.That(testRecord.Data11, Is.EqualTo(template.Data11), "Record not equal! Data11 did not match! "                                                                                                                                                   + testRecord.Data11 + " != " + template.Data11);
+                        Assert.That(testRecord.Data12, Is.EqualTo(template.Data12), "Record not equal! Data12 did not match! "                                                                                                                                                   + testRecord.Data12 + " != " + template.Data12);
+                        Assert.That(testRecord.Data13, Is.EqualTo(template.Data13), "Record not equal! Data13 did not match! "                                                                                                                                                   + testRecord.Data13 + " != " + template.Data13);
+                        Assert.That(testRecord.Data14, Is.EqualTo(template.Data14), "Record not equal! Data14 did not match! "                                                                                                                                                   + testRecord.Data14 + " != " + template.Data14);
+                        Assert.That(testRecord.Data15 != template.Data15 && (!float.IsNaN(testRecord.Data15)  || !float.IsNaN(template.Data15)), Is.False, "Record not equal! Data15 did not match! "                                                                             + testRecord.Data15 + " != " + template.Data15);
+                        Assert.That(testRecord.Data16 != template.Data16 && (testRecord.Data16 == null        || template.Data16 == null || !float.IsNaN(testRecord.Data16.Value) || !float.IsNaN(template.Data16.Value)), Is.False, "Record not equal! Data16 did not match! "   + testRecord.Data16 + " != " + template.Data16);
+                        Assert.That(testRecord.Data17 != template.Data17 && (!double.IsNaN(testRecord.Data17) || !double.IsNaN(template.Data17)), Is.False, "Record not equal! Data17 did not match! "                                                                            + testRecord.Data17 + " != " + template.Data17);
+                        Assert.That(testRecord.Data18 != template.Data18 && (testRecord.Data18 == null        || template.Data18 == null || !double.IsNaN(testRecord.Data18.Value) || !double.IsNaN(template.Data18.Value)), Is.False, "Record not equal! Data18 did not match! " + testRecord.Data18 + " != " + template.Data18);
+                        Assert.That(testRecord.Data19, Is.EqualTo(template.Data19), "Record not equal! Data19 did not match! "                                                                                                                                                   + testRecord.Data19 + " != " + template.Data19);
+                        Assert.That(testRecord.Data20, Is.EqualTo(template.Data20), "Record not equal! Data20 did not match! "                                                                                                                                                   + testRecord.Data20 + " != " + template.Data20);
+                        Assert.That(testRecord.Data21, Is.EqualTo(template.Data21), "Record not equal! Data21 did not match! "                                                                                                                                                   + testRecord.Data21 + " != " + template.Data21);
+                        Assert.That(testRecord.Data22, Is.EqualTo(template.Data22), "Record not equal! Data22 did not match! "                                                                                                                                                   + testRecord.Data22 + " != " + template.Data22);
+                        Assert.That(testRecord.Data23.AsSpan().SequenceEqual(template.Data23), Is.True, "Record not equal! Data23 did not match! "                                                                                                                                + testRecord.Data23 + " != " + template.Data23);
+                        Assert.That(testRecord.Data24 != template.Data24 && testRecord.Data24?.AsSpan().SequenceEqual(template.Data24) != true, Is.False, "Record not equal! Data24 did not match! "                                                                              + testRecord.Data24 + " != " + template.Data24);
+                        Assert.That(testRecord.Data25, Is.EqualTo(template.Data25), "Record not equal! Data25 did not match! "                                                                                                                                                   + testRecord.Data25 + " != " + template.Data25);
+                        Assert.That(testRecord.Data26, Is.EqualTo(template.Data26), "Record not equal! Data26 did not match! "                                                                                                                                                   + testRecord.Data26 + " != " + template.Data26);
+                        Assert.That(testRecord.Data27, Is.EqualTo(template.Data27), "Record not equal! Data27 did not match! "                                                                                                                                                   + testRecord.Data27 + " != " + template.Data27);
+                        Assert.That(testRecord.Data28, Is.EqualTo(template.Data28), "Record not equal! Data28 did not match! "                                                                                                                                                   + testRecord.Data28 + " != " + template.Data28);
+                        Assert.That(testRecord.Data29, Is.EqualTo(template.Data29), "Record not equal! Data29 did not match! "                                                                                                                                                   + testRecord.Data29 + " != " + template.Data29);
+                        Assert.That(testRecord.Data30, Is.EqualTo(template.Data30), "Record not equal! Data30 did not match! "                                                                                                                                                   + testRecord.Data30 + " != " + template.Data30);
                     }
                 }
             }
@@ -227,16 +227,16 @@ public class SQLRecordTests
                 await ex3a.Insert(sql);
                 await ex3b.Update(sql);
                 Example3? ex3bcomp = await Example3.SelectOne(sql, "\"ID\" = @0", Guid.Empty);
-                Assert.AreEqual(ex3bcomp, ex3b, "Did not Update correctly!");
+                Assert.That(ex3bcomp, Is.EqualTo(ex3b), "Did not Update correctly!");
                 await ex3c.Upsert(sql);
                 Example3? ex3ccomp = await Example3.SelectOne(sql, "\"ID\" = @0", Guid.Empty);
-                Assert.AreEqual(ex3ccomp, ex3c, "Did not Upsert correctly!");
+                Assert.That(ex3ccomp, Is.EqualTo(ex3c), "Did not Upsert correctly!");
                 await Example3.Truncate(sql);
                 Example3? emptycomp = await Example3.SelectOne(sql, "\"ID\" = @0", Guid.Empty);
-                Assert.IsNull(emptycomp, "Did not Truncate correctly");
+                Assert.That(emptycomp, Is.Null, "Did not Truncate correctly");
                 await ex3c.Upsert(sql);
                 Example3? ex3ccomp2 = await Example3.SelectOne(sql, "\"ID\" = @0", Guid.Empty);
-                Assert.AreEqual(ex3ccomp2, ex3c, "Did not Upsert correctly!");
+                Assert.That(ex3ccomp2, Is.EqualTo(ex3c), "Did not Upsert correctly!");
             }
         }
         catch (Exception e)
@@ -265,7 +265,7 @@ public class SQLRecordTests
             {
                 List<object> parameters = new List<object>();
                 string condition = c.Build(sql,pis,ref parameters) + ";";
-                Assert.AreEqual(condition, " WHERE" +
+                Assert.That(condition, Is.EqualTo(" WHERE" +
                     " \"Column1\" = @0 AND" +
                     " \"Column2\" != @0 AND" +
                     " \"Column3\" > @1 AND" +
@@ -275,8 +275,8 @@ public class SQLRecordTests
                     " (\"Column7\" IS NULL OR \"Column7\" IN (@5, @6, @7, @8, @9, @10)) AND" +
                     " \"Column8\" IN (@5, @6, @7, @8, @9, @10) AND" +
                     " (\"Column9\" IS NOT NULL AND \"Column9\" NOT IN (@5, @6, @7, @8, @9, @10)) AND" +
-                    " \"Column10\" NOT IN (@11, @12, @13, @1, @2, @3);", "Invalid SQL\n" + condition);
-                Assert.False((string)parameters[0] != "SPAM" ||
+                    " \"Column10\" NOT IN (@11, @12, @13, @1, @2, @3);"), "Invalid SQL\n" + condition);
+                Assert.That((string)parameters[0] != "SPAM" ||
                     (int)parameters[1] != 4 ||
                     (int)parameters[2] != 5 ||
                     (int)parameters[3] != 6 ||
@@ -289,7 +289,7 @@ public class SQLRecordTests
                     (double)parameters[10] != 6.0 ||
                     (int)parameters[11] != 1 ||
                     (int)parameters[12] != 2 ||
-                    (int)parameters[13] != 3,"Invalid parameters!");
+                    (int)parameters[13] != 3, Is.False,"Invalid parameters!");
             }
             Assert.Pass();
         }
