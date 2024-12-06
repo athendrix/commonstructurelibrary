@@ -75,7 +75,7 @@ namespace CSL.SQL
                 Data.Env.Vars["POSTGRES_SCHEMA"],
                 ParseSSLMode(Data.Env.Vars["POSTGRES_SSLMODE"])
                 );
-        private static SslMode ParseSSLMode(string? SSLMODE) => SSLMODE == null ? SslMode.Prefer : (SslMode)Enum.Parse(typeof(SslMode), char.ToUpperInvariant(SSLMODE[0]) + SSLMODE.ToLowerInvariant().Substring(1));
+        private static SslMode ParseSSLMode(string? SSLMODE) => SSLMODE == null ? SslMode.Prefer : (SslMode)Enum.Parse(typeof(SslMode), SSLMODE, true);
         public PostgreSQL(DbConnection connection) : base(connection)
         {
             currentTransaction = null;

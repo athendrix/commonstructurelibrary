@@ -15,9 +15,9 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
-    <AssemblyVersion>2024.01.02.00</AssemblyVersion>
-    <FileVersion>2024.01.02.00</FileVersion>
-	<Version>2024.01.02.00</Version>
+    <AssemblyVersion>2024.12.05.00</AssemblyVersion>
+    <FileVersion>2024.12.05.00</FileVersion>
+	<Version>2024.12.05.00</Version>
     <AnalysisLevel>5.0</AnalysisLevel>
   </PropertyGroup>
 
