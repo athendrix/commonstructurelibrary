@@ -56,7 +56,7 @@ namespace CSL.SQL
                 mdb.Log($"Transaction {TransactionID} Created. IsolationLevel {isolationLevel}");
             }
             public override void Commit() => mdb.Log($"Transaction {TransactionID} Committed");
-            public override void Rollback() => mdb.Log($"Transaction {TransactionID} Committed");
+            public override void Rollback() => mdb.Log($"Transaction {TransactionID} Rolled Back");
             protected override DbConnection DbConnection => mdb.dbConnection;
             public override IsolationLevel IsolationLevel { get; }
         }
