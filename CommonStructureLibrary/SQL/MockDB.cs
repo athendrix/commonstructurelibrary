@@ -19,19 +19,15 @@ namespace CSL.SQL
         public class MockDbCommand : DbCommand
         {
             private MockDB mdb;
-            public MockDbCommand(MockDB mdb)
-            {
-                this.mdb = mdb;
-            }
-
+            public MockDbCommand(MockDB mdb) => this.mdb = mdb;
             public override void Cancel() => mdb.Log("Command Cancelled");
             public override int ExecuteNonQuery() => throw new NotImplementedException();
             public override object ExecuteScalar() => throw new NotImplementedException();
             public override void Prepare() => throw new NotImplementedException();
-            public override string CommandText { get; set; }
-            public override int CommandTimeout { get; set; }
-            public override CommandType CommandType { get; set; }
-            public override UpdateRowSource UpdatedRowSource { get; set; }
+            public override string CommandText { get; set; } = string.Empty;
+            public override int CommandTimeout { get; set; } = 0;
+            public override CommandType CommandType { get; set; } = CommandType.Text;
+            public override UpdateRowSource UpdatedRowSource { get; set; } = UpdateRowSource.Both;
             protected override DbConnection DbConnection { get; set; }
             protected override DbParameterCollection DbParameterCollection { get; }
             protected override DbTransaction DbTransaction { get; set; }

@@ -134,41 +134,41 @@ namespace CSL.SQL
             if (ParameterType.IsEnum) { return Enum.ToObject(ParameterType, Convert.ChangeType(parameter, Enum.GetUnderlyingType(ParameterType))); }
             return parameter;
         }
-        private static readonly Dictionary<Type, string> SQLTypes = new Dictionary<Type, string>()
-    {
-        {typeof(bool),      "BOOLEAN"},
-        {typeof(bool?),     "BOOLEAN"},
-        {typeof(sbyte),     "SMALLINT"},
-        {typeof(sbyte?),    "SMALLINT"},
-        {typeof(byte),      "SMALLINT"},
-        {typeof(byte?),     "SMALLINT"},
-        {typeof(char),      "CHAR(1)"}, //Small bit of C# conversion required
-        {typeof(char?),     "CHAR(1)"}, //Small bit of C# conversion required
-        {typeof(short),     "SMALLINT"},
-        {typeof(short?),    "SMALLINT"},
-        {typeof(ushort),    "SMALLINT"},
-        {typeof(ushort?),   "SMALLINT"},
-        {typeof(int),       "INTEGER"},
-        {typeof(int?),      "INTEGER"},
-        {typeof(uint),      "INTEGER"},
-        {typeof(uint?),     "INTEGER"},
-        {typeof(long),      "BIGINT"},
-        {typeof(long?),     "BIGINT"},
-        {typeof(ulong),     "BIGINT"},
-        {typeof(ulong?),    "BIGINT"},
-        {typeof(float),     "FLOAT4"},
-        {typeof(float?),    "FLOAT4"},
-        {typeof(double),    "FLOAT8"},
-        {typeof(double?),   "FLOAT8"},
-        {typeof(decimal),   "NUMERIC"},
-        {typeof(decimal?),  "NUMERIC"},
-        {typeof(Guid),      "UUID"},
-        {typeof(Guid?),     "UUID"},
-        {typeof(DateTime),  "TIMESTAMP"},
-        {typeof(DateTime?), "TIMESTAMP"},
-        {typeof(string),    "TEXT"},
-        {typeof(byte[]),    "BYTEA" }
-    };
+        private static readonly Dictionary<Type, string> SQLTypes = new Dictionary<Type, string>() 
+        {
+            {typeof(bool),      "BOOLEAN"},
+            {typeof(bool?),     "BOOLEAN"},
+            {typeof(sbyte),     "SMALLINT"},
+            {typeof(sbyte?),    "SMALLINT"},
+            {typeof(byte),      "SMALLINT"},
+            {typeof(byte?),     "SMALLINT"},
+            {typeof(char),      "CHAR(1)"}, //Small bit of C# conversion required
+            {typeof(char?),     "CHAR(1)"}, //Small bit of C# conversion required
+            {typeof(short),     "SMALLINT"},
+            {typeof(short?),    "SMALLINT"},
+            {typeof(ushort),    "SMALLINT"},
+            {typeof(ushort?),   "SMALLINT"},
+            {typeof(int),       "INTEGER"},
+            {typeof(int?),      "INTEGER"},
+            {typeof(uint),      "INTEGER"},
+            {typeof(uint?),     "INTEGER"},
+            {typeof(long),      "BIGINT"},
+            {typeof(long?),     "BIGINT"},
+            {typeof(ulong),     "BIGINT"},
+            {typeof(ulong?),    "BIGINT"},
+            {typeof(float),     "FLOAT4"},
+            {typeof(float?),    "FLOAT4"},
+            {typeof(double),    "FLOAT8"},
+            {typeof(double?),   "FLOAT8"},
+            {typeof(decimal),   "NUMERIC"},
+            {typeof(decimal?),  "NUMERIC"},
+            {typeof(Guid),      "UUID"},
+            {typeof(Guid?),     "UUID"},
+            {typeof(DateTime),  "TIMESTAMP"},
+            {typeof(DateTime?), "TIMESTAMP"},
+            {typeof(string),    "TEXT"},
+            {typeof(byte[]),    "BYTEA" }
+        };
         public override string? GetSQLType(Type t) => SQLTypes.ContainsKey(t) ? SQLTypes[t] : null;
         public override Task Truncate(string TableName, bool cascade) => ExecuteNonQuery($"TRUNCATE {TableName}{(cascade ? " CASCADE" : "")};");
         #endregion

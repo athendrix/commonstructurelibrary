@@ -35,7 +35,7 @@ namespace CSL.Webserver
                     Headers.Remove("X-Forwarded-Host");
                     didanything = true;
                 }
-                if (Headers.ContainsKey("X-Forwarded-For") && IPAddress.TryParse(Headers["X-Forwarded-For"][0], out IPAddress? address))
+                if (Headers.ContainsKey("X-Forwarded-For") && IPAddress.TryParse(Headers["X-Forwarded-For"][0] ?? "", out IPAddress? address))
                 {
                     context.Connection.RemoteIpAddress = address;
                     Headers.Remove("X-Forwarded-For");
@@ -55,7 +55,7 @@ namespace CSL.Webserver
                             string value = kvpair[1].Trim();
                             if (ForwardedValues.ContainsKey(key))
                             {
-                                string[] oldValues = ForwardedValues[key].ToArray();
+                                string[] oldValues = ForwardedValues[key].Select(x => x ?? "").ToArray();
                                 string[] newValues = new string[oldValues.Length + 1];
                                 Array.Copy(oldValues, newValues, oldValues.Length);
                                 newValues[oldValues.Length] = value;
@@ -67,7 +67,7 @@ namespace CSL.Webserver
                             }
                         }
                     }
-                    if (ForwardedValues.ContainsKey("for") && IPAddress.TryParse(ForwardedValues["for"][0], out address))
+                    if (ForwardedValues.ContainsKey("for") && IPAddress.TryParse(ForwardedValues["for"][0] ?? "", out address))
                     {
                         context.Connection.RemoteIpAddress = address;
                     }

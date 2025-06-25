@@ -14,9 +14,9 @@ namespace CSL.Helpers
             char PairStartToken = '?';
             foreach (KeyValuePair<string, StringValues> QueryPair in pairs)
             {
-                foreach (string value in QueryPair.Value)
+                foreach (string? value in QueryPair.Value)
                 {
-                    toReturn.Append(PairStartToken + HttpUtility.UrlEncode(QueryPair.Key) + "=" + HttpUtility.UrlEncode(value));
+                    toReturn.Append(PairStartToken + HttpUtility.UrlEncode(QueryPair.Key) + "=" + HttpUtility.UrlEncode(value ?? ""));
                     PairStartToken = '&';
                 }
             }

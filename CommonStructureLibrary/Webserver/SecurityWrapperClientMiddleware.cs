@@ -24,7 +24,7 @@ namespace CSL.Webserver
                 {
                     if (header.Key.StartsWith(SecurityWrapper))
                     {
-                        foreach (string value in header.Value)
+                        foreach (string? value in header.Value)
                         {
                             if (header.Key == SecurityWrapper + "user")
                             {
@@ -41,7 +41,7 @@ namespace CSL.Webserver
                                             username = value;
                                             break;
                                         case ClaimTypes.Role:
-                                            foreach (string role in value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                                            foreach (string role in value?.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>())
                                             {
                                                 roles.Add(role.Trim().ToLower());
                                             }

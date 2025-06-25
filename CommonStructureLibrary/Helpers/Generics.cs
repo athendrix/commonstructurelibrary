@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -213,7 +214,7 @@ namespace CSL.Helpers
             #region Serialization
             try
             {
-                result = Newtonsoft.Json.JsonConvert.DeserializeObject(s,TType);
+                result = JsonSerializer.Deserialize(s,TType);
                 return true;
             }
             catch { }
@@ -347,7 +348,7 @@ namespace CSL.Helpers
             #region Serialization
             try
             {
-                return Newtonsoft.Json.JsonConvert.SerializeObject(input);
+                return JsonSerializer.Serialize(input);
             }
             catch { }
             #endregion
