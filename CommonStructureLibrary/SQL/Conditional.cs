@@ -11,7 +11,7 @@ namespace CSL.SQL
         protected readonly Conditional? previous;
         protected readonly ConditionalType ctype;
         protected abstract bool Validate(ConditionalType pctype);
-        public string Build(SQLDB sql, ParameterInfo[] ValidColumns, ref List<object> ParametersList, bool SubConditional = false)
+        public string Build(SQLDB sql, RecordParameter[] ValidColumns, ref List<object> ParametersList, bool SubConditional = false)
         {
             if (sql is PostgreSQL) { return Build(BuildType.PostgreSQL, ValidColumns, ref ParametersList, SubConditional); }
             if (sql is Sqlite) { return Build(BuildType.Sqlite, ValidColumns, ref ParametersList, SubConditional); }
@@ -27,7 +27,7 @@ namespace CSL.SQL
             }
             return index;
         }
-        public string Build(BuildType buildType, ParameterInfo[] ValidColumns, ref List<object> ParametersList, bool SubConditional = false)
+        public string Build(BuildType buildType, RecordParameter[] ValidColumns, ref List<object> ParametersList, bool SubConditional = false)
         {
             Stack<Conditional> conditionalStack = new Stack<Conditional>();
             for (Conditional? c = this; c != null; c = c.previous) { conditionalStack.Push(c); }
@@ -39,7 +39,7 @@ namespace CSL.SQL
             return toReturn.ToString();
         }
 
-        protected abstract string BuildSegment(BuildType buildType, ParameterInfo[] ValidColumns, ref List<object> ParametersList, bool SubConditional);
+        protected abstract string BuildSegment(BuildType buildType, RecordParameter[] ValidColumns, ref List<object> ParametersList, bool SubConditional);
         
         protected Conditional(Conditional? previous, ConditionalType ctype)
         {
@@ -95,7 +95,7 @@ namespace CSL.SQL
                 this.parameters = parameters;
             }
         }
-        protected override string BuildSegment(BuildType buildType, ParameterInfo[] ValidColumns, ref List<object> ParametersList, bool SubConditional)
+        protected override string BuildSegment(BuildType buildType, RecordParameter[] ValidColumns, ref List<object> ParametersList, bool SubConditional)
         {
             string joinstring = ctype switch
             {
@@ -108,12 +108,12 @@ namespace CSL.SQL
             {
                 return $"{joinstring}1 = {parameters[0]}";
             }
-            ParameterInfo? currentColumn = ValidColumns.Where(x => x.Name == ColumnName).FirstOrDefault();
+            RecordParameter? currentColumn = ValidColumns.Where(x => x.Name == ColumnName).FirstOrDefault();
             //For injection protection we're making sure the column name is a valid part of the record.
             if (currentColumn == null) { throw new ArgumentException($"\"{ColumnName}\" is not a valid column name!"); }
 
             bool inequality = Condition is IS.LESS_THAN or IS.LESS_THAN_OR_EQUAL_TO or IS.GREATER_THAN or IS.GREATER_THAN_OR_EQUAL_TO;
-            bool unsignedType = currentColumn.ParameterType == typeof(ulong) || currentColumn.ParameterType == typeof(uint) || currentColumn.ParameterType == typeof(ushort);
+            bool unsignedType = currentColumn.Type == typeof(ulong) || currentColumn.Type == typeof(uint) || currentColumn.Type == typeof(ushort);
             bool notValue = Condition is IS.NOT_EQUAL_TO or IS.NOT_IN or IS.NOT_BETWEEN or IS.NOT_LIKE or IS.NOT_STARTING_WITH or IS.NOT_ENDING_WITH or IS.NOT_CONTAINING or IS.NOT_ILIKE;
 
 
@@ -141,7 +141,7 @@ namespace CSL.SQL
                         throw new ArgumentNullException("A null value is only allowed for `=` or `IN` comparisons.");
                     }
                     //Fix Typing
-                    if (value.GetType() != currentColumn.ParameterType && value.GetType() != Nullable.GetUnderlyingType(currentColumn.ParameterType)) { value = Convert.ChangeType(value, currentColumn.ParameterType); }
+                    if (value.GetType() != currentColumn.Type && value.GetType() != Nullable.GetUnderlyingType(currentColumn.Type)) { value = Convert.ChangeType(value, currentColumn.Type); }
                     if (Condition is IS.STARTING_WITH or IS.NOT_STARTING_WITH or IS.CONTAINING or IS.NOT_CONTAINING)
                     {
                         value = value.ToString() + "%";
@@ -210,8 +210,8 @@ namespace CSL.SQL
                     }
                     #endregion
 
-                    if (first.GetType() != currentColumn.ParameterType) { first = Convert.ChangeType(first, currentColumn.ParameterType); }
-                    if (last.GetType() != currentColumn.ParameterType) { last = Convert.ChangeType(last, currentColumn.ParameterType); }
+                    if (first.GetType() != currentColumn.Type) { first = Convert.ChangeType(first, currentColumn.Type); }
+                    if (last.GetType() != currentColumn.Type) { last = Convert.ChangeType(last, currentColumn.Type); }
                     return $"{joinstring}{a}{notString} BETWEEN @{AddOrIndex(ref ParametersList, first)} AND @{AddOrIndex(ref ParametersList, last)}";
                 #endregion
                 default:
@@ -227,7 +227,7 @@ namespace CSL.SQL
                             nullinlist = true;
                             continue;
                         }
-                        if (toAdd.GetType() != currentColumn.ParameterType) { toAdd = Convert.ChangeType(toAdd, currentColumn.ParameterType); }
+                        if (toAdd.GetType() != currentColumn.Type) { toAdd = Convert.ChangeType(toAdd, currentColumn.Type); }
                         NonNullParameters.Add(toAdd);
                     }
                     string[] nnpstrings = new string[NonNullParameters.Count];
@@ -263,7 +263,7 @@ namespace CSL.SQL
         public OrderClauseSegment ORDERBYDESC(string ColumnName) => new OrderClauseSegment(this, ConditionalType.ORDERBY, ColumnName, false);
         #endregion
         internal SubconditionalSegment(Conditional? previous, ConditionalType ctype, Conditional subConditional) : base(previous, ctype) => this.subConditional = subConditional;
-        protected override string BuildSegment(BuildType buildType, ParameterInfo[] ValidColumns, ref List<object> ParametersList, bool SubConditional)
+        protected override string BuildSegment(BuildType buildType, RecordParameter[] ValidColumns, ref List<object> ParametersList, bool SubConditional)
         {
             string joinstring = ctype switch
             {
@@ -289,7 +289,7 @@ namespace CSL.SQL
             this.ascending = ascending;
         }
 
-        protected override string BuildSegment(BuildType buildType, ParameterInfo[] ValidColumns, ref List<object> ParametersList, bool SubConditional)
+        protected override string BuildSegment(BuildType buildType, RecordParameter[] ValidColumns, ref List<object> ParametersList, bool SubConditional)
         {
             if (!ValidColumns.Where(x => x.Name == ColumnName).Any()) { throw new ArgumentException($"\"{ColumnName}\" is not a valid column name!"); }
 
@@ -315,7 +315,7 @@ namespace CSL.SQL
             this.offset = offset;
         }
 
-        protected override string BuildSegment(BuildType buildType, ParameterInfo[] ValidColumns, ref List<object> ParametersList, bool SubConditional)
+        protected override string BuildSegment(BuildType buildType, RecordParameter[] ValidColumns, ref List<object> ParametersList, bool SubConditional)
         {
             string offsetstring = offset == 0 ? "" : $" OFFSET {offset}";
             return $" LIMIT {rowcount}{offsetstring}";

@@ -52,7 +52,7 @@ namespace CSL.SQL
         /// <summary>
         /// Lets you specify a comparison that any parameters have to satisfy. Check comparisons will be checked on Insert or Update.
         /// </summary>
-        /// <param name="CheckString">The SQL to use for a check. For exmaple if I wanted to make sure a date happened after Dec 31, 1999, I'd put "> '1999-12-31'"</param>
+        /// <param name="CheckString">The SQL to use for a check. For example if I wanted to make sure a date happened after Dec 31, 1999, I'd put "> '1999-12-31'"</param>
         public CheckAttribute(string CheckString) => this.CheckString = CheckString;
     }
     public record FKGroup(string Table, int Group);
@@ -125,32 +125,32 @@ namespace CSL.SQL
             //return "<FIXME>";
         }
         #region Helper Properties
-        protected static readonly string TableName = TNA?.TableName ?? Common.Escape(typeof(T).Name);
+        public static readonly string TableName = TNA?.TableName ?? Common.Escape(typeof(T).Name);
         private static TableNameAttribute? TNA => typeof(T).GetCustomAttributes(false).SelectMany(x => x is TableNameAttribute r ? new TableNameAttribute[] { r } : new TableNameAttribute[0]).FirstOrDefault();
         protected static readonly SQLRecordAttribute ARA = typeof(T).GetCustomAttributes(true).SelectMany(x => x is SQLRecordAttribute r ? new SQLRecordAttribute[] { r } : new SQLRecordAttribute[0]).First();
 
-        protected static readonly ParameterInfo[] PKs = RecordParameters.Take(ARA.PrimaryKeys).ToArray();
-        protected static readonly ParameterInfo[] Datas = RecordParameters.Skip(ARA.PrimaryKeys).ToArray();
+        protected static readonly RecordParameter[] PKs = RecordParameters.Take(ARA.PrimaryKeys).ToArray();
+        protected static readonly RecordParameter[] Datas = RecordParameters.Skip(ARA.PrimaryKeys).ToArray();
         protected static readonly string[] PKStrings = PKs.Select(x => $"{Common.Escape(x.Name)} = @{x.Position}").ToArray();
         protected static readonly string[] DataStrings = Datas.Select(x => $"{Common.Escape(x.Name)} = @{x.Position}").ToArray();
-        protected static readonly string[] ExtraLines = GetExtraLines(RecordParameters.SelectMany(x => x.GetCustomAttributes().Select(y => new Tuple<ParameterInfo, Attribute>(x, y))).GroupBy(z => z.Item2.GetType()).ToArray());
+        protected static readonly string[] ExtraLines = GetExtraLines(RecordParameters.SelectMany(x => x.Attributes.Select(y => new Tuple<RecordParameter, Attribute>(x, y))).GroupBy(z => z.Item2.GetType()).ToArray());
         protected static readonly string[] ParameterNumbers = Enumerable.Range(0, RecordParameters.Length).Select(i => $"@{i}").ToArray();
         #endregion
         #region Function Helpers
-        private static string[] GetExtraLines(IGrouping<Type, Tuple<ParameterInfo, Attribute>>[] attributes)
+        private static string[] GetExtraLines(IGrouping<Type, Tuple<RecordParameter, Attribute>>[] attributes)
         {
             List<string> toReturn = new List<string>();
-            foreach (IGrouping<Type, Tuple<ParameterInfo, Attribute>> group in attributes)
+            foreach (IGrouping<Type, Tuple<RecordParameter, Attribute>> group in attributes)
             {
                 if (group.Key == typeof(UniqueAttribute))
                 {
-                    foreach (IGrouping<int?, Tuple<ParameterInfo, Attribute>> innergroup in group.GroupBy(x => ((UniqueAttribute)x.Item2).Group))
+                    foreach (IGrouping<int?, Tuple<RecordParameter, Attribute>> innergroup in group.GroupBy(x => ((UniqueAttribute)x.Item2).Group))
                     {
                         if (innergroup.Key == null)
                         {
-                            foreach (ParameterInfo pi in innergroup.Select(x => x.Item1))
+                            foreach (RecordParameter rp in innergroup.Select(x => x.Item1))
                             {
-                                toReturn.Add($"UNIQUE({Common.Escape(pi.Name)})");
+                                toReturn.Add($"UNIQUE({Common.Escape(rp.Name)})");
                             }
                         }
                         else
@@ -165,7 +165,7 @@ namespace CSL.SQL
                 }
                 if (group.Key == typeof(FKAttribute))
                 {
-                    foreach (IGrouping<FKGroup?, Tuple<ParameterInfo, Attribute>> innergroup in group.GroupBy(x => ((FKAttribute)x.Item2).Grouping))
+                    foreach (IGrouping<FKGroup?, Tuple<RecordParameter, Attribute>> innergroup in group.GroupBy(x => ((FKAttribute)x.Item2).Grouping))
                     {
                         if (innergroup.Key == null)
                         {
@@ -185,9 +185,9 @@ namespace CSL.SQL
             }
             return toReturn.ToArray();
         }
-        protected static string FormatParameterInfos(SQLDB sql, IEnumerable<ParameterInfo> pis) => string.Join(", ", pis.Select(x => FormatParameterInfo(sql, x)));
-        protected static string GetEscapedParameterNames(IEnumerable<ParameterInfo> pis) => string.Join(", ", pis.Select(x => Common.Escape(x.Name)));
-        protected static string FormatParameterInfo(SQLDB sql, ParameterInfo pi) => $"{Common.Escape(pi.Name)} {GetSQLType(sql, pi.ParameterType)}{(IsNullable(pi) ? "" : " NOT NULL")}";
+        protected static string FormatRecordParameters(SQLDB sql, IEnumerable<RecordParameter> rps) => string.Join(", ", rps.Select(x => FormatRecordParameter(sql, x)));
+        protected static string GetEscapedParameterNames(IEnumerable<RecordParameter> rps) => string.Join(", ", rps.Select(x => Common.Escape(x.Name)));
+        protected static string FormatRecordParameter(SQLDB sql, RecordParameter rp) => $"{Common.Escape(rp.Name)} {GetSQLType(sql, rp.Type)}{(rp.Nullable ? "" : " NOT NULL")}";
         protected static string JoinCommas(IEnumerable<string?> toJoin) => string.Join(", ", toJoin);
         protected static string JoinANDs(IEnumerable<string?> toJoin) => string.Join(" AND ", toJoin);
         #endregion
@@ -199,8 +199,8 @@ namespace CSL.SQL
                 //Regular Parameter Definitions
                 for (int i = 0; i < RecordParameters.Length; i++)
                 {
-                    ParameterInfo pi = RecordParameters[i];
-                    command.Append($"{FormatParameterInfo(sql, pi)}, ");
+                    RecordParameter rp = RecordParameters[i];
+                    command.Append($"{FormatRecordParameter(sql, rp)}, ");
                 }
                 //Primary Key Definitions - This works because I require at least 1 Primary Key
                 command.Append($"PRIMARY KEY({GetEscapedParameterNames(PKs)})");

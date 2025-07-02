@@ -500,29 +500,5 @@ namespace CSL.Helpers
             _ => throw new NotImplementedException()
         };
         #endregion
-        public static bool IsNullable(ParameterInfo parameter)
-        {
-            if (parameter.ParameterType.IsValueType) { return Nullable.GetUnderlyingType(parameter.ParameterType) != null; }
-            foreach(CustomAttributeData customAttribute in parameter.CustomAttributes)
-            {
-                if(customAttribute.AttributeType.FullName == "System.Runtime.CompilerServices.NullableAttribute")
-                {
-                    return (byte?)customAttribute.ConstructorArguments[0].Value == 2;
-                }
-            }
-
-            for (MemberInfo? type = parameter.Member; type != null; type = type.DeclaringType)
-            {
-                foreach(CustomAttributeData customAttribute in type.CustomAttributes)
-                {
-                    if(customAttribute.AttributeType.FullName == "System.Runtime.CompilerServices.NullableContextAttribute")
-                    {
-                        return (byte?)customAttribute.ConstructorArguments[0].Value == 2;
-                    }
-                }
-            }
-
-            return false;
-        }
     }
 }

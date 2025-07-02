@@ -46,7 +46,7 @@ namespace CSL.Webserver
                     string testquery = "";
                     foreach (KeyValuePair<string, StringValues> QueryPair in context.Request.Query)
                     {
-                        foreach (string value in QueryPair.Value)
+                        foreach (string? value in QueryPair.Value)
                         {
                             testquery += "&" + HttpUtility.UrlEncode(QueryPair.Key) + "=" + HttpUtility.UrlEncode(value);
                             debuginfo.AppendLine("&nbsp;&nbsp;&nbsp;&nbsp;Key: " + QueryPair.Key + " Value: " + value);

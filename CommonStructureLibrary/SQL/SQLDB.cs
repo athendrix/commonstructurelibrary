@@ -262,14 +262,14 @@ namespace CSL.SQL
             }
             return toReturn;
         }
-        public abstract object? ConvertFromFriendlyParameter(object? parameter, ParameterInfo pi);
-        public object?[] ConvertFromFriendlyParameters(object?[] parameters, ParameterInfo[] pis)
+        public abstract object? ConvertFromFriendlyParameter(object? parameter, RecordParameter rp);
+        public object?[] ConvertFromFriendlyParameters(object?[] parameters, RecordParameter[] rps)
         {
-            if(parameters.Length != pis.Length) { throw new ArgumentException("Parameters length is not the same as ParameterInfo length!"); }
+            if(parameters.Length != rps.Length) { throw new ArgumentException("Parameters length is not the same as RecordParameter length!"); }
             object?[] toReturn = new object[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
             {
-                toReturn[i] = ConvertFromFriendlyParameter(parameters[i], pis[i]);
+                toReturn[i] = ConvertFromFriendlyParameter(parameters[i], rps[i]);
             }
             return toReturn;
         }

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using CSL;
 using CSL.Encryption;
 using CSL.SQL;
 using NUnit.Framework;
@@ -260,11 +262,11 @@ public class SQLRecordTests
                 .AND("Column8", IS.IN, 1, 2, 3, 4, 5, 6)
                 .AND("Column9", IS.NOT_IN, 1, 2, 3, 4, 5, 6, null)
                 .AND("Column10", IS.NOT_IN, 1, 2, 3, 4, 5, 6);
-            ParameterInfo[] pis = ExampleSet.GetType().GetConstructors()[0].GetParameters();
+            RecordParameter[] rps = ExampleSet.GetType().GetConstructors()[0].GetParameters().Select(x => new RecordParameter(x)).ToArray();
             using (Sqlite sql = new Sqlite(":memory:"))
             {
                 List<object> parameters = new List<object>();
-                string condition = c.Build(sql,pis,ref parameters) + ";";
+                string condition = c.Build(sql,rps,ref parameters) + ";";
                 Assert.That(condition, Is.EqualTo(" WHERE" +
                     " \"Column1\" = @0 AND" +
                     " \"Column2\" != @0 AND" +

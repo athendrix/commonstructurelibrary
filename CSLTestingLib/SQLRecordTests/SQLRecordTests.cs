@@ -10,7 +10,7 @@ using CSL.Testing;
 using ExampleNamespace.SomeSubNamespace;
 using static CSLTesting.TestingHelpers;
 using System.Reflection;
-
+using CSL;
 using static CSL.SQL.Conditional;
 
 namespace CSLTesting
@@ -188,11 +188,11 @@ namespace CSLTesting
                 .AND("Column8", IS.IN, 1, 2, 3, 4, 5, 6)
                 .AND("Column9", IS.NOT_IN, 1, 2, 3, 4, 5, 6, null)
                 .AND("Column10", IS.NOT_IN, 1, 2, 3, 4, 5, 6);
-            ParameterInfo[] pis = (new { Column1 = "SPAM", Column2 = "SPAMMER", Column3 = 22, Column4 = 2, Column5 = 6, Column6 = 6.5, Column7 = 3.0, Column8 = 5.0, Column9 = 4.5, Column10 = 22 })
-                .GetType().GetConstructors()[0].GetParameters();
+            RecordParameter[] rps = (new { Column1 = "SPAM", Column2 = "SPAMMER", Column3 = 22, Column4 = 2, Column5 = 6, Column6 = 6.5, Column7 = 3.0, Column8 = 5.0, Column9 = 4.5, Column10 = 22 })
+                .GetType().GetConstructors()[0].GetParameters().Select(x => new RecordParameter(x)).ToArray();
 
             List<object> parameters = new List<object>();
-            string condition = c.Build(BuildType.PostgreSQL, pis, ref parameters) + ";";
+            string condition = c.Build(BuildType.PostgreSQL, rps, ref parameters) + ";";
             if (condition != " WHERE" +
                 " \"Column1\" = @0 AND" +
                 " \"Column2\" != @0 AND" +

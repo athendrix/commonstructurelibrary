@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -25,18 +26,18 @@ namespace CSL
             t == typeof(DateTime) || t == typeof(DateTime?) ||
             t == typeof(string) ||
             t == typeof(byte[]) ||
-            t.IsEnum || Nullable.GetUnderlyingType(t).IsEnum;
+            t.IsEnum || Nullable.GetUnderlyingType(t)?.IsEnum == true;
         static CSLRecord()
         {
-            foreach(ParameterInfo pi in RecordParameters)
+            foreach(RecordParameter rp in RecordParameters)
             {
-                if(!IsValidType(pi.ParameterType))
+                if(!IsValidType(rp.Type))
                 {
                     throw new Exception("CSLRecords only support basic data types at the moment. This limitation allows for extended capabilities.");
                 }
             }
         }
-        public static ParameterInfo[] RecordParameters = typeof(T).GetConstructors()[0].GetParameters();
+        public static readonly RecordParameter[] RecordParameters = typeof(T).GetConstructors()[0].GetParameters().Select(x => new RecordParameter(x)).ToArray();
         public static T GetRecord(object?[] parameters) => (T)typeof(T).GetConstructors()[0].Invoke(parameters);
         public object?[] ToArray()
         {

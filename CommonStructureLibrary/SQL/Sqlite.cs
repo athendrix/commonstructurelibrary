@@ -54,14 +54,14 @@ namespace CSL.SQL
             return toReturn;
         }
 
-        public override object? ConvertFromFriendlyParameter(object? parameter, ParameterInfo pi)
+        public override object? ConvertFromFriendlyParameter(object? parameter, RecordParameter rp)
         {
             if (parameter is null or DBNull)
             {
-                if (!IsNullable(pi)) { throw new Exception($"Incorrect nullability for parameter \"{pi.Name}\"!"); }
+                if (!rp.Nullable) { throw new Exception($"Incorrect nullability for parameter \"{rp.Name}\"!"); }
                 return null;
             }
-            Type ParameterType = pi.ParameterType;
+            Type ParameterType = rp.Type;
             ParameterType = Nullable.GetUnderlyingType(ParameterType) ?? ParameterType;
             if (ParameterType == typeof(byte)) { return (byte)(long)parameter; }
             if (ParameterType == typeof(sbyte)) { return (sbyte)(long)parameter; }

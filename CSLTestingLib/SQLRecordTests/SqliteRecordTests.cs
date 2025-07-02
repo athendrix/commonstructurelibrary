@@ -10,6 +10,7 @@ using CSL.Testing;
 using ExampleNamespace.SomeSubNamespace;
 using static CSLTesting.TestingHelpers;
 using System.Reflection;
+using CSL;
 
 namespace CSLTesting
 {
@@ -211,12 +212,12 @@ namespace CSLTesting
                 .AND("Column8", IS.IN, 1, 2, 3, 4, 5, 6)
                 .AND("Column9", IS.NOT_IN, 1, 2, 3, 4, 5, 6, null)
                 .AND("Column10", IS.NOT_IN, 1, 2, 3, 4, 5, 6);
-            ParameterInfo[] pis = ExampleSet.GetType().GetConstructors()[0].GetParameters();
+            RecordParameter[] rps = ExampleSet.GetType().GetConstructors()[0].GetParameters().Select(x => new RecordParameter(x)).ToArray();
             List<Func<Sqlite>> SQLDBs = SQLTests.GetSqliteDB;
             using (Sqlite sql = SQLDBs[0]())
             {
                 List<object> parameters = new List<object>();
-                string condition = c.Build(sql,pis,ref parameters) + ";";
+                string condition = c.Build(sql,rps,ref parameters) + ";";
                 if(condition != " WHERE" +
                     " \"Column1\" = @0 AND" +
                     " \"Column2\" != @0 AND" +
