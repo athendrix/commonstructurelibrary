@@ -20,8 +20,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSLTestingLib", "CSLTesting
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSLTesting", "CSLTesting\CSLTesting.csproj", "{BD423ED5-4904-459B-8B4F-D3FD7EB4BB82}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonStructureLibrary.SQLJoinSourceGenerator", "CommonStructureLibrary.SQLJoinSourceGenerator\CommonStructureLibrary.SQLJoinSourceGenerator.csproj", "{65399BB4-A62B-4A88-91ED-61DEFE5274E6}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,10 +50,6 @@ Global
 		{BD423ED5-4904-459B-8B4F-D3FD7EB4BB82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD423ED5-4904-459B-8B4F-D3FD7EB4BB82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD423ED5-4904-459B-8B4F-D3FD7EB4BB82}.Release|Any CPU.Build.0 = Release|Any CPU
-		{65399BB4-A62B-4A88-91ED-61DEFE5274E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{65399BB4-A62B-4A88-91ED-61DEFE5274E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{65399BB4-A62B-4A88-91ED-61DEFE5274E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{65399BB4-A62B-4A88-91ED-61DEFE5274E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
